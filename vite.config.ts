@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import devServer from '@hono/vite-dev-server'
 
-const publicStylesheet = resolve('public/styles.css')
+const publicStylesheet = resolve('src/public/styles.css')
 
 const servePublicStyles = () => ({
   name: 'serve-public-styles',
@@ -24,7 +24,7 @@ export default defineConfig({
   plugins: [react(), devServer({ entry: 'src/index.ts' }), servePublicStyles()],
   publicDir: false,
   build: {
-    outDir: 'public',
+    outDir: 'src/public',
     emptyOutDir: false,
     rollupOptions: {
       input: 'src/client.tsx',

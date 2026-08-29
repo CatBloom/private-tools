@@ -1,10 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { secureHeaders } from 'hono/secure-headers'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { z } from 'zod'
-import { App } from '../ui/App'
+import { App } from '../ui/App.js'
 
 const MAX_BODY_BYTES = 16 * 1024
 
@@ -12,7 +15,27 @@ const helloRequestSchema = z
   .object({ name: z.string().trim().min(1).max(50) })
   .strict()
 
-type AppOptions = { clientScript?: string }
+type AppOptions = { clientScript?: string; clientAsset?: string | null; stylesAsset?: string | null }
+
+const staticAssetRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
+
+const staticAssets = [
+  { path: '/assets/client.js', contentType: 'application/javascript; charset=UTF-8', filePath: join(staticAssetRoot, 'assets', 'client.js'), option: 'clientAsset' as const },
+  { path: '/styles.css', contentType: 'text/css; charset=UTF-8', filePath: join(staticAssetRoot, 'styles.css'), option: 'stylesAsset' as const },
+]
+
+const defaultStaticAssetCache = new Map<string, string | null>()
+
+const readDefaultStaticAsset = (asset: (typeof staticAssets)[number]) => {
+  if (!defaultStaticAssetCache.has(asset.path)) {
+    try {
+      defaultStaticAssetCache.set(asset.path, readFileSync(asset.filePath, 'utf8'))
+    } catch {
+      defaultStaticAssetCache.set(asset.path, null)
+    }
+  }
+  return defaultStaticAssetCache.get(asset.path) ?? null
+}
 
 const isJsonContentType = (contentType: string | undefined) =>
   contentType?.toLowerCase().split(';', 1)[0] === 'application/json'
@@ -51,6 +74,18 @@ export const createApp = (options: AppOptions = {}) => {
     const page = renderToString(createElement(App))
     return c.html(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>検証用アプリ</title><link rel="stylesheet" href="/styles.css"></head><body><div id="root">${page}</div><script type="module" src="${clientScript}"></script></body></html>`)
   })
+
+  if (process.env.NODE_ENV === 'production') {
+    for (const asset of staticAssets) {
+      const override = options[asset.option]
+      const content = override === undefined ? readDefaultStaticAsset(asset) : override
+
+      app.get(asset.path, (c) => {
+        if (content === null || content === undefined) return c.notFound()
+        return c.body(content, 200, { 'Content-Type': asset.contentType })
+      })
+    }
+  }
 
   app.post(
     '/api/hello',

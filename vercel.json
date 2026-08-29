@@ -1,3 +1,10 @@
 {
-  "framework": "hono"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "hono",
+  "buildCommand": "pnpm run build",
+  "functions": {
+    "src/index.ts": {
+      "includeFiles": "src/public/**/*"
+    }
+  }
 }
