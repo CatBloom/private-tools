@@ -4,7 +4,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { z } from 'zod'
-import { App } from '../ui/App'
+import { App } from '../ui/App.js'
 
 const MAX_BODY_BYTES = 16 * 1024
 
