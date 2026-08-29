@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import devServer from '@hono/vite-dev-server'
 
-const publicStylesheet = resolve('public/styles.css')
+const publicStylesheet = resolve('src/public/styles.css')
 
 const servePublicStyles = () => ({
   name: 'serve-public-styles',

@@ -14,9 +14,15 @@ const helloRequestSchema = z
   .object({ name: z.string().trim().min(1).max(50) })
   .strict()
 
-type AppOptions = { clientScript?: string; clientAsset?: string | null }
+type AppOptions = { clientScript?: string; clientAsset?: string | null; stylesAsset?: string | null }
 
 const clientAssetPath = resolve(process.cwd(), 'src/public/assets/client.js')
+const stylesAssetPath = resolve(process.cwd(), 'src/public/styles.css')
+
+const staticAssets = [
+  { path: '/assets/client.js', contentType: 'application/javascript; charset=UTF-8', filePath: clientAssetPath, option: 'clientAsset' as const },
+  { path: '/styles.css', contentType: 'text/css; charset=UTF-8', filePath: stylesAssetPath, option: 'stylesAsset' as const },
+]
 
 const isJsonContentType = (contentType: string | undefined) =>
   contentType?.toLowerCase().split(';', 1)[0] === 'application/json'
@@ -57,17 +63,26 @@ export const createApp = (options: AppOptions = {}) => {
   })
 
   if (process.env.NODE_ENV === 'production') {
-    app.get('/assets/client.js', (c) => {
-      try {
-        const clientAsset = options.clientAsset === undefined
-          ? readFileSync(clientAssetPath, 'utf8')
-          : options.clientAsset
-        if (clientAsset === null) return c.notFound()
-        return c.body(clientAsset, 200, { 'Content-Type': 'application/javascript; charset=UTF-8' })
-      } catch {
-        return c.notFound()
+    const staticCache = new Map<string, string | null>()
+
+    for (const asset of staticAssets) {
+      const override = options[asset.option]
+      let content: string | null = override === undefined ? null : override
+      if (override === undefined) {
+        try {
+          content = readFileSync(asset.filePath, 'utf8')
+        } catch {
+          content = null
+        }
       }
-    })
+      staticCache.set(asset.path, content)
+
+      app.get(asset.path, (c) => {
+        const content = staticCache.get(asset.path)
+        if (content === null || content === undefined) return c.notFound()
+        return c.body(content, 200, { 'Content-Type': asset.contentType })
+      })
+    }
   }
 
   app.post(
