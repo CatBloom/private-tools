@@ -24,7 +24,7 @@ export default defineConfig({
   plugins: [react(), devServer({ entry: 'src/index.ts' }), servePublicStyles()],
   publicDir: false,
   build: {
-    outDir: 'public',
+    outDir: 'src/public',
     emptyOutDir: false,
     rollupOptions: {
       input: 'src/client.tsx',

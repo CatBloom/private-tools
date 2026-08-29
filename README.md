@@ -20,7 +20,7 @@ pnpm install
 pnpm run dev
 ```
 
-品質確認は `pnpm run check`、本番用クライアントの生成は `pnpm run build` です。生成された `public/assets/` は Git 管理しません。
+品質確認は `pnpm run check`、本番用クライアントの生成は `pnpm run build` です。生成された `src/public/assets/` は Git 管理せず、Vercel の Function に含めて `/assets/client.js` から配信します。CSS はルートの `public/` に置き、Hono のプリセットで静的配信します。
 
 Vercel の設定は [`vercel.json`](vercel.json) で管理しています。Framework Preset は `Hono`、Build Command は `pnpm run build` です。Output Directory は設定していません。Hono のプリセットがルートの `public/` を静的ファイルとして自動的に配信します。
 

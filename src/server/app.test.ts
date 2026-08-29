@@ -38,6 +38,34 @@ describe('server application', () => {
     }
   })
 
+  it('serves the bundled client asset in production', async () => {
+    const previousNodeEnv = process.env.NODE_ENV
+    try {
+      process.env.NODE_ENV = 'production'
+      const response = await createApp({ clientAsset: 'console.log("bundle")' }).request('http://localhost/assets/client.js')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('application/javascript')
+      await expect(response.text()).resolves.toBe('console.log("bundle")')
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+    }
+  })
+
+  it('returns 404 when the bundled client asset is unavailable', async () => {
+    const previousNodeEnv = process.env.NODE_ENV
+    try {
+      process.env.NODE_ENV = 'production'
+      const response = await createApp({ clientAsset: null }).request('http://localhost/assets/client.js')
+
+      expect(response.status).toBe(404)
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+    }
+  })
+
   it('returns a trimmed greeting for valid JSON', async () => {
     const response = await request('/api/hello', {
       method: 'POST',

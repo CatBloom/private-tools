@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { secureHeaders } from 'hono/secure-headers'
@@ -12,7 +14,9 @@ const helloRequestSchema = z
   .object({ name: z.string().trim().min(1).max(50) })
   .strict()
 
-type AppOptions = { clientScript?: string }
+type AppOptions = { clientScript?: string; clientAsset?: string | null }
+
+const clientAssetPath = resolve(process.cwd(), 'src/public/assets/client.js')
 
 const isJsonContentType = (contentType: string | undefined) =>
   contentType?.toLowerCase().split(';', 1)[0] === 'application/json'
@@ -51,6 +55,20 @@ export const createApp = (options: AppOptions = {}) => {
     const page = renderToString(createElement(App))
     return c.html(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>検証用アプリ</title><link rel="stylesheet" href="/styles.css"></head><body><div id="root">${page}</div><script type="module" src="${clientScript}"></script></body></html>`)
   })
+
+  if (process.env.NODE_ENV === 'production') {
+    app.get('/assets/client.js', (c) => {
+      try {
+        const clientAsset = options.clientAsset === undefined
+          ? readFileSync(clientAssetPath, 'utf8')
+          : options.clientAsset
+        if (clientAsset === null) return c.notFound()
+        return c.body(clientAsset, 200, { 'Content-Type': 'application/javascript; charset=UTF-8' })
+      } catch {
+        return c.notFound()
+      }
+    })
+  }
 
   app.post(
     '/api/hello',
