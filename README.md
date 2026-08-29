@@ -1,8 +1,15 @@
-# 検証用アプリ
+# private-tools
 
-SSR と React の動作を確認するための検証用アプリです。
+個人で使用する便利ツールを集めたアプリケーションです。
 
-Hono SSR、React、Vite、TypeScript を使った初期基盤です。アクセス制御はデプロイ時に Cloudflare Access で設定します。アプリ内のアカウント管理や永続データは、個別の Issue で必要になった時点で追加します。
+## Architecture
+
+- アプリケーション: Hono SSR、React、Vite、TypeScript
+- ホスティング: Vercel
+- 本番ブランチ: `main`
+- アクセス制御: Cloudflare Access
+- 永続ストレージ: 必要になった時点で Cloudflare Workers KV を REST API 経由で使用
+- UI: モバイルファースト。デスクトップでも利用可能
 
 ## Local development
 
@@ -15,10 +22,6 @@ pnpm run dev
 
 品質確認は `pnpm run check`、本番用クライアントの生成は `pnpm run build` です。生成された `public/assets/` は Git 管理しません。
 
-Vercel では Framework Preset を `Hono` にし、Build Command と Output Directory の override は設定しません。
-
-## API
-
-`POST /api/hello` は JSON の `{ "name": "..." }` を受け取り、挨拶メッセージを返すサンプル API です。入力は 1〜50 文字に制限され、16 KiB を超えるリクエスト本文は拒否します。
+Vercel では Framework Preset を `Hono` にし、Build Command は `pnpm run build` を使用します。Output Directory は override しません。
 
 - [要件定義書](requirements.html)
