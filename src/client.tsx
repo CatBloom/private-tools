@@ -1,5 +1,5 @@
 import '@vitejs/plugin-react/preamble'
-import { hydrateRoot } from 'react-dom/client'
-import { App } from './ui/App'
+import { createRoot } from 'react-dom/client'
+import CreditCsvApp from './tools/credit-csv'
 
-hydrateRoot(document.getElementById('root')!, <App />)
+createRoot(document.getElementById('root')!).render(<CreditCsvApp />)

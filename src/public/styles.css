@@ -3,21 +3,81 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #17212b;
   background: #f4f7fb;
+  --top-bg: #f4f7fb;
+  --top-surface: #ffffff;
+  --top-border: #d9e2ec;
+  --top-text: #17212b;
+  --top-muted: #5b6b7c;
+  --top-accent: #1769aa;
+  --top-shadow: 0 .5rem 1.5rem rgb(23 33 43 / 8%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    color: #e7edf3;
+    background: #101820;
+    --top-bg: #101820;
+    --top-surface: #182432;
+    --top-border: #2b3947;
+    --top-text: #e7edf3;
+    --top-muted: #94a3b3;
+    --top-accent: #4ba3ff;
+    --top-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 30%);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e7edf3;
+  background: #101820;
+  --top-bg: #101820;
+  --top-surface: #182432;
+  --top-border: #2b3947;
+  --top-text: #e7edf3;
+  --top-muted: #94a3b3;
+  --top-accent: #4ba3ff;
+  --top-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 30%);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 0; }
+body { margin: 0; min-width: 0; background: var(--top-bg); color: var(--top-text); }
 button, input { font: inherit; }
-.page-shell { width: min(100%, 42rem); margin: 0 auto; padding: 1rem; }
-.card { margin-top: 1rem; padding: 1.5rem; background: #fff; border: 1px solid #d9e2ec; border-radius: 1rem; box-shadow: 0 .5rem 1.5rem rgb(23 33 43 / 8%); }
-.eyebrow { margin: 0 0 .5rem; color: #1769aa; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-h1 { margin: 0; font-size: clamp(1.7rem, 7vw, 2.4rem); line-height: 1.25; }
-.hello-form { display: grid; gap: .7rem; margin-top: 1.5rem; }
-label { font-weight: 700; }
-input, button { width: 100%; min-height: 44px; border-radius: .65rem; }
-input { padding: .65rem .8rem; border: 1px solid #8c9baa; font-size: 16px; }
-button { padding: .65rem 1rem; color: #fff; background: #1769aa; border: 1px solid #1769aa; font-weight: 700; cursor: pointer; }
-button:hover { background: #105888; }
-button:disabled { cursor: wait; opacity: .7; }
-.response-message { min-height: 1.7em; margin: 1.25rem 0 0; padding: .75rem; background: #eaf4ff; border-radius: .6rem; }
-@media (min-width: 48rem) { .page-shell { padding: 2rem; } .card { margin-top: 3rem; padding: 2rem; } }
+
+.top-shell { width: min(100%, 42rem); margin: 0 auto; padding: 1rem; }
+.top-header { position: relative; margin-bottom: 1.5rem; }
+.top-eyebrow { margin: 0 0 .5rem; color: var(--top-accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.top-header h1 { margin: 0; font-size: clamp(1.7rem, 7vw, 2.4rem); line-height: 1.25; }
+.top-theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: .4rem .9rem;
+  background: var(--top-surface);
+  border: 1px solid var(--top-border);
+  border-radius: .5rem;
+  color: var(--top-text);
+  cursor: pointer;
+}
+.top-theme-toggle:hover { border-color: var(--top-accent); }
+.top-tool-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.top-tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--top-surface);
+  border: 1px solid var(--top-border);
+  border-radius: 1rem;
+  box-shadow: var(--top-shadow);
+  text-decoration: none;
+  color: inherit;
+}
+.top-tool-card:hover { border-color: var(--top-accent); }
+.top-tool-name { font-size: 1.15rem; font-weight: 700; color: var(--top-accent); }
+.top-tool-desc { color: var(--top-muted); }
+@media (min-width: 48rem) {
+  /* credit-csv ツールと同じ約130%拡大でPC間の見た目を統一する */
+  :root { font-size: 130%; }
+  .top-shell { padding: 2rem; }
+}

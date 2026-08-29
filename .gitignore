@@ -19,3 +19,6 @@ Thumbs.db
 
 # Local task tracking
 task/
+
+# Local storage fallback (CSV persistence, dev only)
+.data/

@@ -1,188 +1,202 @@
 import { describe, expect, it } from 'vitest'
 import app from '../index'
 import { createApp } from './app'
+import type { Storage, StoredFileMeta } from './storage/index'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
 
+const withNodeEnv = async (value: string | undefined, run: () => Promise<void>) => {
+  const previous = process.env.NODE_ENV
+  try {
+    if (value === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = value
+    await run()
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previous
+  }
+}
+
+class InMemoryStorage implements Storage {
+  private files = new Map<string, Uint8Array>()
+
+  async list(): Promise<StoredFileMeta[]> {
+    return [...this.files.keys()].sort().map((name) => ({ name, size: this.files.get(name)!.length, uploadedAt: new Date(0).toISOString() }))
+  }
+
+  async get(name: string): Promise<Uint8Array | null> {
+    return this.files.get(name) ?? null
+  }
+
+  async put(name: string, bytes: Uint8Array): Promise<StoredFileMeta> {
+    this.files.set(name, bytes)
+    return { name, size: bytes.length, uploadedAt: new Date(0).toISOString() }
+  }
+
+  async delete(name: string): Promise<void> {
+    this.files.delete(name)
+  }
+}
+
 describe('server application', () => {
-  it('serves SSR through the Vercel entry with its development client and security headers', async () => {
+  it('serves the top hub page with a link to the credit CSV tool and the theme toggle script', async () => {
     const response = await request('/')
     const html = await response.text()
 
     expect(response.status).toBe(200)
-    expect(html).toContain('<title>検証用アプリ</title>')
-    expect(html).toContain('<h1 id="page-title">検証用アプリ</h1>')
-    expect(html).toContain('src="/src/client.tsx"')
+    expect(html).toContain('<title>Private Tools</title>')
+    expect(html).toContain('href="/tools/credit-csv"')
+    expect(html).toContain('data-theme-toggle')
+    expect(html).toContain('<script type="module" src="/src/ui/theme.ts"></script>')
     const csp = response.headers.get('content-security-policy')
-    expect(csp).toContain("default-src 'self'")
-    expect(csp).toContain("object-src 'none'")
-    expect(csp).toContain("frame-ancestors 'none'")
+    expect(csp).toContain("style-src 'self'")
+    expect(csp).not.toContain("style-src 'self' 'unsafe-inline'")
+    expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
     expect(response.headers.get('x-content-type-options')).toBe('nosniff')
-    expect(csp).not.toContain("'unsafe-inline'")
   })
 
-  it('allows the Vite React Refresh inline preamble only in development', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'development'
+  it('points the top page at the built theme script in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp().request('http://localhost/')
+      const html = await response.text()
+
+      expect(html).toContain('<script type="module" src="/assets/theme.js"></script>')
+    })
+  })
+
+  it('does not add the theme script to the credit CSV tool shell', async () => {
+    const response = await request('/tools/credit-csv')
+    const html = await response.text()
+
+    expect(html).not.toContain('theme.js')
+    expect(html).not.toContain('theme.ts')
+  })
+
+  it('serves the credit CSV SSR shell for the tool root and deep links, relaxing style-src', async () => {
+    for (const path of ['/tools/credit-csv', '/tools/credit-csv/yearly']) {
+      const response = await request(path)
+      const html = await response.text()
+
+      expect(response.status).toBe(200)
+      expect(html).toContain('id="root"')
+      expect(html).toContain('src="/src/client.tsx"')
+      expect(html).toContain('href="/assets/client.css"')
+      const csp = response.headers.get('content-security-policy')
+      expect(csp).toContain("style-src 'self' 'unsafe-inline'")
+      expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
+    }
+  })
+
+  it('allows the Vite React Refresh inline preamble in script-src only in development', async () => {
+    await withNodeEnv('development', async () => {
       const response = await createApp().request('http://localhost/')
       const csp = response.headers.get('content-security-policy')
 
       expect(csp).toContain("script-src 'self' 'unsafe-inline'")
-    } finally {
-      if (previousNodeEnv === undefined) {
-        delete process.env.NODE_ENV
-      } else {
-        process.env.NODE_ENV = previousNodeEnv
-      }
-    }
+    })
+  })
+
+  it('mounts the credit CSV API under /tools/credit-csv/api', async () => {
+    const storage = new InMemoryStorage()
+    await storage.put('202401.csv', new Uint8Array([1, 2, 3]))
+    const testApp = createApp({ creditCsvStorage: storage })
+
+    const response = await testApp.request('http://localhost/tools/credit-csv/api/files')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      data: { files: [{ name: '202401.csv', size: 3, uploadedAt: new Date(0).toISOString() }] },
+    })
+  })
+
+  it('returns a JSON 404 for unknown routes under the credit CSV API', async () => {
+    const testApp = createApp({ creditCsvStorage: new InMemoryStorage() })
+    const response = await testApp.request('http://localhost/tools/credit-csv/api/missing')
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Not found.' } })
   })
 
   it('serves the bundled client asset in production', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'production'
-      const response = await createApp({ clientAsset: 'console.log("bundle")' }).request('http://localhost/assets/client.js')
+    await withNodeEnv('production', async () => {
+      const response = await createApp({ assetOverrides: { 'client.js': 'console.log("bundle")' } }).request(
+        'http://localhost/assets/client.js',
+      )
 
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('application/javascript')
       await expect(response.text()).resolves.toBe('console.log("bundle")')
-    } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
-      else process.env.NODE_ENV = previousNodeEnv
-    }
+    })
   })
 
-  it('returns 404 when the bundled client asset is unavailable', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'production'
-      const response = await createApp({ clientAsset: null }).request('http://localhost/assets/client.js')
+  it('serves the extracted tool stylesheet in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp({ assetOverrides: { 'client.css': '.ccsv-app { color: red; }' } }).request(
+        'http://localhost/assets/client.css',
+      )
 
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('text/css')
+      await expect(response.text()).resolves.toBe('.ccsv-app { color: red; }')
+    })
+  })
+
+  it('returns 404 for an asset that does not exist', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp().request('http://localhost/assets/does-not-exist.js')
       expect(response.status).toBe(404)
-    } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
-      else process.env.NODE_ENV = previousNodeEnv
-    }
+    })
+  })
+
+  it('rejects asset filenames outside the allowlist pattern, including path traversal attempts', async () => {
+    await withNodeEnv('production', async () => {
+      for (const path of ['/assets/..%2F..%2Fpackage.json', '/assets/%2e%2e%2fapp.ts', '/assets/sub/dir.js']) {
+        const response = await createApp().request(`http://localhost${path}`)
+        expect(response.status).toBe(404)
+      }
+    })
   })
 
   it('serves the stylesheet in production with its content type', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'production'
+    await withNodeEnv('production', async () => {
       const response = await createApp({ stylesAsset: 'body { color: red; }' }).request('http://localhost/styles.css')
 
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/css')
       await expect(response.text()).resolves.toBe('body { color: red; }')
-    } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
-      else process.env.NODE_ENV = previousNodeEnv
-    }
+    })
   })
 
   it('serves the default stylesheet from the module-relative asset path', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'production'
+    await withNodeEnv('production', async () => {
       const response = await createApp().request('http://localhost/styles.css')
 
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/css')
-      await expect(response.text()).resolves.toContain('.page-shell')
-    } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
-      else process.env.NODE_ENV = previousNodeEnv
-    }
+      await expect(response.text()).resolves.toContain('.top-shell')
+    })
   })
 
-  it('does not serve files outside the static asset allowlist', async () => {
-    const previousNodeEnv = process.env.NODE_ENV
-    try {
-      process.env.NODE_ENV = 'production'
-      const response = await createApp({ clientAsset: 'console.log("bundle")' }).request('http://localhost/src/public/styles.css')
-
+  it('returns 404 when the bundled client asset is unavailable', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp({ assetOverrides: { 'client.js': null } }).request('http://localhost/assets/client.js')
       expect(response.status).toBe(404)
-    } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
-      else process.env.NODE_ENV = previousNodeEnv
-    }
-  })
-
-  it('returns a trimmed greeting for valid JSON', async () => {
-    const response = await request('/api/hello', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({ name: '  Ada  ' }),
     })
-
-    expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ ok: true, data: { message: 'Hello, Ada!' } })
   })
 
-  it.each([{ name: '' }, { name: 'x'.repeat(51) }, { name: 'Ada', extra: true }, {}])(
-    'rejects invalid input without exposing it',
-    async (body) => {
-      const response = await request('/api/hello', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      expect(response.status).toBe(400)
-      await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid request.' } })
-    },
-  )
-
-  it('rejects malformed JSON', async () => {
-    const response = await request('/api/hello', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: '{',
-    })
-
-    expect(response.status).toBe(400)
-  })
-
-  it('requires JSON content type', async () => {
-    const response = await request('/api/hello', { method: 'POST', body: 'name=Ada' })
-    expect(response.status).toBe(415)
-  })
-
-  it('rejects request bodies over 16 KiB', async () => {
-    const response = await request('/api/hello', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'x', padding: 'a'.repeat(16 * 1024) }),
-    })
-    expect(response.status).toBe(413)
-  })
-
-  it('rejects an oversized stream without a Content-Length header', async () => {
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode(`{"name":"${'a'.repeat(16 * 1024)}"}`))
-        controller.close()
-      },
-    })
-    const requestWithStream = new Request(
-      'http://localhost/api/hello',
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body,
-        duplex: 'half',
-      } as RequestInit & { duplex: 'half' },
+  it('does not serve static assets outside production', async () => {
+    const response = await createApp({ assetOverrides: { 'client.js': 'console.log("bundle")' } }).request(
+      'http://localhost/assets/client.js',
     )
-
-    expect(requestWithStream.headers.has('content-length')).toBe(false)
-    const response = await app.request(requestWithStream)
-    expect(response.status).toBe(413)
-    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Request body is too large.' } })
+    expect(response.status).toBe(404)
   })
 
   it('keeps API and HTML 404 responses separate', async () => {
-    const [apiResponse, htmlResponse] = await Promise.all([request('/api/missing'), request('/missing')])
+    const [apiResponse, htmlResponse] = await Promise.all([
+      request('/tools/credit-csv/api/missing'),
+      request('/missing'),
+    ])
 
     expect(apiResponse.status).toBe(404)
     await expect(apiResponse.json()).resolves.toEqual({ ok: false, error: { message: 'Not found.' } })
