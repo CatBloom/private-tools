@@ -9,11 +9,11 @@ Hono SSR、React、Vite、TypeScript を使った初期基盤です。アクセ�
 Node.js 22 で、次を実行します。
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-品質確認は `npm run check`、本番用クライアントの生成は `npm run build` です。生成された `public/assets/` は Git 管理しません。
+品質確認は `pnpm run check`、本番用クライアントの生成は `pnpm run build` です。生成された `public/assets/` は Git 管理しません。
 
 Vercel では Framework Preset を `Hono` にし、Build Command と Output Directory の override は設定しません。
 

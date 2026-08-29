@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@11.21.0",
   "engines": { "node": ">=22" },
   "scripts": {
     "dev": "vite",
@@ -10,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "vite build",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "dependencies": {
     "hono": "^4.9.6",
