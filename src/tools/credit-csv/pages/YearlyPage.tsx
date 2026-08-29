@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { TrendChartCard } from '../components/Charts'
 import { MerchantTotalsTable } from '../components/MerchantTotalsTable'
 import { StatusView } from '../components/StatusView'
@@ -11,10 +12,13 @@ const YearlyView = ({ data }: { data: AppData }) => {
   const [year, setYear] = usePersistedState('credit-csv:yearly-year', data.latestPeriod.year)
   const selectedYear = data.years.includes(year) ? year : data.latestPeriod.year
 
-  const yearlyRows = data.transactions.filter((transaction) => transaction.year === selectedYear)
-  const summary = summarizePeriod(yearlyRows)
-  const trend = buildYearlyTrend(data.transactions, selectedYear)
-  const merchantRows = summarizeMerchants(yearlyRows)
+  const yearlyRows = useMemo(
+    () => data.transactions.filter((transaction) => transaction.year === selectedYear),
+    [data.transactions, selectedYear]
+  )
+  const summary = useMemo(() => summarizePeriod(yearlyRows), [yearlyRows])
+  const trend = useMemo(() => buildYearlyTrend(data.transactions, selectedYear), [data.transactions, selectedYear])
+  const merchantRows = useMemo(() => summarizeMerchants(yearlyRows), [yearlyRows])
 
   return (
     <div className="ccsv-page-stack">

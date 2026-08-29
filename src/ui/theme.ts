@@ -1,4 +1,6 @@
-export const THEME_KEY = 'private-tools:theme'
+import { readJson, THEME_STORAGE_KEY, writeJson } from '../lib/storage'
+
+export const THEME_KEY = THEME_STORAGE_KEY
 
 type Theme = 'light' | 'dark'
 
@@ -6,14 +8,8 @@ const isTheme = (value: unknown): value is Theme => value === 'light' || value =
 
 // credit-csv ツールの usePersistedState と同じ JSON 形式で読み書きし、テーマ状態を共有する
 const readStoredTheme = (): Theme | null => {
-  try {
-    const raw = localStorage.getItem(THEME_KEY)
-    if (raw === null) return null
-    const parsed: unknown = JSON.parse(raw)
-    return isTheme(parsed) ? parsed : null
-  } catch {
-    return null
-  }
+  const stored = readJson<unknown>(THEME_KEY, null)
+  return isTheme(stored) ? stored : null
 }
 
 const prefersDark = (): boolean => {
@@ -41,11 +37,7 @@ const updateToggleLabels = (theme: Theme) => {
 const handleToggleClick = () => {
   const next: Theme = effectiveTheme() === 'dark' ? 'light' : 'dark'
   applyTheme(next)
-  try {
-    localStorage.setItem(THEME_KEY, JSON.stringify(next))
-  } catch {
-    // localStorage が使えない環境（プライベートモード等）では保存をあきらめる
-  }
+  writeJson(THEME_KEY, next)
   updateToggleLabels(next)
 }
 

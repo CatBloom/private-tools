@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatCurrency } from '../lib/format'
+import { collapseTopN } from '../lib/selectors'
 import { useIsMobile } from '../hooks/useIsMobile'
 
 // スマホでは円グラフを見やすくするため上位 N 件＋「その他」に折りたたむ
@@ -68,9 +69,7 @@ export const CompositionChartCard = ({
 
   const displayData = useMemo(() => {
     if (!isMobile || data.length <= MOBILE_MAX_SLICES + 1) return data
-    const head = data.slice(0, MOBILE_MAX_SLICES)
-    const otherTotal = data.slice(MOBILE_MAX_SLICES).reduce((sum, entry) => sum + entry.value, 0)
-    return otherTotal !== 0 ? [...head, { name: 'その他', value: otherTotal }] : head
+    return collapseTopN(data, MOBILE_MAX_SLICES)
   }, [data, isMobile])
 
   return (

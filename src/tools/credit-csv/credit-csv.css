@@ -501,12 +501,6 @@
   width: 7rem;
 }
 
-.ccsv-transactions-table td:nth-child(2) {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 /* ページネーションで表示行が入れ替わっても列幅が動かないよう固定する */
 .ccsv-summary-table,
 .ccsv-totals-table,
@@ -527,25 +521,15 @@
   width: 6rem;
 }
 
-.ccsv-summary-table td:nth-child(1),
-.ccsv-totals-table td:nth-child(1) {
+/* 数値列は右寄せ、店名などの長い列は省略記号で切り詰める */
+.ccsv-cell-numeric {
+  text-align: right;
+}
+
+.ccsv-cell-truncate {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-/* 数値列は全テーブルで右寄せに統一する（ヘッダーのソートボタンも右寄せに追随する） */
-.ccsv-transactions-table th:nth-child(3),
-.ccsv-transactions-table td:nth-child(3),
-.ccsv-summary-table th:nth-child(2),
-.ccsv-summary-table td:nth-child(2),
-.ccsv-summary-table th:nth-child(3),
-.ccsv-summary-table td:nth-child(3),
-.ccsv-totals-table th:nth-child(2),
-.ccsv-totals-table td:nth-child(2),
-.ccsv-monthly-table th:nth-child(2),
-.ccsv-monthly-table td:nth-child(2) {
-  text-align: right;
 }
 
 .ccsv-upload-form button {

@@ -1,31 +1,19 @@
-import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSortableRows } from '../hooks/useSortableRows'
 import { formatCurrency } from '../lib/format'
 import type { MerchantSummary } from '../lib/types'
 import { Pagination, usePaginatedRows } from './Pagination'
 
 type SortKey = 'totalAmount'
-type SortDirection = 'asc' | 'desc'
+
+const compareRows = (left: MerchantSummary, right: MerchantSummary, key: SortKey) => left[key] - right[key]
 
 export const MerchantTotalsTable = ({ rows }: { rows: MerchantSummary[] }) => {
-  const [sortKey, setSortKey] = useState<SortKey>('totalAmount')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-
-  const sortedRows = useMemo(() => {
-    const factor = sortDirection === 'asc' ? 1 : -1
-    return [...rows].sort((left, right) => (left[sortKey] - right[sortKey]) * factor)
-  }, [rows, sortKey, sortDirection])
-
-  const toggleSort = (key: SortKey) => {
-    if (key === sortKey) {
-      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDirection('desc')
-    }
-  }
-
-  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDirection === 'asc' ? '▲' : '▼') : '')
+  const { sortedRows, sortIndicator, ariaSort, toggleSort } = useSortableRows<MerchantSummary, SortKey>(
+    rows,
+    'totalAmount',
+    compareRows
+  )
 
   const pagination = usePaginatedRows(sortedRows)
 
@@ -43,9 +31,7 @@ export const MerchantTotalsTable = ({ rows }: { rows: MerchantSummary[] }) => {
           <thead>
             <tr>
               <th>店名</th>
-              <th
-                aria-sort={sortKey === 'totalAmount' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-              >
+              <th className="ccsv-cell-numeric" aria-sort={ariaSort('totalAmount')}>
                 <button type="button" className="ccsv-sort-button" onClick={() => toggleSort('totalAmount')}>
                   累計金額<span className="ccsv-sort-indicator" aria-hidden="true">{sortIndicator('totalAmount')}</span>
                 </button>
@@ -55,12 +41,12 @@ export const MerchantTotalsTable = ({ rows }: { rows: MerchantSummary[] }) => {
           <tbody>
             {pagination.pageRows.map((row) => (
               <tr key={row.merchantKey}>
-                <td>
+                <td className="ccsv-cell-truncate">
                   <Link to={`/merchant/${encodeURIComponent(row.merchantKey)}`} title={row.merchant}>
                     {row.merchant}
                   </Link>
                 </td>
-                <td>{formatCurrency(row.totalAmount)}</td>
+                <td className="ccsv-cell-numeric">{formatCurrency(row.totalAmount)}</td>
               </tr>
             ))}
           </tbody>

@@ -124,14 +124,17 @@ export const parseCsvText = (
       return;
     }
 
+    const label = formatMerchantLabel(merchant);
+    const normalized = normalizeMerchant(merchant);
+
     transactions.push({
       id: `${sourceFile}-${index}`,
       date,
       sortableDate,
-      merchant: formatMerchantLabel(merchant),
-      normalizedMerchant: normalizeMerchant(merchant),
-      merchantKey: normalizeMerchant(merchant),
-      merchantLabel: formatMerchantLabel(merchant),
+      merchant: label,
+      normalizedMerchant: normalized,
+      merchantKey: normalized,
+      merchantLabel: label,
       amount,
       ...getUsagePeriod(sortableDate),
       sourceFile

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { CompositionChartCard } from '../components/Charts'
 import { FilterBar } from '../components/FilterBar'
 import { MerchantSummaryTable } from '../components/MerchantSummaryTable'
@@ -28,10 +28,13 @@ const DetailView = ({ data }: { data: AppData }) => {
     if (selectedMonth !== month) setMonth(selectedMonth)
   }, [selectedMonth, month, setMonth])
 
-  const rows = filterTransactions(data.transactions, selectedYear, selectedMonth, merchantFilter)
-  const summary = summarizePeriod(rows)
-  const pieData = buildPieData(rows)
-  const monthlySummaryRows = summarizeMerchants(rows)
+  const rows = useMemo(
+    () => filterTransactions(data.transactions, selectedYear, selectedMonth, merchantFilter),
+    [data.transactions, selectedYear, selectedMonth, merchantFilter]
+  )
+  const summary = useMemo(() => summarizePeriod(rows), [rows])
+  const pieData = useMemo(() => buildPieData(rows), [rows])
+  const monthlySummaryRows = useMemo(() => summarizeMerchants(rows), [rows])
 
   return (
     <div className="ccsv-page-stack">

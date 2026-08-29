@@ -1,9 +1,8 @@
 import { useCallback } from 'react'
+import { THEME_STORAGE_KEY } from '../../../lib/storage'
 import { usePersistedState } from './usePersistedState'
 
 export type Theme = 'light' | 'dark'
-
-const THEME_STORAGE_KEY = 'private-tools:theme'
 
 export const useTheme = () => {
   const [theme, setTheme] = usePersistedState<Theme>(THEME_STORAGE_KEY, 'light')

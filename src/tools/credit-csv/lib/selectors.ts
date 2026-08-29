@@ -88,22 +88,25 @@ export const summarizePeriod = (transactions: Transaction[]) => ({
   count: transactions.length
 });
 
-export const buildPieData = (transactions: Transaction[]) => {
-  const merchantRows = summarizeMerchants(transactions);
-  const top = merchantRows.slice(0, 10).map((row) => ({
-    name: row.merchant,
-    value: row.totalAmount
-  }));
-  const otherTotal = merchantRows
-    .slice(10)
-    .reduce((sum, row) => sum + row.totalAmount, 0);
+export const collapseTopN = (
+  data: { name: string; value: number }[],
+  limit: number,
+  otherLabel = "その他"
+) => {
+  const top = data.slice(0, limit);
+  const otherTotal = data.slice(limit).reduce((sum, row) => sum + row.value, 0);
 
-  if (otherTotal !== 0) {
-    top.push({ name: "その他", value: otherTotal });
-  }
-
-  return top;
+  return otherTotal !== 0 ? [...top, { name: otherLabel, value: otherTotal }] : top;
 };
+
+export const buildPieData = (transactions: Transaction[]) =>
+  collapseTopN(
+    summarizeMerchants(transactions).map((row) => ({
+      name: row.merchant,
+      value: row.totalAmount
+    })),
+    10
+  );
 
 const buildMonthAxis = (year: string): MonthlyTotal[] =>
   Array.from({ length: 12 }, (_, index) => {

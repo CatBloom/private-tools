@@ -26,14 +26,14 @@ export const MerchantMonthlyTable = ({
           <thead>
             <tr>
               <th>年月</th>
-              <th>合計金額</th>
+              <th className="ccsv-cell-numeric">合計金額</th>
             </tr>
           </thead>
           <tbody>
             {displayedRows.map((row) => (
               <tr key={row.key}>
                 <td>{row.periodLabel}</td>
-                <td>{formatCurrency(row.totalAmount)}</td>
+                <td className="ccsv-cell-numeric">{formatCurrency(row.totalAmount)}</td>
               </tr>
             ))}
           </tbody>
