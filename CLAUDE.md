@@ -32,7 +32,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 - `src/index.ts` — Vercel エントリ。`src/server/app.ts` の default export を再輸出するだけ。
 - `src/server/app.ts` — アプリ本体。`createApp(options)` ファクトリと default インスタンスを輸出。`options` でテスト用に `creditCsvStorage`（Storage 注入）や `assetOverrides` を差し込める。
-- `src/ui/TopPage.tsx` — TOP ハブ（`/`）の**純 SSR** コンポーネント。ツール一覧をカードで並べる。将来ツールが増えたらここに追加する。
+- `src/ui/TopPage.ts` — TOP ハブ（`/`）の**純 SSR** コンポーネント。ツール一覧をカードで並べる。将来ツールが増えたらここに追加する。**SSR で使うコンポーネントは JSX ではなく `createElement` を使い拡張子 `.ts` にする**（Vercel のサーバービルドは import 指定子 `'../ui/TopPage.js'` を `.ts` には解決できるが `.tsx` には解決できず、実行時に `ERR_MODULE_NOT_FOUND` になるため）。JSX を使うクライアント専用コンポーネントは `.tsx` でよい（Vite がバンドルする）。
 - `src/client.tsx` — クライアントエントリ。`createRoot(...).render(<CreditCsvApp/>)`（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。**ツールページでのみ読み込まれ、TOP には `<script>` を出さない**（TOP は JS ゼロ）。
 - `src/tools/credit-csv/` — Credit CSV Viewer ツール（`/tools/credit-csv`）。
 - `src/server/routes/` — ツール別 Hono API。
