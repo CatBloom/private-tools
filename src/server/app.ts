@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { secureHeaders } from 'hono/secure-headers'
@@ -16,13 +17,25 @@ const helloRequestSchema = z
 
 type AppOptions = { clientScript?: string; clientAsset?: string | null; stylesAsset?: string | null }
 
-const clientAssetPath = resolve(process.cwd(), 'src/public/assets/client.js')
-const stylesAssetPath = resolve(process.cwd(), 'src/public/styles.css')
+const staticAssetRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
 
 const staticAssets = [
-  { path: '/assets/client.js', contentType: 'application/javascript; charset=UTF-8', filePath: clientAssetPath, option: 'clientAsset' as const },
-  { path: '/styles.css', contentType: 'text/css; charset=UTF-8', filePath: stylesAssetPath, option: 'stylesAsset' as const },
+  { path: '/assets/client.js', contentType: 'application/javascript; charset=UTF-8', filePath: join(staticAssetRoot, 'assets', 'client.js'), option: 'clientAsset' as const },
+  { path: '/styles.css', contentType: 'text/css; charset=UTF-8', filePath: join(staticAssetRoot, 'styles.css'), option: 'stylesAsset' as const },
 ]
+
+const defaultStaticAssetCache = new Map<string, string | null>()
+
+const readDefaultStaticAsset = (asset: (typeof staticAssets)[number]) => {
+  if (!defaultStaticAssetCache.has(asset.path)) {
+    try {
+      defaultStaticAssetCache.set(asset.path, readFileSync(asset.filePath, 'utf8'))
+    } catch {
+      defaultStaticAssetCache.set(asset.path, null)
+    }
+  }
+  return defaultStaticAssetCache.get(asset.path) ?? null
+}
 
 const isJsonContentType = (contentType: string | undefined) =>
   contentType?.toLowerCase().split(';', 1)[0] === 'application/json'
@@ -63,22 +76,11 @@ export const createApp = (options: AppOptions = {}) => {
   })
 
   if (process.env.NODE_ENV === 'production') {
-    const staticCache = new Map<string, string | null>()
-
     for (const asset of staticAssets) {
       const override = options[asset.option]
-      let content: string | null = override === undefined ? null : override
-      if (override === undefined) {
-        try {
-          content = readFileSync(asset.filePath, 'utf8')
-        } catch {
-          content = null
-        }
-      }
-      staticCache.set(asset.path, content)
+      const content = override === undefined ? readDefaultStaticAsset(asset) : override
 
       app.get(asset.path, (c) => {
-        const content = staticCache.get(asset.path)
         if (content === null || content === undefined) return c.notFound()
         return c.body(content, 200, { 'Content-Type': asset.contentType })
       })

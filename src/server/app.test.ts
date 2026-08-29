@@ -81,6 +81,21 @@ describe('server application', () => {
     }
   })
 
+  it('serves the default stylesheet from the module-relative asset path', async () => {
+    const previousNodeEnv = process.env.NODE_ENV
+    try {
+      process.env.NODE_ENV = 'production'
+      const response = await createApp().request('http://localhost/styles.css')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('text/css')
+      await expect(response.text()).resolves.toContain('.page-shell')
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+    }
+  })
+
   it('does not serve files outside the static asset allowlist', async () => {
     const previousNodeEnv = process.env.NODE_ENV
     try {
