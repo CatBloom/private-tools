@@ -10,7 +10,17 @@ const formatFileSize = (size: number) => {
 
 const formatUploadedAt = (isoDate: string) => {
   const date = new Date(isoDate)
-  return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleString('ja-JP')
+  if (Number.isNaN(date.getTime())) return isoDate
+  // 月日・時分秒を2桁ゼロ埋めして各行の桁を揃える（例: 2026/08/31 02:22:27）
+  return date.toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
 }
 
 type FeedbackMessage = { kind: 'info' | 'error'; text: string }
