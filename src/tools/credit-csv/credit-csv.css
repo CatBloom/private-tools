@@ -476,10 +476,6 @@
   font-size: 0.85rem;
 }
 
-.ccsv-upload-form button[type="submit"] {
-  align-self: flex-start;
-}
-
 .ccsv-sort-indicator {
   display: inline-block;
   width: 1em;
@@ -530,31 +526,6 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.ccsv-upload-form button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  min-width: 9.5rem;
-  padding: 0.55rem 1.1rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #fff;
-  background: var(--ccsv-accent);
-  border: 1px solid var(--ccsv-accent);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
-.ccsv-upload-form button:hover {
-  background: var(--ccsv-accent-strong);
-}
-
-.ccsv-upload-form button:disabled {
-  cursor: wait;
-  opacity: 0.7;
 }
 
 .ccsv-danger-button {
@@ -636,9 +607,5 @@
   .ccsv-upload-form {
     flex-direction: row;
     align-items: center;
-  }
-
-  .ccsv-upload-form button[type="submit"] {
-    align-self: auto;
   }
 }

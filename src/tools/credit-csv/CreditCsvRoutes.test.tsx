@@ -215,9 +215,8 @@ describe('CreditCsvRoutes', () => {
     expect(await screen.findByText('202604.csv')).toBeInTheDocument()
 
     const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
+    // ファイル選択（change）だけで自動アップロードされる（アップロードボタンは廃止）
     fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
-    // required なファイル入力は jsdom の制約検証が click 経由の送信をブロックするため submit を直接発火する
-    fireEvent.submit(screen.getByRole('button', { name: 'アップロード' }).closest('form')!)
 
     expect(await screen.findByText('202605.csv')).toBeInTheDocument()
     expect(store.some((entry) => entry.name === '202605.csv')).toBe(true)

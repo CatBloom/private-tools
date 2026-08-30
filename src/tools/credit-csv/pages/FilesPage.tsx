@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { useAppDataContext } from '../state/AppDataContext'
 
 const formatFileSize = (size: number) => {
@@ -21,12 +21,10 @@ export const FilesPage = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [message, setMessage] = useState<FeedbackMessage | null>(null)
-  const [selectedName, setSelectedName] = useState<string | null>(null)
 
-  const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const file = inputRef.current?.files?.[0]
-
+  // ファイルを選択した時点で自動アップロードする（アップロードボタンは廃止）
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) {
       return
     }
@@ -37,14 +35,14 @@ export const FilesPage = () => {
     try {
       await upload(file)
       setMessage({ kind: 'info', text: `${file.name} をアップロードしました。` })
-      if (inputRef.current) {
-        inputRef.current.value = ''
-      }
-      setSelectedName(null)
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'アップロードに失敗しました。' })
     } finally {
       setIsUploading(false)
+      // 同じファイルを選び直しても onChange が再発火するよう値をリセットする
+      if (inputRef.current) {
+        inputRef.current.value = ''
+      }
     }
   }
 
@@ -71,7 +69,7 @@ export const FilesPage = () => {
         <div className="ccsv-panel-header">
           <h1>ファイル管理</h1>
         </div>
-        <form className="ccsv-upload-form" onSubmit={handleUpload}>
+        <div className="ccsv-upload-form">
           <div className="ccsv-file-field">
             <input
               ref={inputRef}
@@ -79,19 +77,18 @@ export const FilesPage = () => {
               className="ccsv-file-input"
               type="file"
               accept=".csv"
-              required
               aria-label="CSVファイル"
-              onChange={(event) => setSelectedName(event.target.files?.[0]?.name ?? null)}
+              disabled={isUploading}
+              onChange={handleFileChange}
             />
-            <label htmlFor="ccsv-csv-input" className="ccsv-file-button">
+            <label htmlFor="ccsv-csv-input" className="ccsv-file-button" aria-disabled={isUploading}>
               ファイルを選択
             </label>
-            <span className="ccsv-file-name">{selectedName ?? 'ファイルが選択されていません'}</span>
+            <span className="ccsv-file-name">
+              {isUploading ? 'アップロード中…' : 'ファイルを選択すると自動でアップロードされます'}
+            </span>
           </div>
-          <button type="submit" disabled={isUploading}>
-            {isUploading ? 'アップロード中…' : 'アップロード'}
-          </button>
-        </form>
+        </div>
         {message ? (
           <p
             className={message.kind === 'error' ? 'ccsv-status-message ccsv-status-message-error' : 'ccsv-status-message'}
