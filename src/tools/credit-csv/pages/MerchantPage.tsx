@@ -30,8 +30,9 @@ const MerchantView = ({ data, merchant }: { data: AppData; merchant: string }) =
     [data.transactions, merchant]
   )
 
-  const summary = summarizePeriod(rows)
   const tableRows = mode === 'all' ? rows : rows.filter((transaction) => transaction.year === selectedYear)
+  // サマリーは表示中の期間（全期間 or 選択年）に一致させる
+  const summary = summarizePeriod(tableRows)
   const monthlyRows = summarizeMerchantByMonth(tableRows)
   const displayName = rows[0]?.merchantLabel ?? merchant
   const trend =

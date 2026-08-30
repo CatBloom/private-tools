@@ -65,11 +65,14 @@ const buildSecureHeaders = (styleSrc: string[]) =>
     xFrameOptions: 'DENY',
   })
 
-const creditCsvShellHtml = (clientScript: string) =>
-  `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Credit CSV Viewer</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/assets/client.css"></head><body><div id="root">読み込み中…</div><script type="module" src="${clientScript}"></script></body></html>`
+// includeBuiltCss は production のときだけ true。開発では抽出済み /assets/client.css は
+// 存在せず（Vite が JS 経由で CSS を注入する）、リンクすると 404 になるため出さない。
+const creditCsvShellHtml = (clientScript: string, includeBuiltCss: boolean) =>
+  `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Credit CSV Viewer</title><link rel="stylesheet" href="/styles.css">${includeBuiltCss ? '<link rel="stylesheet" href="/assets/client.css">' : ''}</head><body><div id="root">読み込み中…</div><script type="module" src="${clientScript}"></script></body></html>`
 
 export const createApp = (options: AppOptions = {}) => {
   const app = new Hono()
+  const isProduction = process.env.NODE_ENV === 'production'
   const clientScript =
     options.clientScript ??
     (process.env.NODE_ENV === 'production' ? '/assets/client.js' : '/src/client.tsx')
@@ -115,7 +118,7 @@ export const createApp = (options: AppOptions = {}) => {
     return c.html(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Private Tools</title><link rel="stylesheet" href="/styles.css"></head><body>${page}<script type="module" src="${themeScript}"></script></body></html>`)
   })
 
-  app.get(CREDIT_CSV_PREFIX, (c) => c.html(creditCsvShellHtml(clientScript)))
+  app.get(CREDIT_CSV_PREFIX, (c) => c.html(creditCsvShellHtml(clientScript, isProduction)))
   app.get(`${CREDIT_CSV_PREFIX}/*`, (c) => {
     // app.route() flattens the API sub-app's routes into this router without
     // carrying over its own notFound handler, so unmatched API paths would
@@ -123,7 +126,7 @@ export const createApp = (options: AppOptions = {}) => {
     if (c.req.path.startsWith(`${CREDIT_CSV_PREFIX}/api`)) {
       return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
     }
-    return c.html(creditCsvShellHtml(clientScript))
+    return c.html(creditCsvShellHtml(clientScript, isProduction))
   })
 
   app.notFound((c) => {

@@ -80,11 +80,22 @@ describe('server application', () => {
       expect(response.status).toBe(200)
       expect(html).toContain('id="root"')
       expect(html).toContain('src="/src/client.tsx"')
-      expect(html).toContain('href="/assets/client.css"')
+      // 開発では抽出済み /assets/client.css は存在しないためリンクしない（404 を避ける）
+      expect(html).not.toContain('/assets/client.css')
       const csp = response.headers.get('content-security-policy')
       expect(csp).toContain("style-src 'self' 'unsafe-inline'")
       expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
     }
+  })
+
+  it('links the built stylesheet in the credit CSV shell only in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp().request('http://localhost/tools/credit-csv')
+      const html = await response.text()
+
+      expect(html).toContain('src="/assets/client.js"')
+      expect(html).toContain('href="/assets/client.css"')
+    })
   })
 
   it('allows the Vite React Refresh inline preamble in script-src only in development', async () => {
