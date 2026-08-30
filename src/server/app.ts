@@ -136,6 +136,16 @@ export const createApp = (options: AppOptions = {}) => {
     return c.html('<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Not found</title></head><body><main><h1>Not found</h1></main></body></html>', 404)
   })
 
+  // 未処理例外（例: ストレージ層の失敗）を汎用500で握りつぶさず、API パスでは
+  // サニタイズ済みメッセージを JSON で返す（トークン等の秘密は storage 側で除外済み）。
+  app.onError((err, c) => {
+    const message = err instanceof Error ? err.message : 'Internal server error.'
+    if (c.req.path.startsWith('/api/') || c.req.path.startsWith(`${CREDIT_CSV_PREFIX}/api`)) {
+      return c.json({ ok: false, error: { message } }, 500)
+    }
+    return c.html('<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Error</title></head><body><main><h1>Server error</h1></main></body></html>', 500)
+  })
+
   return app
 }
 
