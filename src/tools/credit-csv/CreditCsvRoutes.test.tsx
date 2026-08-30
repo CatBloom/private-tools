@@ -212,13 +212,13 @@ describe('CreditCsvRoutes', () => {
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
-    expect(await screen.findByText('202604.csv')).toBeInTheDocument()
+    expect(await screen.findByText('202604')).toBeInTheDocument()
 
     const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
     // ファイル選択（change）だけで自動アップロードされる（アップロードボタンは廃止）
     fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
 
-    expect(await screen.findByText('202605.csv')).toBeInTheDocument()
+    expect(await screen.findByText('202605')).toBeInTheDocument()
     expect(store.some((entry) => entry.name === '202605.csv')).toBe(true)
   })
 
@@ -256,12 +256,12 @@ describe('CreditCsvRoutes', () => {
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
-    const row = (await screen.findByText('202604.csv')).closest('tr')
+    const row = (await screen.findByText('202604')).closest('tr')
     expect(row).not.toBeNull()
 
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
 
-    await waitFor(() => expect(screen.queryByText('202604.csv')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByText('202604')).not.toBeInTheDocument())
     expect(store).toHaveLength(0)
   })
 
@@ -270,11 +270,11 @@ describe('CreditCsvRoutes', () => {
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
-    const row = (await screen.findByText('202604.csv')).closest('tr')
+    const row = (await screen.findByText('202604')).closest('tr')
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
 
     // キャンセル時は削除されない
-    expect(screen.getByText('202604.csv')).toBeInTheDocument()
+    expect(screen.getByText('202604')).toBeInTheDocument()
     expect(store).toHaveLength(1)
   })
 })

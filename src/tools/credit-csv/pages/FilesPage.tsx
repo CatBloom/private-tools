@@ -17,6 +17,8 @@ type FeedbackMessage = { kind: 'info' | 'error'; text: string }
 
 export const FilesPage = () => {
   const { files, upload, remove } = useAppDataContext()
+  // アップロード日の降順（最新が上）で表示する
+  const sortedFiles = [...files].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
@@ -104,7 +106,13 @@ export const FilesPage = () => {
           <h2>アップロード済みファイル</h2>
         </div>
         <div className="ccsv-table-wrap">
-          <table>
+          <table className="ccsv-files-table">
+            <colgroup>
+              <col className="ccsv-fcol-date" />
+              <col className="ccsv-fcol-name" />
+              <col className="ccsv-fcol-size" />
+              <col className="ccsv-fcol-actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th>アップロード日時</th>
@@ -114,10 +122,10 @@ export const FilesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {files.map((file) => (
+              {sortedFiles.map((file) => (
                 <tr key={file.name}>
                   <td>{formatUploadedAt(file.uploadedAt)}</td>
-                  <td>{file.name}</td>
+                  <td>{file.name.replace(/\.csv$/i, '')}</td>
                   <td>{formatFileSize(file.size)}</td>
                   <td>
                     <button

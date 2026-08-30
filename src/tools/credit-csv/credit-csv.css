@@ -373,6 +373,16 @@
   text-decoration: underline;
 }
 
+/* 構成比ランキングの店名リンクもテーブルと同じ見た目（下線はホバー時のみ） */
+.ccsv-legend-row a {
+  color: var(--ccsv-accent);
+  text-decoration: none;
+}
+
+.ccsv-legend-row a:hover {
+  text-decoration: underline;
+}
+
 .ccsv-pagination {
   display: flex;
   flex-wrap: wrap;
@@ -540,6 +550,44 @@
 .ccsv-danger-button:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+/* アップロード済みファイル表：スマホでも全列（削除ボタン含む）が収まるよう列幅を固定。
+   日時を広めに取り、ファイル名(.csv省略)・サイズ・操作は最小限にする。 */
+.ccsv-files-table {
+  table-layout: fixed;
+}
+
+.ccsv-files-table .ccsv-fcol-name {
+  width: 4rem;
+}
+
+.ccsv-files-table .ccsv-fcol-size {
+  width: 3.75rem;
+}
+
+.ccsv-files-table .ccsv-fcol-actions {
+  width: 4.5rem;
+}
+
+.ccsv-files-table th,
+.ccsv-files-table td {
+  padding: 0.5rem 0.4rem;
+}
+
+.ccsv-files-table td:nth-child(1),
+.ccsv-files-table td:nth-child(2) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ccsv-files-table td:nth-child(4) {
+  text-align: right;
+}
+
+.ccsv-files-table .ccsv-danger-button {
+  padding: 0.35rem 0.5rem;
 }
 
 @media (min-width: 48rem) {

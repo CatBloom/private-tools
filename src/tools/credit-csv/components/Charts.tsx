@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatCurrency } from '../lib/format'
 import { collapseTopN } from '../lib/selectors'
@@ -63,7 +64,7 @@ export const CompositionChartCard = ({
   data
 }: {
   title: string
-  data: Array<{ name: string; value: number }>
+  data: Array<{ name: string; value: number; merchantKey?: string }>
 }) => {
   const isMobile = useIsMobile()
 
@@ -93,7 +94,13 @@ export const CompositionChartCard = ({
       <div className="ccsv-legend-list">
         {displayData.map((entry) => (
           <div key={entry.name} className="ccsv-legend-row">
-            <span>{entry.name}</span>
+            {entry.merchantKey ? (
+              <Link to={`/merchant/${encodeURIComponent(entry.merchantKey)}`} title={entry.name}>
+                {entry.name}
+              </Link>
+            ) : (
+              <span>{entry.name}</span>
+            )}
             <strong>{formatCurrency(entry.value)}</strong>
           </div>
         ))}
