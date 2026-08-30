@@ -559,7 +559,7 @@
 }
 
 .ccsv-files-table .ccsv-fcol-name {
-  width: 4rem;
+  width: 5.5rem;
 }
 
 .ccsv-files-table .ccsv-fcol-size {
@@ -567,7 +567,7 @@
 }
 
 .ccsv-files-table .ccsv-fcol-actions {
-  width: 4.5rem;
+  width: 2.75rem;
 }
 
 .ccsv-files-table th,
@@ -586,8 +586,31 @@
   text-align: right;
 }
 
-.ccsv-files-table .ccsv-danger-button {
-  padding: 0.35rem 0.5rem;
+/* アイコンだけの削除ボタン（文字「削除」より狭く、行にファイル名(.csv)が収まる） */
+.ccsv-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  color: var(--ccsv-danger);
+  background: transparent;
+  border: 1px solid var(--ccsv-border);
+  border-radius: 0.5rem;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.ccsv-icon-button:hover {
+  border-color: var(--ccsv-danger);
+}
+
+.ccsv-icon-button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.ccsv-icon-button svg {
+  display: block;
 }
 
 @media (min-width: 48rem) {
