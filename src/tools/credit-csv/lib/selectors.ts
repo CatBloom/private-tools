@@ -88,22 +88,25 @@ export const summarizePeriod = (transactions: Transaction[]) => ({
   count: transactions.length
 });
 
-export const collapseTopN = (
-  data: { name: string; value: number }[],
+export const collapseTopN = <T extends { name: string; value: number }>(
+  data: T[],
   limit: number,
   otherLabel = "その他"
-) => {
+): T[] => {
   const top = data.slice(0, limit);
   const otherTotal = data.slice(limit).reduce((sum, row) => sum + row.value, 0);
 
-  return otherTotal !== 0 ? [...top, { name: otherLabel, value: otherTotal }] : top;
+  // 「その他」は個別の店名を持たない集約項目。追加フィールド(merchantKey等)は付かない
+  // ため T としてキャストする（T の追加フィールドは任意である前提）。
+  return otherTotal !== 0 ? [...top, { name: otherLabel, value: otherTotal } as T] : top;
 };
 
 export const buildPieData = (transactions: Transaction[]) =>
   collapseTopN(
     summarizeMerchants(transactions).map((row) => ({
       name: row.merchant,
-      value: row.totalAmount
+      value: row.totalAmount,
+      merchantKey: row.merchantKey
     })),
     10
   );

@@ -10,13 +10,25 @@ const formatFileSize = (size: number) => {
 
 const formatUploadedAt = (isoDate: string) => {
   const date = new Date(isoDate)
-  return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleString('ja-JP')
+  if (Number.isNaN(date.getTime())) return isoDate
+  // 月日・時分秒を2桁ゼロ埋めして各行の桁を揃える（例: 2026/08/31 02:22:27）
+  return date.toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
 }
 
 type FeedbackMessage = { kind: 'info' | 'error'; text: string }
 
 export const FilesPage = () => {
   const { files, upload, remove } = useAppDataContext()
+  // アップロード日の降順（最新が上）で表示する
+  const sortedFiles = [...files].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
@@ -104,7 +116,13 @@ export const FilesPage = () => {
           <h2>アップロード済みファイル</h2>
         </div>
         <div className="ccsv-table-wrap">
-          <table>
+          <table className="ccsv-files-table">
+            <colgroup>
+              <col className="ccsv-fcol-date" />
+              <col className="ccsv-fcol-name" />
+              <col className="ccsv-fcol-size" />
+              <col className="ccsv-fcol-actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th>アップロード日時</th>
@@ -114,7 +132,7 @@ export const FilesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {files.map((file) => (
+              {sortedFiles.map((file) => (
                 <tr key={file.name}>
                   <td>{formatUploadedAt(file.uploadedAt)}</td>
                   <td>{file.name}</td>
@@ -122,11 +140,15 @@ export const FilesPage = () => {
                   <td>
                     <button
                       type="button"
-                      className="ccsv-danger-button"
+                      className="ccsv-icon-button"
+                      aria-label="削除"
+                      title="削除"
                       disabled={pendingDelete === file.name}
                       onClick={() => handleDelete(file.name)}
                     >
-                      {pendingDelete === file.name ? '削除中…' : '削除'}
+                      <svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
+                      </svg>
                     </button>
                   </td>
                 </tr>
