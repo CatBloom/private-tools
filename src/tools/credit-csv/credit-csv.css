@@ -586,8 +586,10 @@
   text-align: right;
 }
 
-/* アイコンだけの削除ボタン（文字「削除」より狭く、行にファイル名(.csv)が収まる） */
-.ccsv-icon-button {
+/* アイコンだけの削除ボタン（文字「削除」より狭く、行にファイル名(.csv)が収まる）。
+   `.ccsv-app button { color: inherit }` に勝つよう `.ccsv-app` を付けて詳細度を上げ、
+   アイコン(currentColor)を danger（赤）で表示する。 */
+.ccsv-app .ccsv-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
