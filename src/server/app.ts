@@ -89,7 +89,7 @@ const buildSecureHeaders = (styleSrc: string[]) =>
 // includeBuiltCss は production のときだけ true。開発では抽出済み /assets/*.css は
 // 存在せず（Vite が JS 経由で CSS を注入する）、リンクすると 404 になるため出さない。
 const toolShellHtml = (title: string, clientScript: string, builtCssHref: string | null) =>
-  `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="stylesheet" href="/styles.css">${builtCssHref ? `<link rel="stylesheet" href="${builtCssHref}">` : ''}</head><body><div id="root">読み込み中…</div><script type="module" src="${clientScript}"></script></body></html>`
+  `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="stylesheet" href="/styles.css">${builtCssHref ? `<link rel="stylesheet" href="${builtCssHref}">` : ''}</head><body><div id="root"><div class="tool-shell-loading" role="status" aria-label="読み込み中"><div class="tool-shell-spinner"></div></div></div><script type="module" src="${clientScript}"></script></body></html>`
 
 export const createApp = (options: AppOptions = {}) => {
   const app = new Hono()

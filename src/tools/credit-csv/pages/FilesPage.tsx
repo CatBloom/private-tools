@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { useAlert } from '../../../components/feedback'
 import { useAppDataContext } from '../state/AppDataContext'
 
 const formatFileSize = (size: number) => {
@@ -27,6 +28,7 @@ type FeedbackMessage = { kind: 'info' | 'error'; text: string }
 
 export const FilesPage = () => {
   const { files, upload, remove } = useAppDataContext()
+  const { showAlert } = useAlert()
   // アップロード日の降順（最新が上）で表示する
   const sortedFiles = [...files].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
   const inputRef = useRef<HTMLInputElement>(null)
@@ -42,13 +44,12 @@ export const FilesPage = () => {
     }
 
     setIsUploading(true)
-    setMessage(null)
 
     try {
       await upload(file)
-      setMessage({ kind: 'info', text: `${file.name} をアップロードしました。` })
+      showAlert('success', `${file.name} をアップロードしました。`)
     } catch (error) {
-      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'アップロードに失敗しました。' })
+      showAlert('error', error instanceof Error ? error.message : 'アップロードに失敗しました。')
     } finally {
       setIsUploading(false)
       // 同じファイルを選び直しても onChange が再発火するよう値をリセットする

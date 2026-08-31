@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import { AlertProvider } from '../../components/feedback'
 import { CreditCsvRoutes } from './CreditCsvRoutes'
 import { formatCurrency } from './lib/format'
 
@@ -93,9 +94,11 @@ const handleFetch = async (input: RequestInfo | URL, init?: RequestInit): Promis
 
 const renderApp = (initialEntry = '/') =>
   render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <CreditCsvRoutes />
-    </MemoryRouter>
+    <AlertProvider>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <CreditCsvRoutes />
+      </MemoryRouter>
+    </AlertProvider>
   )
 
 beforeEach(() => {
@@ -220,6 +223,34 @@ describe('CreditCsvRoutes', () => {
 
     expect(await screen.findByText('202605.csv')).toBeInTheDocument()
     expect(store.some((entry) => entry.name === '202605.csv')).toBe(true)
+  })
+
+  it('shows a success alert when an upload succeeds', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    expect(await screen.findByText('202604.csv')).toBeInTheDocument()
+
+    const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
+
+    const alertMessage = await screen.findByText('202605.csv をアップロードしました。')
+    expect(alertMessage.closest('.fbk-alert')).toHaveClass('fbk-alert-success')
+  })
+
+  it('shows an error alert when an upload fails', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    expect(await screen.findByText('202604.csv')).toBeInTheDocument()
+
+    ;(fetch as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(async () =>
+      jsonResponse({ ok: false, error: { message: 'アップロードに失敗しました。(テスト)' } }, 400)
+    )
+
+    const file = new File([MAY_CSV], '202699.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
+
+    const alertMessage = await screen.findByText('アップロードに失敗しました。(テスト)')
+    expect(alertMessage.closest('.fbk-alert')).toHaveClass('fbk-alert-error')
   })
 
   it('redirects unknown internal paths back to the detail page', async () => {

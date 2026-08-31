@@ -81,3 +81,28 @@ button, input { font: inherit; }
   :root { font-size: 130%; }
   .top-shell { padding: 2rem; }
 }
+
+/* ツールシェルの初期ローディング（React マウント前、#root の初期表示）。
+   TOP ページはこのクラスを使わないため影響しない。 */
+.tool-shell-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 15%);
+}
+
+.tool-shell-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--top-border);
+  border-top-color: var(--top-accent);
+  border-radius: 50%;
+  animation: tool-shell-spin .8s linear infinite;
+}
+
+@keyframes tool-shell-spin {
+  to { transform: rotate(360deg); }
+}
