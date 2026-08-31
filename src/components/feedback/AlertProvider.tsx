@@ -24,29 +24,47 @@ const SEVERITY_ICON: Record<AlertSeverity, string> = {
 
 let nextToastId = 0
 
-export const AlertProvider = ({ children }: { children: ReactNode }) => {
+// 同時に表示するトーストの上限（超えたら古いものから消す）。ツール側で変更可。
+const DEFAULT_MAX_TOASTS = 3
+
+export const AlertProvider = ({ children, max = DEFAULT_MAX_TOASTS }: { children: ReactNode; max?: number }) => {
   const [toasts, setToasts] = useState<AlertToast[]>([])
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
 
-  const dismiss = useCallback((id: number) => {
+  const clearTimer = useCallback((id: number) => {
     const timer = timers.current.get(id)
     if (timer) {
       clearTimeout(timer)
       timers.current.delete(id)
     }
-    setToasts((current) => current.filter((toast) => toast.id !== id))
   }, [])
+
+  const dismiss = useCallback(
+    (id: number) => {
+      clearTimer(id)
+      setToasts((current) => current.filter((toast) => toast.id !== id))
+    },
+    [clearTimer],
+  )
 
   const showAlert = useCallback(
     (severity: AlertSeverity, message: string) => {
       const id = nextToastId++
-      setToasts((current) => [...current, { id, severity, message }])
+      setToasts((current) => {
+        const next = [...current, { id, severity, message }]
+        // 上限を超えたぶんは古いものから捨てる（タイマーも破棄する）
+        while (next.length > Math.max(1, max)) {
+          const removed = next.shift()
+          if (removed) clearTimer(removed.id)
+        }
+        return next
+      })
       timers.current.set(
         id,
         setTimeout(() => dismiss(id), AUTO_DISMISS_MS[severity]),
       )
     },
-    [dismiss],
+    [dismiss, clearTimer, max],
   )
 
   // アンマウント時に残っている全タイマーを確実に破棄する

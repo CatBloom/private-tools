@@ -536,6 +536,13 @@
   overflow-wrap: break-word;
 }
 
+/* 「履歴に保存」はコピー（塗り）と対のセカンダリー系アクションとして、枠線を
+   セカンダリー色にする（アウトライン）。`.pbuilder-app` 前置で既定ボタンに勝たせる。 */
+.pbuilder-app .pbuilder-history-form button {
+  color: var(--pbuilder-secondary);
+  border-color: var(--pbuilder-secondary);
+}
+
 .pbuilder-history-date {
   color: var(--pbuilder-muted);
   font-size: 0.85rem;

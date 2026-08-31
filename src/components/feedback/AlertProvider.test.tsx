@@ -51,6 +51,21 @@ describe('AlertProvider / useAlert', () => {
     expect(screen.getByText('失敗しました')).toBeInTheDocument()
   })
 
+  it('keeps only the latest toasts up to the max (drops the oldest)', () => {
+    render(
+      <AlertProvider max={1}>
+        <AlertTrigger />
+      </AlertProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'success' }))
+    fireEvent.click(screen.getByRole('button', { name: 'error' }))
+
+    // max=1 なので古い success は消え、最新の error だけが残る
+    expect(screen.queryByText('保存しました')).not.toBeInTheDocument()
+    expect(screen.getByText('失敗しました')).toBeInTheDocument()
+  })
+
   it('removes a toast immediately when its close button is clicked', () => {
     renderTrigger()
 

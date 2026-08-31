@@ -125,6 +125,8 @@ describe('CategoryPage', () => {
     const [category, words] = vi.mocked(putWords).mock.calls[0]
     expect(category).toBe('base-prompt')
     expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'new word'])
+    // 手動保存は成功トーストを出す
+    expect(await screen.findByText('保存しました')).toBeInTheDocument()
   })
 
   it('copies the output preview text to the clipboard', async () => {
@@ -339,7 +341,8 @@ describe('CategoryPage', () => {
       const [category, words] = vi.mocked(putWords).mock.calls[0]
       expect(category).toBe('base-prompt')
       expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'auto word'])
-      await screen.findByText('保存しました。')
+      // 自動保存はバックグラウンド扱いでトースト/インライン通知を出さない
+      expect(screen.queryByText('保存しました')).not.toBeInTheDocument()
     })
 
     it('resets the debounce timer while changes keep happening', async () => {
