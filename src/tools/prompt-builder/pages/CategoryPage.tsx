@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useAlert, useConfirm } from '../../../components/feedback'
+import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { getHistory, getWords, putHistory, putWords } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
 import { buildOutput, clampWeight, reorder } from '../lib/notation'
@@ -409,7 +409,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
           </button>
         </form>
 
-        {loadStatus === 'loading' ? <p>読み込み中…</p> : null}
+        {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
         {loadStatus === 'error' ? (
           <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
             {loadError}
@@ -539,7 +539,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
             </p>
           ) : null}
 
-          {historyLoadStatus === 'loading' ? <p>読み込み中…</p> : null}
+          {historyLoadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
           {historyLoadStatus === 'error' ? (
             <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
               {historyLoadError}

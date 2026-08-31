@@ -2,7 +2,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { AlertProvider } from '../../components/feedback'
 import { CreditCsvRoutes } from './CreditCsvRoutes'
 import { formatCurrency } from './lib/format'
 
@@ -94,11 +93,9 @@ const handleFetch = async (input: RequestInfo | URL, init?: RequestInit): Promis
 
 const renderApp = (initialEntry = '/') =>
   render(
-    <AlertProvider>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <CreditCsvRoutes />
-      </MemoryRouter>
-    </AlertProvider>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <CreditCsvRoutes />
+    </MemoryRouter>
   )
 
 beforeEach(() => {
