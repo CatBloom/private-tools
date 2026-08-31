@@ -76,12 +76,12 @@
 
 .fbk-alert {
   display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.75rem 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
   background: var(--fbk-surface);
   border: 1px solid var(--fbk-border);
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   box-shadow: var(--fbk-shadow);
   color: var(--fbk-text);
   font-size: 0.9rem;
@@ -114,10 +114,17 @@
 .fbk-alert-message {
   flex: 1;
   min-width: 0;
-  word-break: break-word;
+  /* 1行に収める（長文はどうしても入りきらない分だけ省略記号にする）。 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.fbk-alert-close {
+/* ツール側の `.ccsv-app button` / `.pbuilder-app button`（詳細度 0,1,1）が
+   背景・枠を持つため、単一クラスの共有ボタン（0,1,0）では負ける。Provider は
+   各ツールの .app 配下に置く（テーマ継承のため）ので、コンテナ+クラスの複合
+   セレクタ（0,2,0）に上げてツールの button 既定に勝たせる。 */
+.fbk-alert .fbk-alert-close {
   flex-shrink: 0;
   padding: 0;
   color: inherit;
@@ -130,7 +137,7 @@
   opacity: 0.7;
 }
 
-.fbk-alert-close:hover {
+.fbk-alert .fbk-alert-close:hover {
   opacity: 1;
 }
 
@@ -183,19 +190,21 @@
   cursor: pointer;
 }
 
-.fbk-confirm-cancel {
+/* 複合セレクタ（0,2,0）でツールの `.app button`（0,1,1）背景・枠に勝たせる。 */
+.fbk-confirm-actions .fbk-confirm-cancel {
   color: var(--fbk-text);
   background: var(--fbk-surface);
   border: 1px solid var(--fbk-border);
 }
 
-.fbk-confirm-confirm {
+.fbk-confirm-actions .fbk-confirm-confirm {
   color: #fff;
   background: var(--fbk-accent);
   border: 1px solid var(--fbk-accent);
 }
 
-.fbk-confirm-confirm-danger {
+.fbk-confirm-actions .fbk-confirm-confirm-danger {
+  color: #fff;
   background: var(--fbk-danger);
   border-color: var(--fbk-danger);
 }

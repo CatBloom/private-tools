@@ -176,7 +176,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   }
 
   const deleteWord = async (id: string) => {
-    const confirmed = await confirm('このワードを削除しますか？', { danger: true })
+    const confirmed = await confirm('このワードを削除しますか？', { title: '削除', danger: true })
     if (!confirmed) return
 
     setWords((current) => current.filter((word) => word.id !== id))
@@ -285,7 +285,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   }
 
   const deleteHistoryEntry = async (id: string) => {
-    const confirmed = await confirm('この履歴を削除しますか？', { danger: true })
+    const confirmed = await confirm('この履歴を削除しますか？', { title: '削除', danger: true })
     if (!confirmed) return
 
     const remaining = historyEntries.filter((entry) => entry.id !== id)
@@ -482,26 +482,18 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
           </button>
         </div>
 
-        {outputItems.length === 0 ? (
-          <p className="pbuilder-empty">一覧のワードを選ぶとここに追加されます。</p>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={outputItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <ul className="pbuilder-output-list">
-                {outputItems.map((item) => (
-                  <SortableOutputItem key={item.id} item={item} onRemove={removeOutputItem} onWeightChange={changeWeight} />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-        )}
-
+        {/* 出力結果とコピーボタンを一番上に置き、下の並べ替えリストを見なくてもコピーできるようにする。 */}
         <div className="pbuilder-output-preview">
           <p className="pbuilder-output-text" ref={outputTextRef}>
             {outputText || '（出力はまだありません）'}
           </p>
           <div className="pbuilder-output-preview-actions">
-            <button type="button" disabled={outputItems.length === 0} onClick={handleCopy}>
+            <button
+              type="button"
+              className="pbuilder-copy-button"
+              disabled={outputItems.length === 0}
+              onClick={handleCopy}
+            >
               コピー
             </button>
             {copyStatus === 'copied' ? (
@@ -516,6 +508,20 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
             ) : null}
           </div>
         </div>
+
+        {outputItems.length === 0 ? (
+          <p className="pbuilder-empty">一覧のワードを選ぶとここに追加されます。</p>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={outputItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+              <ul className="pbuilder-output-list">
+                {outputItems.map((item) => (
+                  <SortableOutputItem key={item.id} item={item} onRemove={removeOutputItem} onWeightChange={changeWeight} />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        )}
 
         <div className="pbuilder-history">
           <h3>保存履歴</h3>

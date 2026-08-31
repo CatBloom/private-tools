@@ -279,8 +279,7 @@ describe('CreditCsvRoutes', () => {
     expect(menuButton).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('deletes a file through the files page', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('deletes a file through the files page after confirming the dialog', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
@@ -288,20 +287,22 @@ describe('CreditCsvRoutes', () => {
     expect(row).not.toBeNull()
 
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
+    // 共有の確認ダイアログで OK を押す
+    fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(screen.queryByText('202604.csv')).not.toBeInTheDocument())
     expect(store).toHaveLength(0)
   })
 
   it('does not delete when the confirmation dialog is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
     const row = (await screen.findByText('202604.csv')).closest('tr')
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
+    // ダイアログでキャンセルすると削除されない
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    // キャンセル時は削除されない
     expect(screen.getByText('202604.csv')).toBeInTheDocument()
     expect(store).toHaveLength(1)
   })

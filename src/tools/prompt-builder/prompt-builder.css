@@ -5,6 +5,7 @@
   --pbuilder-text: #17212b;
   --pbuilder-muted: #5b6b7c;
   --pbuilder-accent: #1769aa;
+  --pbuilder-secondary: #0f766e;
   --pbuilder-danger: #b3261e;
   --pbuilder-success: #2e7d32;
   --pbuilder-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
@@ -24,6 +25,7 @@
   --pbuilder-text: #e7edf3;
   --pbuilder-muted: #94a3b3;
   --pbuilder-accent: #4ba3ff;
+  --pbuilder-secondary: #2bb3a3;
   --pbuilder-danger: #ff8a80;
   --pbuilder-success: #81c784;
   --pbuilder-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
@@ -439,9 +441,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--pbuilder-border);
+  /* 出力結果＋コピーを一番上に置くので、下の並べ替えリストとの間に余白を空ける。 */
+  margin-bottom: 1.25rem;
 }
 
 .pbuilder-output-text {
@@ -456,9 +457,20 @@
 
 .pbuilder-output-preview-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+/* コピーは主要アクションなので画面いっぱいで目立たせる。出力タブ（アクセント青）と色が
+   被らないようセカンダリー色（teal）を使う。`.pbuilder-app` 前置で `.pbuilder-app button`
+   の既定背景に勝たせる。 */
+.pbuilder-app .pbuilder-copy-button {
+  width: 100%;
+  color: #fff;
+  background: var(--pbuilder-secondary);
+  border-color: var(--pbuilder-secondary);
+  font-weight: 700;
 }
 
 .pbuilder-copy-feedback {
@@ -539,6 +551,8 @@
   gap: 0.5rem;
   /* 長い名前でボタン群が縮まないように固定する。 */
   flex-shrink: 0;
+  /* スマホ（縦積み時）はラベルの下で全幅になるので、復元/削除を右寄せにする。 */
+  justify-content: flex-end;
 }
 
 @media (min-width: 48rem) {
