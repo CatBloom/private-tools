@@ -10,6 +10,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useAlert, useConfirm } from '../../../components/feedback'
 import { getHistory, getWords, putHistory, putWords } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
 import { buildOutput, clampWeight, reorder } from '../lib/notation'
@@ -23,7 +24,7 @@ type CopyStatus = 'idle' | 'copied' | 'error'
 type PageTab = 'words' | 'output'
 
 // ワード編集が止まってからこの時間だけアイドルしたら自動保存する（KV書き込み枠節約のためのデバウンス）
-const AUTO_SAVE_DELAY_MS = 10_000
+const AUTO_SAVE_DELAY_MS = 30_000
 
 const createWord = (text: string, description: string): PromptWord => ({
   id: crypto.randomUUID(),
@@ -47,6 +48,8 @@ const formatHistoryDate = (isoDate: string) => {
 }
 
 export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
+  const { showAlert } = useAlert()
+  const { confirm } = useConfirm()
   const [tab, setTab] = useState<PageTab>('words')
   const [words, setWords] = useState<PromptWord[]>([])
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
@@ -150,6 +153,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     markWordsDirty()
     setNewText('')
     setNewDescription('')
+    showAlert('success', '追加しました')
   }
 
   const startEdit = (word: PromptWord) => {
@@ -171,9 +175,13 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     setEditingId(null)
   }
 
-  const deleteWord = (id: string) => {
+  const deleteWord = async (id: string) => {
+    const confirmed = await confirm('このワードを削除しますか？', { danger: true })
+    if (!confirmed) return
+
     setWords((current) => current.filter((word) => word.id !== id))
     markWordsDirty()
+    showAlert('success', '削除しました')
   }
 
   const saveWords = useCallback(async () => {
@@ -199,10 +207,10 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     }
   }, [category])
 
-  // 未保存の変更が10秒アイドルしたら自動保存する。編集が続く限り words の変化で毎回タイマーを
-  // 張り直し（＝アイドル10秒で発火）、保存中は張らない（手動保存が saveStatus を 'saving' にした
-  // 時点でも同じ理由で pending タイマーは破棄される＝二重送信しない）。
-  // 直前の自動保存が失敗（'error'）したら、そのまま10秒ごとに再送し続けると KV の書き込み
+  // 未保存の変更が AUTO_SAVE_DELAY_MS だけアイドルしたら自動保存する。編集が続く限り words の
+  // 変化で毎回タイマーを張り直し（＝アイドル時間で発火）、保存中は張らない（手動保存が saveStatus を
+  // 'saving' にした時点でも同じ理由で pending タイマーは破棄される＝二重送信しない）。
+  // 直前の自動保存が失敗（'error'）したら、そのまま定期的に再送し続けると KV の書き込み
   // クォータを浪費するため自動リトライしない。次のワード編集が saveStatus を 'idle' に戻して
   // 再アームする（手動「保存」でも復帰できる）。
   useEffect(() => {
@@ -224,7 +232,13 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   }, [category])
 
   const addToOutput = (word: PromptWord) => {
+    if (outputItems.some((item) => item.wordId === word.id)) {
+      showAlert('info', '既に追加されています')
+      return
+    }
+
     setOutputItems((current) => [...current, { id: crypto.randomUUID(), wordId: word.id, text: word.text, weight: 0 }])
+    showAlert('success', '出力に追加しました')
   }
 
   const removeOutputItem = (id: string) => {
@@ -257,9 +271,12 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
       setHistoryEntries(saved)
       setHistoryName('')
       setHistorySaveStatus('saved')
+      showAlert('success', '履歴に保存しました')
     } catch (error) {
-      setHistorySaveError(error instanceof Error ? error.message : '保存に失敗しました。')
+      const message = error instanceof Error ? error.message : '保存に失敗しました。'
+      setHistorySaveError(message)
       setHistorySaveStatus('error')
+      showAlert('error', message)
     }
   }
 
@@ -268,6 +285,9 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   }
 
   const deleteHistoryEntry = async (id: string) => {
+    const confirmed = await confirm('この履歴を削除しますか？', { danger: true })
+    if (!confirmed) return
+
     const remaining = historyEntries.filter((entry) => entry.id !== id)
     setHistorySaveStatus('saving')
     setHistorySaveError(null)
@@ -275,9 +295,12 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
       const saved = await putHistory(category, remaining)
       setHistoryEntries(saved)
       setHistorySaveStatus('idle')
+      showAlert('success', '削除しました')
     } catch (error) {
-      setHistorySaveError(error instanceof Error ? error.message : '削除に失敗しました。')
+      const message = error instanceof Error ? error.message : '削除に失敗しました。'
+      setHistorySaveError(message)
       setHistorySaveStatus('error')
+      showAlert('error', message)
     }
   }
 
@@ -432,12 +455,14 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
                     <button type="button" onClick={() => addToOutput(word)}>
                       出力に追加
                     </button>
-                    <button type="button" onClick={() => startEdit(word)}>
-                      編集
-                    </button>
-                    <button type="button" className="pbuilder-danger-button" onClick={() => deleteWord(word.id)}>
-                      削除
-                    </button>
+                    <div className="pbuilder-word-row-actions-secondary">
+                      <button type="button" onClick={() => startEdit(word)}>
+                        編集
+                      </button>
+                      <button type="button" className="pbuilder-danger-button" onClick={() => deleteWord(word.id)}>
+                        削除
+                      </button>
+                    </div>
                   </div>
                 </li>
               ),

@@ -365,8 +365,18 @@
 .pbuilder-word-row-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   /* 長い説明でボタン群が縮まないように固定する（表示行）。 */
+  flex-shrink: 0;
+  /* スマホ（縦積み時）はボタン列が全幅になるので、出力に追加を左・編集/削除を右に分けて
+     バランスを取る。PC 側（行レイアウト）では内容幅なので space-between は実質無効。 */
+  justify-content: space-between;
+}
+
+.pbuilder-word-row-actions-secondary {
+  display: flex;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 

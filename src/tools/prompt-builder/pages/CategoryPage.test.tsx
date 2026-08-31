@@ -1,9 +1,20 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
+import { AlertProvider, ConfirmProvider } from '../../../components/feedback'
 import { CategoryPage } from './CategoryPage'
 import { getHistory, getWords, putHistory, putWords } from '../api'
 import type { HistoryEntry, PromptWord } from '../shared/types'
+
+// CategoryPage は useAlert/useConfirm を使うため、常に Provider でラップして render する。
+const renderPage = () =>
+  render(
+    <AlertProvider>
+      <ConfirmProvider>
+        <CategoryPage category="base-prompt" />
+      </ConfirmProvider>
+    </AlertProvider>,
+  )
 
 vi.mock('../api', () => ({
   getWords: vi.fn(),
@@ -59,7 +70,7 @@ describe('CategoryPage', () => {
   })
 
   it('switches between the words tab and the output tab', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     expect(screen.getByRole('tab', { name: 'ワード' })).toHaveAttribute('aria-selected', 'true')
@@ -73,7 +84,7 @@ describe('CategoryPage', () => {
   })
 
   it('loads words and adds a selected word to the output preview', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     expect(await screen.findByText('cat girl')).toBeInTheDocument()
 
@@ -86,7 +97,7 @@ describe('CategoryPage', () => {
   })
 
   it('reflects weight changes in the output preview', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
@@ -101,7 +112,7 @@ describe('CategoryPage', () => {
   })
 
   it('saves the current word list via putWords', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
@@ -120,7 +131,7 @@ describe('CategoryPage', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.assign(navigator, { clipboard: { writeText } })
 
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
@@ -135,7 +146,7 @@ describe('CategoryPage', () => {
   })
 
   it('saves the current output as a named history entry via putHistory', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
@@ -156,7 +167,7 @@ describe('CategoryPage', () => {
   })
 
   it('disables saving history when the output is empty', async () => {
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     await screen.findByText('cat girl')
     fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
@@ -173,7 +184,7 @@ describe('CategoryPage', () => {
     }
     vi.mocked(getHistory).mockResolvedValue([entry])
 
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
     expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
@@ -192,12 +203,13 @@ describe('CategoryPage', () => {
     let resolvePut: (value: HistoryEntry[]) => void = () => {}
     vi.mocked(putHistory).mockImplementation(() => new Promise<HistoryEntry[]>((resolve) => { resolvePut = resolve }))
 
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
     fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
     await screen.findByText('set one', { exact: false })
 
     const firstDelete = screen.getAllByRole('button', { name: '削除' })[0]
     fireEvent.click(firstDelete)
+    fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     // While the PUT is pending, every delete button is disabled so a second click
     // cannot race on a stale history array.
@@ -218,18 +230,91 @@ describe('CategoryPage', () => {
     }
     vi.mocked(getHistory).mockResolvedValue([entry])
 
-    render(<CategoryPage category="base-prompt" />)
+    renderPage()
 
     fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
     await screen.findByText('saved set', { exact: false })
 
     fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(putHistory).toHaveBeenCalledWith('base-prompt', []))
+    expect(await screen.findByText('削除しました')).toBeInTheDocument()
+  })
+
+  it('does not delete the history entry when the confirmation is cancelled', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
+    await screen.findByText('saved set', { exact: false })
+
+    fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
+
+    expect(putHistory).not.toHaveBeenCalled()
+    expect(screen.getByText('saved set', { exact: false })).toBeInTheDocument()
+  })
+
+  it('deletes a word after confirmation and shows a success toast', async () => {
+    renderPage()
+    await screen.findByText('cat girl')
+
+    const wordRow = screen.getByText('cat girl').closest('li')!
+    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
+
+    await waitFor(() => expect(screen.queryByText('cat girl')).not.toBeInTheDocument())
+    expect(await screen.findByText('削除しました')).toBeInTheDocument()
+  })
+
+  it('does not delete a word when the delete confirmation is cancelled', async () => {
+    renderPage()
+    await screen.findByText('cat girl')
+
+    const wordRow = screen.getByText('cat girl').closest('li')!
+    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
+
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+  })
+
+  it('shows a success toast after adding a word', async () => {
+    renderPage()
+    await screen.findByText('cat girl')
+
+    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
+    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+    expect(await screen.findByText('追加しました')).toBeInTheDocument()
+  })
+
+  it('shows an info toast and does not add a duplicate when the same word is added to the output twice', async () => {
+    renderPage()
+    await screen.findByText('cat girl')
+
+    const wordRow = screen.getByText('cat girl').closest('li')!
+    const addButton = within(wordRow).getByRole('button', { name: '出力に追加' })
+
+    fireEvent.click(addButton)
+    expect(await screen.findByText('出力に追加しました')).toBeInTheDocument()
+
+    fireEvent.click(addButton)
+    expect(await screen.findByText('既に追加されています')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
+    expect(screen.getAllByText('cat girl', { selector: '.pbuilder-output-item-preview' })).toHaveLength(1)
   })
 
   describe('word list auto save (debounce)', () => {
-    const AUTO_SAVE_DELAY_MS = 10_000
+    const AUTO_SAVE_DELAY_MS = 30_000
 
     beforeEach(() => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -239,8 +324,8 @@ describe('CategoryPage', () => {
       vi.useRealTimers()
     })
 
-    it('auto-saves once, 10 seconds after the last change', async () => {
-      render(<CategoryPage category="base-prompt" />)
+    it('auto-saves once after the debounce delay from the last change', async () => {
+      renderPage()
       await screen.findByText('cat girl')
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'auto word' } })
@@ -258,29 +343,31 @@ describe('CategoryPage', () => {
     })
 
     it('resets the debounce timer while changes keep happening', async () => {
-      render(<CategoryPage category="base-prompt" />)
+      renderPage()
       await screen.findByText('cat girl')
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
-      await vi.advanceTimersByTimeAsync(5000)
+      // 1回目の変更からアイドルが完了する直前
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
-      // 2回目の変更から10秒経つまでは発火しない（1回目の変更からは10秒経過済みでも）
-      await vi.advanceTimersByTimeAsync(5000)
+      // 2回目の変更でタイマーがリセットされるので、そこからアイドル完了までは発火しない
+      // （1回目の変更からは十分に時間が経っていても）
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
       expect(putWords).not.toHaveBeenCalled()
 
-      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(1000)
       expect(putWords).toHaveBeenCalledTimes(1)
     })
 
     it('does not auto-retry after a failed save until the next edit re-arms it', async () => {
       vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
 
-      render(<CategoryPage category="base-prompt" />)
+      renderPage()
       await screen.findByText('cat girl')
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
@@ -290,7 +377,7 @@ describe('CategoryPage', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
       await screen.findByText('save failed')
 
-      // エラー後は10秒ごとに再送し続けない（KV 書き込みクォータを浪費しない）
+      // エラー後はデバウンスのたびに再送し続けない（KV 書き込みクォータを浪費しない）
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS * 3)
       expect(putWords).toHaveBeenCalledTimes(1)
 
@@ -302,7 +389,7 @@ describe('CategoryPage', () => {
     })
 
     it('does not double-save when a manual save happens before the debounce fires', async () => {
-      render(<CategoryPage category="base-prompt" />)
+      renderPage()
       await screen.findByText('cat girl')
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'manual word' } })
@@ -323,7 +410,7 @@ describe('CategoryPage', () => {
         () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
       )
 
-      render(<CategoryPage category="base-prompt" />)
+      renderPage()
       await screen.findByText('cat girl')
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
