@@ -80,15 +80,19 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   const [historyName, setHistoryName] = useState('')
   const [historySaveStatus, setHistorySaveStatus] = useState<SaveStatus>('idle')
   const [historySaveError, setHistorySaveError] = useState<string | null>(null)
+  const historySaveStatusRef = useRef(historySaveStatus)
+  historySaveStatusRef.current = historySaveStatus
 
   const loadWords = useCallback(async () => {
     setLoadStatus('loading')
     setLoadError(null)
     try {
       const data = await getWords(category)
-      setWords(data)
-      setDirty(false)
-      setSaveStatus('idle')
+      // 読み込み中にユーザーが編集し始めていたら（dirty）、その編集を初期データで上書きしない。
+      if (!dirtyRef.current) {
+        setWords(data)
+        setSaveStatus('idle')
+      }
       setLoadStatus('ready')
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : '読み込みに失敗しました。')
@@ -105,7 +109,10 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     setHistoryLoadError(null)
     try {
       const entries = await getHistory(category)
-      setHistoryEntries(entries)
+      // 読み込み中に保存/削除が走っていたら、その結果を初期データで上書きしない。
+      if (historySaveStatusRef.current !== 'saving') {
+        setHistoryEntries(entries)
+      }
       setHistoryLoadStatus('ready')
     } catch (error) {
       setHistoryLoadError(error instanceof Error ? error.message : '読み込みに失敗しました。')
@@ -170,13 +177,22 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   }
 
   const saveWords = useCallback(async () => {
+    // 保存対象の配列参照をこの時点で固定する。putWords は送った配列をそのまま返すだけなので、
+    // レスポンスで setWords し直す必要はない（むしろ通信中に増えた編集を上書きしてしまう）。
+    const snapshot = wordsRef.current
     setSaveStatus('saving')
     setSaveError(null)
     try {
-      const saved = await putWords(category, wordsRef.current)
-      setWords(saved)
-      setDirty(false)
-      setSaveStatus('saved')
+      await putWords(category, snapshot)
+      if (wordsRef.current === snapshot) {
+        // 通信中に編集が無ければ保存完了。
+        setDirty(false)
+        setSaveStatus('saved')
+      } else {
+        // 通信中にユーザーが追加/編集/削除していた（参照が変わった）。新しい変更を消さず、
+        // dirty のままにして次の debounce で再保存させる（'saving' を解除するだけ）。
+        setSaveStatus('idle')
+      }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : '保存に失敗しました。')
       setSaveStatus('error')

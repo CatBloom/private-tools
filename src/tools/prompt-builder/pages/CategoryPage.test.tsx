@@ -316,5 +316,35 @@ describe('CategoryPage', () => {
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
       expect(putWords).toHaveBeenCalledTimes(1)
     })
+
+    it('keeps edits made while an auto-save is in flight and re-saves them', async () => {
+      let resolveSave: (value: PromptWord[]) => void = () => {}
+      vi.mocked(putWords).mockImplementationOnce(
+        () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
+      )
+
+      render(<CategoryPage category="base-prompt" />)
+      await screen.findByText('cat girl')
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+      expect(putWords).toHaveBeenCalledTimes(1) // 通信中（未解決）
+
+      // 保存の通信中にユーザーが別のワードを追加する
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      // 古いスナップショットの結果（空配列）を返しても、通信中に足した 'second' は消えない
+      resolveSave([])
+      await waitFor(() => expect(screen.getByText('second')).toBeInTheDocument())
+      expect(screen.getByText('first')).toBeInTheDocument()
+
+      // 新しい状態が次の debounce で再保存される（'second' を含む）
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
+      expect(vi.mocked(putWords).mock.calls[1][1].map((word) => word.text)).toContain('second')
+    })
   })
 })
