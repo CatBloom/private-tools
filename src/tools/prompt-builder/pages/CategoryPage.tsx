@@ -184,34 +184,29 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     showAlert('success', '削除しました')
   }
 
-  // notify=true（手動「保存」ボタン）のときだけ成功トーストを出す。自動保存(debounce)は
-  // notify=false でバックグラウンド扱い（トーストを出さない）。
-  const saveWords = useCallback(
-    async ({ notify = false }: { notify?: boolean } = {}) => {
-      // 保存対象の配列参照をこの時点で固定する。putWords は送った配列をそのまま返すだけなので、
-      // レスポンスで setWords し直す必要はない（むしろ通信中に増えた編集を上書きしてしまう）。
-      const snapshot = wordsRef.current
-      setSaveStatus('saving')
-      setSaveError(null)
-      try {
-        await putWords(category, snapshot)
-        if (wordsRef.current === snapshot) {
-          // 通信中に編集が無ければ保存完了。
-          setDirty(false)
-          setSaveStatus('saved')
-        } else {
-          // 通信中にユーザーが追加/編集/削除していた（参照が変わった）。新しい変更を消さず、
-          // dirty のままにして次の debounce で再保存させる（'saving' を解除するだけ）。
-          setSaveStatus('idle')
-        }
-        if (notify) showAlert('success', '保存しました')
-      } catch (error) {
-        setSaveError(error instanceof Error ? error.message : '保存に失敗しました。')
-        setSaveStatus('error')
+  const saveWords = useCallback(async () => {
+    // 保存対象の配列参照をこの時点で固定する。putWords は送った配列をそのまま返すだけなので、
+    // レスポンスで setWords し直す必要はない（むしろ通信中に増えた編集を上書きしてしまう）。
+    const snapshot = wordsRef.current
+    setSaveStatus('saving')
+    setSaveError(null)
+    try {
+      await putWords(category, snapshot)
+      if (wordsRef.current === snapshot) {
+        // 通信中に編集が無ければ保存完了。手動・自動どちらの保存でも成功トーストを出す。
+        setDirty(false)
+        setSaveStatus('saved')
+        showAlert('success', '保存しました')
+      } else {
+        // 通信中にユーザーが追加/編集/削除していた（参照が変わった）。新しい変更を消さず、
+        // dirty のままにして次の debounce で再保存させる（'saving' を解除するだけ・通知なし）。
+        setSaveStatus('idle')
       }
-    },
-    [category, showAlert],
-  )
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : '保存に失敗しました。')
+      setSaveStatus('error')
+    }
+  }, [category, showAlert])
 
   // 未保存の変更が AUTO_SAVE_DELAY_MS だけアイドルしたら自動保存する。編集が続く限り words の
   // 変化で毎回タイマーを張り直し（＝アイドル時間で発火）、保存中は張らない（手動保存が saveStatus を
@@ -334,7 +329,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
       await navigator.clipboard.writeText(outputText)
-      setCopyStatus('copied')
+      showAlert('success', 'コピーしました')
     } catch {
       // クリップボード API が使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
       const node = outputTextRef.current
@@ -377,7 +372,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
         <div className="pbuilder-panel-header">
           <h1>ワード一覧</h1>
           <div className="pbuilder-save-controls">
-            <button type="button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords({ notify: true })}>
+            <button type="button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords()}>
               {saveStatus === 'saving' ? '保存中…' : '保存'}
             </button>
             {dirty && saveStatus !== 'saving' ? <span className="pbuilder-dirty-badge">未保存の変更あり</span> : null}
