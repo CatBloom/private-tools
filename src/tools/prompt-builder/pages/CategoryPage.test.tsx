@@ -111,6 +111,22 @@ describe('CategoryPage', () => {
     expect(await screen.findByText('{cat girl}', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
   })
 
+  it('disables adding words until the initial load completes', async () => {
+    // 初回 getWords を保留させ、ロード中の状態を作る
+    let resolveLoad: (words: PromptWord[]) => void = () => {}
+    vi.mocked(getWords).mockImplementationOnce(() => new Promise<PromptWord[]>((resolve) => { resolveLoad = resolve }))
+
+    renderPage()
+
+    // ロード中は入力・追加を無効化（未取得の一覧への追加→保存で既存を消すのを防ぐ）
+    expect(screen.getByLabelText('ワード')).toBeDisabled()
+    expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
+
+    resolveLoad(sampleWords)
+    await screen.findByText('cat girl')
+    expect(screen.getByLabelText('ワード')).toBeEnabled()
+  })
+
   it('saves the current word list via putWords', async () => {
     renderPage()
 

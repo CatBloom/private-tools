@@ -15,6 +15,9 @@ const MAX_HISTORY_ENTRIES_PER_CATEGORY = 200
 const MAX_HISTORY_NAME_LENGTH = 200
 const MAX_HISTORY_ITEMS_PER_ENTRY = 500
 const MAX_OUTPUT_ITEM_TEXT_LENGTH = 500
+// weight は復元時に applyNotation で String.repeat(|weight|) される。巨大な値だと RangeError や
+// 過大メモリ確保を招くため、有限整数かつ小さな絶対値に制限する（クライアントは ±5 にクランプ）。
+const MAX_OUTPUT_ITEM_WEIGHT = 20
 // Reject an oversized body before parsing it (mirrors the credit-csv upload
 // guard; also stays under Vercel's ~4.5MB Serverless body ceiling).
 const MAX_BODY_BYTES = 4 * 1024 * 1024
@@ -41,7 +44,8 @@ const isOutputItem = (value: unknown): value is OutputItem =>
   ((value as OutputItem).wordId === null || typeof (value as OutputItem).wordId === 'string') &&
   typeof (value as OutputItem).text === 'string' &&
   (value as OutputItem).text.length <= MAX_OUTPUT_ITEM_TEXT_LENGTH &&
-  typeof (value as OutputItem).weight === 'number'
+  Number.isInteger((value as OutputItem).weight) &&
+  Math.abs((value as OutputItem).weight) <= MAX_OUTPUT_ITEM_WEIGHT
 
 const isHistoryEntry = (value: unknown): value is HistoryEntry =>
   typeof value === 'object' &&

@@ -146,6 +146,9 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
 
   const handleAddWord = (event: FormEvent) => {
     event.preventDefault()
+    // 初回ロードが完了するまでは編集させない。空/未取得の一覧に追加すると、その後の保存で
+    // KV 上の既存ワードを「追加した1件だけ」で丸ごと置き換えてしまうため。
+    if (loadStatus !== 'ready') return
     const text = newText.trim()
     if (!text) return
 
@@ -257,6 +260,9 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   const handleSaveHistory = async (event: FormEvent) => {
     event.preventDefault()
     if (outputItems.length === 0) return
+    // 履歴の初回ロードが終わるまでは保存させない。未取得（historyEntries=[]）のまま PUT すると
+    // KV 上の既存履歴を新規1件で丸ごと置き換えてしまうため。
+    if (historyLoadStatus !== 'ready') return
 
     const newEntry: HistoryEntry = {
       id: crypto.randomUUID(),
@@ -391,6 +397,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
             placeholder="ワード"
             aria-label="ワード"
             value={newText}
+            disabled={loadStatus !== 'ready'}
             onChange={(event) => setNewText(event.target.value)}
           />
           <input
@@ -398,9 +405,10 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
             placeholder="説明（任意）"
             aria-label="説明"
             value={newDescription}
+            disabled={loadStatus !== 'ready'}
             onChange={(event) => setNewDescription(event.target.value)}
           />
-          <button type="submit" disabled={!newText.trim()}>
+          <button type="submit" disabled={loadStatus !== 'ready' || !newText.trim()}>
             追加
           </button>
         </form>
@@ -525,7 +533,10 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
               value={historyName}
               onChange={(event) => setHistoryName(event.target.value)}
             />
-            <button type="submit" disabled={outputItems.length === 0 || historySaveStatus === 'saving'}>
+            <button
+              type="submit"
+              disabled={outputItems.length === 0 || historySaveStatus === 'saving' || historyLoadStatus !== 'ready'}
+            >
               履歴に保存
             </button>
           </form>

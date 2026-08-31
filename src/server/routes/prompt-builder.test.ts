@@ -198,6 +198,25 @@ describe('prompt word routes', () => {
     await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })
   })
 
+  it('rejects a history entry whose output item weight is out of range', async () => {
+    // 巨大な weight は復元時に applyNotation の String.repeat で RangeError を招くため弾く
+    const entries = [
+      {
+        id: 'h1',
+        name: 'boom',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: null, text: 'x', weight: 1e9 }],
+      },
+    ]
+    const response = await request('/history/base-prompt', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entries }),
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })
+  })
+
   it('rejects a history put whose entries value is not an array', async () => {
     const response = await request('/history/base-prompt', {
       method: 'PUT',

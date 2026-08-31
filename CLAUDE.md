@@ -40,7 +40,8 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `src/server/routes/` — ツール別 Hono API。
 - `src/server/storage/` — Credit CSV 永続化のストレージ抽象。
 - `src/server/prompt-storage/` — Prompt Builder 用の別ストレージ抽象（credit-csv とは分離。KV Namespace も別）。
-- `src/public/` — 静的資産。`styles.css`（TOP 用）は Git 管理、`assets/`（ビルド生成物）は gitignore。
+- `src/components/feedback/` — 両ツール共通の UI フィードバック（`AlertProvider`/`useAlert` トースト、`ConfirmProvider`/`useConfirm` 確認ダイアログ、`Spinner`）。各ツールは `Layout` の内側（`.<tool>-app[data-theme]` 配下）で Provider をラップする（トースト/ダイアログが `[data-theme]` を継承できるように）。**スタイルは `src/public/styles.css` に置く**（下記の理由）。
+- `src/public/` — 静的資産。`styles.css`（TOP・両ツールのシェルが常時 link）は Git 管理、`assets/`（ビルド生成物）は gitignore。**共有フィードバックの CSS（`.fbk-*`）は styles.css に置く**：コンポーネント側で `import './x.css'` すると Vite が共有チャンクの CSS（`assets/ConfirmProvider.css` 等）に分割し、シェルは `client.css`/`client-prompt.css` しか link しないため**本番で無スタイル化**する（トースト/ダイアログが素の状態でページ最下部に出る）。常時 link される styles.css に置けば dev/prod とも確実に読み込まれる。
 
 ### ルーティングと画面構成（`src/server/app.ts`）
 
