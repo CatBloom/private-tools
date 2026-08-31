@@ -31,22 +31,25 @@ CI（`.github/workflows/ci.yml`）は PR と `main` への push で lint / typec
 Hono SSR をシェルに、ツールはクライアント側でマウントするマルチツール構成。Vercel の Hono プリセットが `src/index.ts` を Function のエントリとして使う。
 
 - `src/index.ts` — Vercel エントリ。`src/server/app.ts` の default export を再輸出するだけ。
-- `src/server/app.ts` — アプリ本体。`createApp(options)` ファクトリと default インスタンスを輸出。`options` でテスト用に `creditCsvStorage`（Storage 注入）や `assetOverrides` を差し込める。
+- `src/server/app.ts` — アプリ本体。`createApp(options)` ファクトリと default インスタンスを輸出。`options` でテスト用に `creditCsvStorage`／`promptWordStorage`／`promptHistoryStorage`（Storage 注入）や `assetOverrides` を差し込める。favicon（`/favicon.ico`）は TOP・ツールシェルの head に `<link rel="icon">` を出し、本番のみ Hono ルートで `src/public/favicon.ico` をバイナリ配信する（開発は `vite.config.ts` の `servePublicFavicon`）。
 - `src/ui/TopPage.ts` — TOP ハブ（`/`）の**純 SSR** コンポーネント。ツール一覧をカードで並べる。将来ツールが増えたらここに追加する。**SSR で使うコンポーネントは JSX ではなく `createElement` を使い拡張子 `.ts` にする**（Vercel のサーバービルドは import 指定子 `'../ui/TopPage.js'` を `.ts` には解決できるが `.tsx` には解決できず、実行時に `ERR_MODULE_NOT_FOUND` になるため）。JSX を使うクライアント専用コンポーネントは `.tsx` でよい（Vite がバンドルする）。
-- `src/client.tsx` — クライアントエントリ。`createRoot(...).render(<CreditCsvApp/>)`（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。**ツールページでのみ読み込まれ、TOP には `<script>` を出さない**（TOP は JS ゼロ）。
+- `src/client.tsx` — Credit CSV Viewer のクライアントエントリ。`createRoot(...).render(<CreditCsvApp/>)`（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。**ツールページでのみ読み込まれ、TOP には React バンドルを出さない**（TOP はテーマ切替の小さな `theme.js` のみ＝React バンドルなし）。
+- `src/client-prompt.tsx` — Prompt Builder のクライアントエントリ。**ツール別にエントリを分離**し、各ツールページは自分のバンドルだけを読む（credit-csv ページに prompt のコードを混ぜない）。
 - `src/tools/credit-csv/` — Credit CSV Viewer ツール（`/tools/credit-csv`）。
+- `src/tools/prompt-builder/` — Prompt Builder ツール（`/tools/prompt-builder`）。
 - `src/server/routes/` — ツール別 Hono API。
-- `src/server/storage/` — CSV 永続化のストレージ抽象。
+- `src/server/storage/` — Credit CSV 永続化のストレージ抽象。
+- `src/server/prompt-storage/` — Prompt Builder 用の別ストレージ抽象（credit-csv とは分離。KV Namespace も別）。
 - `src/public/` — 静的資産。`styles.css`（TOP 用）は Git 管理、`assets/`（ビルド生成物）は gitignore。
 
 ### ルーティングと画面構成（`src/server/app.ts`）
 
-登録順が重要（先に登録したものが優先）:
+登録順が重要（先に登録したものが優先）。各ツールは同じパターンで登録する:
 1. CSP middleware（`app.use('*', ...)`、パスで分岐。下記参照）
-2. `app.route('/tools/credit-csv/api', createCreditCsvRoutes(...))` — **ツール catch-all より必ず前**
+2. 各ツールの API を **catch-all より必ず前**にマウント: `app.route('/tools/credit-csv/api', createCreditCsvRoutes(...))`、`app.route('/tools/prompt-builder/api', createPromptWordRoutes(...))`
 3. （production のみ）`/styles.css`、`/assets/:filename`
 4. `/` — TOP ハブ SSR
-5. `/tools/credit-csv` と `/tools/credit-csv/*` — ツールの SSR シェル（空 `#root`＋クライアントスクリプト＋ツール CSS の `<link>`）。深いパスの直リンクも同じシェルを返し、クライアント側の `react-router`（`BrowserRouter basename="/tools/credit-csv"`）が処理する
+5. 各ツールの SSR シェル（`/tools/<tool>` と `/tools/<tool>/*`。空 `#root`＋そのツールのクライアントスクリプト＋ツール CSS の `<link>`）。深いパスの直リンクも同じシェルを返し、クライアント側の `react-router`（`BrowserRouter basename="/tools/<tool>"`）が処理する。シェル HTML は `toolShellHtml(title, clientScript, builtCssHref)` で共通生成する
 6. `app.notFound(...)` — `/api/*` 系は JSON、それ以外は HTML の 404
 
 ### Credit CSV Viewer（`src/tools/credit-csv/`）
@@ -58,6 +61,18 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - テーマ切替は `localStorage` 永続化（`.ccsv-app[data-theme]` にスコープ、アイランドなので `documentElement` は触らない）。
 - **新機能**: CSV アップロード・アップロード済み一覧・一覧からの削除。
 
+### Prompt Builder（`src/tools/prompt-builder/`）
+
+画像生成プロンプトの「ワード」を分類ごとに管理し、選択順に並べてカンマ区切りで組み立て・コピーするツール。**UI に「NovelAI」表記は出さない**。分類は固定4つ（`base-prompt` / `base-negative` / `character-prompt` / `character-negative`）で、**分類ごとにページを分ける**（1つの `CategoryPage` を4分類で再利用、パスは `/${category}`、不明パスは先頭分類へリダイレクト）。
+
+- `shared/` — **react 非依存の純粋モジュール**（`categories.ts` の分類 ID／ラベル／`isPromptCategoryId`、`types.ts` の `PromptWord = {id,text,description}`／`OutputItem = {id,wordId,text,weight}`）。**サーバー route からも import する**ため JSX を含めない。
+- `lib/notation.ts` — 純粋ロジック（`applyNotation`：weight 正=`{}`／負=`[]` の重ね掛け段数・±5 クランプ、`buildOutput`：カンマ結合、`reorder`）。`lib/outputStorage.ts` — **組み立て中の**出力欄状態を localStorage に永続化。**分類ごとに独立したキー** `prompt-builder:output:${category}`（コピー先が分類ごとに異なるため出力も分類別に管理）。
+- **保存履歴**：組み立てた出力を名前付きスナップショット（`HistoryEntry = {id,name,createdAt,items}`）として **KV に保存**するライブラリ。出力タブ内・現在の出力の下に配置し、保存・復元（現在の出力を置換）・削除ができる。KV キーは `history:${category}`（`shared/types.ts` の `HistoryEntry`、サーバーは `src/server/prompt-storage/` の履歴ストレージ）。**組み立て中の出力は localStorage・保存した履歴は KV** と役割が分かれる。
+- UI（`.tsx`）: `index.tsx` が default export `PromptBuilderApp`（`prompt-builder.css` を import）。CategoryPage のルート要素は **`key={category}`** を付け、分類切替で再マウントしてその分類の状態を正しく初期化する（付けないと React がインスタンスを再利用し出力欄が分類間で混ざる）。各ページは**ページ内タブ**で「ワード」（一覧・登録フォーム内包・インライン編集・削除）と「出力」（選択→積む、**@dnd-kit で並べ替え**〈`PointerSensor`＋`TouchSensor` でモバイル対応〉、個別削除、強調記法付与、カンマ結合＋コピー）を切り替える。ワードの `id` はクライアントで採番。出力アイテムの `text` は**選択時点のスナップショット**（ワード編集後も復元が壊れない）。
+- **ワードの保存**：手動「保存」ボタン（即時 PUT）＋**デバウンス自動保存**（変更が止まって10秒後にまとめて1回 PUT。`AUTO_SAVE_DELAY_MS`）の併用。1分類=1KVキーに配列まるごと PUT なので、Cloudflare KV 無料枠（**書き込み1,000回/日・同一キー1秒1回**）を消費しすぎないよう「操作ごと」ではなく「アイドル10秒でまとめて」保存する。保存失敗時は**自動リトライしない**（次のワード編集が `saveStatus` を `idle` に戻して再アーム。放置すると10秒ごとに書き込みクォータを浪費するため）。分類切替（再マウント）で未保存分が消えないようアンマウント時に best-effort で flush する。**履歴の保存は明示操作のまま**（自動保存の対象外）。
+- テーマ切替は `.pbuilder-app[data-theme]` にスコープ（credit-csv と同じ `THEME_STORAGE_KEY` を共有、`documentElement` は触らない）。フック（`useTheme`/`usePersistedState`）は credit-csv 配下を import せず prompt-builder 内に自前で持つ（ツール間結合を避ける）。
+- **@dnd-kit**: `@dnd-kit/core` と `@dnd-kit/sortable` を使う。`@dnd-kit/utilities` は依存に入れず、`useSortable` の `transform` は自前で `translate3d(...)` の CSS 文字列にする（単一リストの並べ替えでは scale 不要）。CSP の `style-src` に `'unsafe-inline'` が必要なのはこの inline transform のため。
+
 ### ストレージ（`src/server/storage/`）
 
 `Storage` インターフェース（`list/get/put/delete`、`StoredFileMeta = {name,size,uploadedAt}`）と2実装:
@@ -66,9 +81,24 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `selectStorage()` は3つの env が揃えば KV、なければ Local を返す。ファイル名は必ず `^\d{6}\.csv$`（`assertValidFileName`）で検証してからパス/キーに使う（パストラバーサル対策）。
 - **注意**: 本番の実運用には Cloudflare KV の別途設定が必要（未設定のうちは Local フォールバックのみ）。Vercel Serverless のボディ上限（約4.5MB）のため、アップロードは **4MiB 上限**。
 
+### Prompt ストレージ（`src/server/prompt-storage/`）
+
+Prompt Builder 専用。ワード用と履歴用の2系統。どちらも**同じ KV Namespace／同じ env** を使い、キーのプレフィックスで分ける。
+- ワード：`PromptWordStorage`（`getWords/putWords`、分類単位で `PromptWord[]` を丸ごと読み書き）。KV キー `words:${category}`、Local は `.data/prompt-builder/${category}.json`。
+- 履歴：`PromptHistoryStorage`（`getHistory/putHistory`、分類単位で `HistoryEntry[]` を丸ごと読み書き）。KV キー `history:${category}`、Local は `.data/prompt-builder/history-${category}.json`。
+- 実装は各 `LocalPromptStorage`／`CloudflareKvPromptStorage`／`LocalHistoryStorage`／`CloudflareKvHistoryStorage`。環境変数は Account ID / API Token（`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_KV_API_TOKEN`）を credit-csv と**共有**し、**Namespace のみ別立て**の `CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`（**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**）。
+- `selectPromptStorage()`／`selectPromptHistoryStorage()` は Account ID＋`CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`＋API Token が揃えば KV、なければ Local を返す。分類は必ず `isPromptCategoryId`（`assertValidCategory`）で検証してからキー/パスに使う（キー汚染・パストラバーサル対策）。
+
 ### CSV アップロード API（`src/server/routes/credit-csv.ts`）
 
 `createCreditCsvRoutes(storage?)` が Hono サブアプリを返す（`/tools/credit-csv/api` にマウント）。`GET/POST /files`（POST は multipart、field `file`）、`GET/DELETE /files/:name`。バリデーション: ファイル名 `^\d{6}\.csv$`（不正 400）、4MiB 超 413、非 multipart 415、未存在 404。CSV は生バイトのまま保存し、デコード（Shift_JIS）・パースはクライアントで行う。
+
+### ワード API（`src/server/routes/prompt-builder.ts`）
+
+`createPromptWordRoutes(storage?, historyStorage?)` が Hono サブアプリを返す（`/tools/prompt-builder/api` にマウント）。
+- ワード：`GET /words/:category`（分類のワード一覧）、`PUT /words/:category`（JSON `{ words }` で丸ごと置換）。
+- 履歴：`GET /history/:category`（保存履歴一覧）、`PUT /history/:category`（JSON `{ entries }` で丸ごと置換）。
+- バリデーション: 分類不正 400、非 JSON 415、payload 不正 400、ボディ 4MiB 超 413、ワード数 2000 超／履歴エントリ数 200 超 413。`{ ok, data }` 規約は共通。
 
 ### 静的資産の配信（dev と production で経路が違う）
 
@@ -79,22 +109,23 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 | client script | `/src/client.tsx`（Vite） | `/assets/client.js` |
 | ツール CSS | Vite が JS 経由で注入 | `/assets/client.css`（ビルドで抽出）を `<link>` |
 | `/styles.css`（TOP用） | `vite.config.ts` の `servePublicStyles` | Hono ルート |
+| `/favicon.ico` | `vite.config.ts` の `servePublicFavicon` | Hono の `GET /favicon.ico`（バイナリ・本番のみ） |
 | `/assets/*` | Vite dev server | Hono の `GET /assets/:filename` |
 
 - 切り替えは `process.env.NODE_ENV` のみ。Hono の静的アセットルートは **production のときだけ登録される**。
 - **`GET /assets/:filename`**: `src/public/assets/` からのみ読み、`^[A-Za-z0-9._-]+$` で検証（`/`・エンコード済み `../` を拒否＝パストラバーサル対策）、拡張子で Content-Type 判定、モジュールスコープでキャッシュ。存在しなければ 404。
 - 本番のファイル実体は `src/public/` から読み、`vercel.json` の `includeFiles` で Function に同梱する。Output Directory は設定しない。
-- `vite.config.ts`: `outDir:'src/public'`／`emptyOutDir:false`／`publicDir:false`（この2フラグは `src/public/styles.css` を消さないために必要）。出力名はハッシュなし安定名（`entryFileNames:'assets/client.js'`、`assetFileNames:'assets/[name][extname]'`）でシェルの参照名を固定する。
+- `vite.config.ts`: `outDir:'src/public'`／`emptyOutDir:false`／`publicDir:false`（この2フラグは `src/public/styles.css` を消さないために必要）。出力名はハッシュなし安定名（`entryFileNames:'assets/[name].js'`、`assetFileNames:'assets/[name][extname]'`）でシェルの参照名を固定する。**ツールを増やすたびに `rollupOptions.input` にエントリを1つ追加する**（現状 `client`＝credit-csv／`client-prompt`＝prompt-builder／`theme`）。ツール別 CSS は各エントリの `index.tsx` が import し、本番では `client.css`／`client-prompt.css` として個別抽出される。
 
 ### セキュリティと API 規約
 
-- CSP は単一 middleware でパス分岐: **`/tools/credit-csv` 配下のみ `style-src 'self' 'unsafe-inline'`**（recharts のインライン style＋Vite の CSS 注入のため）、他ルートは `style-src 'self'`。**`script-src` は全ルート厳格**（dev のみ Vite preamble 用に `'unsafe-inline'`）。TOP に `<script>` を出さないこと・ルート別 CSP はテストが検証している。
+- CSP は単一 middleware でパス分岐: **`/tools/credit-csv` と `/tools/prompt-builder` の配下のみ `style-src 'self' 'unsafe-inline'`**（credit-csv は recharts のインライン style＋Vite の CSS 注入、prompt-builder は @dnd-kit の inline transform のため。共通の `inlineStyleSecureHeaders` を使う）、他ルートは `style-src 'self'`。**`script-src` は全ルート厳格**（dev のみ Vite preamble 用に `'unsafe-inline'`）。TOP に React バンドルを出さないこと（テーマ用 `theme.js` のみ）・ルート別 CSP はテストが検証している。
 - API レスポンスは `{ ok:true, data }` / `{ ok:false, error:{ message } }`。エラーメッセージに内部情報を含めない。
-- サーバー専用の認証情報（KV トークン等）・`node:fs`・storage コードをクライアントバンドルに入れない（`client.tsx → CreditCsvApp → api.ts` の依存に storage を混ぜない。ビルド後 `src/public/assets/client.js` を grep して混入ゼロを確認できる）。
+- サーバー専用の認証情報（KV トークン等）・`node:fs`・storage コードをクライアントバンドルに入れない（`client.tsx → CreditCsvApp → api.ts` / `client-prompt.tsx → PromptBuilderApp → api.ts` の依存に storage を混ぜない。ビルド後 `src/public/assets/client.js`・`client-prompt.js` を grep して混入ゼロを確認できる）。
 
 ### テスト
 
-vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts は jsdom で完全描画されないため UI テストではモックする。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。
+vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts・@dnd-kit は jsdom で完全描画/ドラッグ再現できないため UI テストではモックし、並べ替えロジックは `lib/notation.ts` の `reorder` など純粋関数を単体で検証する。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。
 
 ## この構成で守ること
 

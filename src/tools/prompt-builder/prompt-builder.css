@@ -1,0 +1,577 @@
+.pbuilder-app {
+  --pbuilder-bg: #f4f7fb;
+  --pbuilder-surface: #ffffff;
+  --pbuilder-border: #d9e2ec;
+  --pbuilder-text: #17212b;
+  --pbuilder-muted: #5b6b7c;
+  --pbuilder-accent: #1769aa;
+  --pbuilder-danger: #b3261e;
+  --pbuilder-success: #2e7d32;
+  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--pbuilder-bg);
+  color: var(--pbuilder-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.pbuilder-app[data-theme="dark"] {
+  --pbuilder-bg: #101820;
+  --pbuilder-surface: #182432;
+  --pbuilder-border: #2b3947;
+  --pbuilder-text: #e7edf3;
+  --pbuilder-muted: #94a3b3;
+  --pbuilder-accent: #4ba3ff;
+  --pbuilder-danger: #ff8a80;
+  --pbuilder-success: #81c784;
+  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
+}
+
+.pbuilder-app * {
+  box-sizing: border-box;
+}
+
+.pbuilder-app button,
+.pbuilder-app input {
+  font: inherit;
+  color: inherit;
+}
+
+.pbuilder-layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.pbuilder-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.pbuilder-menu-button {
+  padding: 0.4rem 0.7rem;
+  background: var(--pbuilder-surface);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.65rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pbuilder-topbar-brand {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.pbuilder-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 45%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.pbuilder-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pbuilder-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 16rem;
+  max-width: 80vw;
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--pbuilder-surface);
+  border-right: 1px solid var(--pbuilder-border);
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+}
+
+.pbuilder-sidebar.is-open {
+  transform: translateX(0);
+}
+
+.pbuilder-back-link {
+  color: var(--pbuilder-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pbuilder-brand {
+  color: var(--pbuilder-text);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.pbuilder-sidebar-brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.pbuilder-theme-toggle {
+  align-self: flex-start;
+  margin-top: auto;
+  flex-shrink: 0;
+  padding: 0.5rem 0.9rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+
+.pbuilder-nav-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pbuilder-nav-tabs a {
+  padding: 0.6rem 0.9rem;
+  color: var(--pbuilder-muted);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 0.65rem;
+}
+
+.pbuilder-nav-tabs a.active {
+  color: #fff;
+  background: var(--pbuilder-accent);
+}
+
+.pbuilder-main {
+  flex: 1;
+  padding: 0 1rem 2rem;
+}
+
+.pbuilder-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pbuilder-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pbuilder-tab-button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  background: var(--pbuilder-surface);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pbuilder-tab-button.is-active {
+  color: #fff;
+  background: var(--pbuilder-accent);
+  border-color: var(--pbuilder-accent);
+}
+
+.pbuilder-tab-badge {
+  display: inline-block;
+  min-width: 1.1rem;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  color: var(--pbuilder-accent);
+  background: var(--pbuilder-surface);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.pbuilder-tab-button.is-active .pbuilder-tab-badge {
+  color: var(--pbuilder-accent);
+  background: #fff;
+}
+
+.pbuilder-panel {
+  padding: 1rem;
+  background: var(--pbuilder-surface);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 1rem;
+  box-shadow: var(--pbuilder-shadow);
+}
+
+.pbuilder-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pbuilder-panel-header h1,
+.pbuilder-panel-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.pbuilder-save-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pbuilder-dirty-badge {
+  color: var(--pbuilder-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pbuilder-app button {
+  padding: 0.5rem 0.9rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.pbuilder-app button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pbuilder-app input[type="text"] {
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.6rem;
+  font-size: 16px;
+}
+
+.pbuilder-app input[type="text"]:focus-visible {
+  outline: 2px solid var(--pbuilder-accent);
+  outline-offset: 1px;
+  border-color: var(--pbuilder-accent);
+}
+
+.pbuilder-status-message {
+  margin: 0.85rem 0;
+  padding: 0.85rem 1rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+}
+
+.pbuilder-status-message-error {
+  color: var(--pbuilder-danger);
+  border-color: var(--pbuilder-danger);
+}
+
+/* 保存成功の通知は枠だけ成功色にする（テキスト・背景は既定のまま）。 */
+.pbuilder-status-message-success {
+  border-color: var(--pbuilder-success);
+}
+
+.pbuilder-status-message-error button {
+  margin-left: 0.6rem;
+}
+
+.pbuilder-word-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.85rem 0;
+}
+
+.pbuilder-word-form input {
+  flex: 1;
+}
+
+/* `.pbuilder-app button`（詳細度 0,1,1）が border/background を持つため、単一クラスの
+   `.pbuilder-danger-button`（0,1,0）では負けて枠色が効かない。`.pbuilder-app` を前置して
+   詳細度を上げ、削除ボタンの danger 枠を確実に適用する。 */
+.pbuilder-app .pbuilder-danger-button {
+  color: var(--pbuilder-danger);
+  border-color: var(--pbuilder-danger);
+  background: transparent;
+}
+
+/* 登録（追加）ボタンはアクセント色の枠にする（同じ詳細度の理由で `.pbuilder-app` を前置）。 */
+.pbuilder-app .pbuilder-word-form button[type="submit"] {
+  color: var(--pbuilder-accent);
+  border-color: var(--pbuilder-accent);
+  background: transparent;
+}
+
+.pbuilder-word-list,
+.pbuilder-output-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pbuilder-word-empty,
+.pbuilder-empty {
+  color: var(--pbuilder-muted);
+  font-size: 0.9rem;
+}
+
+.pbuilder-word-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+}
+
+.pbuilder-word-row.is-editing {
+  gap: 0.5rem;
+}
+
+.pbuilder-word-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  /* 説明が長くてもボタンを押し出さず、テキスト側で折り返す（min-width:0 が必須）。 */
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.pbuilder-word-text {
+  font-weight: 700;
+}
+
+.pbuilder-word-description {
+  color: var(--pbuilder-muted);
+  font-size: 0.85rem;
+}
+
+.pbuilder-word-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  /* 長い説明でボタン群が縮まないように固定する（表示行）。 */
+  flex-shrink: 0;
+}
+
+.pbuilder-output-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+  touch-action: none;
+}
+
+.pbuilder-output-item.is-dragging {
+  z-index: 1;
+  box-shadow: var(--pbuilder-shadow);
+}
+
+.pbuilder-drag-handle {
+  padding: 0.3rem 0.5rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pbuilder-output-item-preview {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.pbuilder-weight-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pbuilder-weight-controls button {
+  padding: 0.3rem 0.6rem;
+}
+
+.pbuilder-weight-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.pbuilder-app .pbuilder-icon-button {
+  padding: 0.3rem 0.55rem;
+  color: var(--pbuilder-danger);
+  background: transparent;
+  border: 1px solid var(--pbuilder-border);
+}
+
+.pbuilder-app .pbuilder-icon-button:hover {
+  border-color: var(--pbuilder-danger);
+}
+
+.pbuilder-output-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pbuilder-border);
+}
+
+.pbuilder-output-text {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+  overflow-wrap: break-word;
+  user-select: text;
+}
+
+.pbuilder-output-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pbuilder-copy-feedback {
+  color: var(--pbuilder-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.pbuilder-copy-feedback-error {
+  color: var(--pbuilder-danger);
+}
+
+.pbuilder-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pbuilder-border);
+}
+
+.pbuilder-history h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.pbuilder-history-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pbuilder-history-form input {
+  flex: 1;
+}
+
+.pbuilder-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pbuilder-history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.75rem;
+}
+
+.pbuilder-history-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  /* 長い名前でもボタンを押し出さずラベル側で折り返す（min-width:0 が必須）。 */
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.pbuilder-history-date {
+  color: var(--pbuilder-muted);
+  font-size: 0.85rem;
+}
+
+.pbuilder-history-name {
+  font-weight: 700;
+}
+
+.pbuilder-history-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  /* 長い名前でボタン群が縮まないように固定する。 */
+  flex-shrink: 0;
+}
+
+@media (min-width: 48rem) {
+  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、credit-csv と揃える） */
+  :root {
+    font-size: 130%;
+  }
+
+  .pbuilder-layout {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .pbuilder-topbar,
+  .pbuilder-overlay {
+    display: none;
+  }
+
+  .pbuilder-sidebar {
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+    width: 16rem;
+    max-width: none;
+    height: 100vh;
+    transform: none;
+  }
+
+  .pbuilder-main {
+    padding: 2rem 2rem 2.5rem;
+  }
+
+  /* 編集中（is-editing）はワード/説明の入力欄とボタンを持つため横並びにしない
+     （横並びにすると入力欄が潰れ、保存/キャンセルが折り返して崩れる）。登録フォームと
+     同じく縦積みのままにする。 */
+  .pbuilder-word-row:not(.is-editing),
+  .pbuilder-history-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pbuilder-history-form {
+    flex-direction: row;
+  }
+}

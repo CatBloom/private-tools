@@ -34,5 +34,15 @@ export const TopPage = () =>
           createElement('span', { className: 'top-tool-desc' }, 'クレジットカード利用明細CSVを集計・閲覧する'),
         ),
       ),
+      createElement(
+        'li',
+        null,
+        createElement(
+          'a',
+          { className: 'top-tool-card', href: '/tools/prompt-builder' },
+          createElement('span', { className: 'top-tool-name' }, 'Prompt Builder'),
+          createElement('span', { className: 'top-tool-desc' }, '画像生成プロンプトのワードを管理して組み立てる'),
+        ),
+      ),
     ),
   )
