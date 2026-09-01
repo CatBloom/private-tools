@@ -7,7 +7,6 @@
   --pbuilder-accent: #1769aa;
   --pbuilder-secondary: #0f766e;
   --pbuilder-danger: #b3261e;
-  --pbuilder-success: #2e7d32;
   --pbuilder-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
 
   display: flex;
@@ -27,7 +26,6 @@
   --pbuilder-accent: #4ba3ff;
   --pbuilder-secondary: #2bb3a3;
   --pbuilder-danger: #ff8a80;
-  --pbuilder-success: #81c784;
   --pbuilder-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
 }
 
@@ -280,10 +278,6 @@
   border-color: var(--pbuilder-danger);
 }
 
-/* 保存成功の通知は枠だけ成功色にする（テキスト・背景は既定のまま）。 */
-.pbuilder-status-message-success {
-  border-color: var(--pbuilder-success);
-}
 
 .pbuilder-status-message-error button {
   margin-left: 0.6rem;
