@@ -16,21 +16,36 @@ import { SortableOutputItem } from '../components/SortableOutputItem'
 import { buildOutput, clampWeight, reorder } from '../lib/notation'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
 import type { PromptCategoryId } from '../shared/categories'
+import { DEFAULT_TAG, PROMPT_TAG_IDS, PROMPT_TAG_LABELS, normalizeTag, type PromptTagId } from '../shared/tags'
 import type { HistoryEntry, OutputItem, PromptWord } from '../shared/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 type CopyStatus = 'idle' | 'copied' | 'error'
 type PageTab = 'words' | 'output'
+// '' = 未選択（一覧を隠す）、'ALL' = 全ワード表示、それ以外 = そのタグのみ表示。永続化しない。
+type TagFilter = PromptTagId | 'ALL' | ''
 
 // ワード編集が止まってからこの時間だけアイドルしたら自動保存する（KV書き込み枠節約のためのデバウンス）
 const AUTO_SAVE_DELAY_MS = 30_000
 
-const createWord = (text: string, description: string): PromptWord => ({
+const createWord = (text: string, description: string, tag: PromptTagId): PromptWord => ({
   id: crypto.randomUUID(),
   text: text.trim(),
   description: description.trim(),
+  tag,
 })
+
+// 登録・編集・絞り込みの各タグセレクトで共通の選択肢。プレースホルダや ALL は各 select 側で持つ。
+const TagOptions = () => (
+  <>
+    {PROMPT_TAG_IDS.map((tag) => (
+      <option key={tag} value={tag}>
+        {PROMPT_TAG_LABELS[tag]}
+      </option>
+    ))}
+  </>
+)
 
 const formatHistoryDate = (isoDate: string) => {
   const date = new Date(isoDate)
@@ -68,10 +83,16 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
 
   const [newText, setNewText] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  // プレースホルダ（未選択）を許すため '' を含む。登録時に '' なら弾く（後述 handleAddWord）。
+  const [newTag, setNewTag] = useState<PromptTagId | ''>('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editTag, setEditTag] = useState<PromptTagId>(DEFAULT_TAG)
+
+  // タグでの絞り込み。永続化しない（リロードのたびに未選択＝一覧非表示に戻る）。
+  const [filterTag, setFilterTag] = useState<TagFilter>('')
 
   const [outputItems, setOutputItems] = useState<OutputItem[]>(() => readOutputItems(category))
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle')
@@ -86,6 +107,10 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
   const historySaveStatusRef = useRef(historySaveStatus)
   historySaveStatusRef.current = historySaveStatus
 
+  // 履歴の名前だけをインライン編集する（historyName は新規保存フォーム用なので別 state）。
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
+  const [editHistoryName, setEditHistoryName] = useState('')
+
   const loadWords = useCallback(async () => {
     setLoadStatus('loading')
     setLoadError(null)
@@ -93,7 +118,8 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
       const data = await getWords(category)
       // 読み込み中にユーザーが編集し始めていたら（dirty）、その編集を初期データで上書きしない。
       if (!dirtyRef.current) {
-        setWords(data)
+        // タグ無し（旧データ）を安全側の既定タグへ寄せてから state に入れる。
+        setWords(data.map((word) => ({ ...word, tag: normalizeTag(word.tag) })))
         setSaveStatus('idle')
       }
       setLoadStatus('ready')
@@ -151,11 +177,16 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     if (loadStatus !== 'ready') return
     const text = newText.trim()
     if (!text) return
+    if (newTag === '') {
+      showAlert('error', 'タグを選択してください')
+      return
+    }
 
-    setWords((current) => [...current, createWord(text, newDescription)])
+    setWords((current) => [...current, createWord(text, newDescription, newTag)])
     markWordsDirty()
     setNewText('')
     setNewDescription('')
+    setNewTag('')
     showAlert('success', '追加しました')
   }
 
@@ -163,6 +194,7 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     setEditingId(word.id)
     setEditText(word.text)
     setEditDescription(word.description)
+    setEditTag(word.tag)
   }
 
   const cancelEdit = () => setEditingId(null)
@@ -172,11 +204,28 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     if (!text) return
 
     setWords((current) =>
-      current.map((word) => (word.id === id ? { ...word, text, description: editDescription.trim() } : word)),
+      current.map((word) => (word.id === id ? { ...word, text, description: editDescription.trim(), tag: editTag } : word)),
     )
     markWordsDirty()
     setEditingId(null)
   }
+
+  // フィルタ選択に応じて表示するワードを絞り込む。未選択（''）は一覧を隠すシグナルとして null を返す。
+  const visibleWords = useMemo(() => {
+    if (filterTag === '') return null
+    if (filterTag === 'ALL') return words
+    return words.filter((word) => word.tag === filterTag)
+  }, [words, filterTag])
+
+  // ALL 表示専用: タグごとにグループ化する（並び順は PROMPT_TAG_IDS の固定順、並び替えなし）。
+  // 0件のタグは描画しないのでここで除外しておく。
+  const groupedWords = useMemo(
+    () =>
+      PROMPT_TAG_IDS.map((tag) => ({ tag, words: words.filter((word) => word.tag === tag) })).filter(
+        (group) => group.words.length > 0,
+      ),
+    [words],
+  )
 
   const deleteWord = async (id: string) => {
     const confirmed = await confirm('このワードを削除しますか？', { title: '削除', danger: true })
@@ -311,6 +360,37 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
     }
   }
 
+  const startEditHistory = (entry: HistoryEntry) => {
+    if (historyLoadStatus !== 'ready') return
+    setEditingHistoryId(entry.id)
+    setEditHistoryName(entry.name)
+  }
+
+  const cancelEditHistory = () => setEditingHistoryId(null)
+
+  const renameHistoryEntry = async (id: string) => {
+    if (historyLoadStatus !== 'ready') return
+
+    // name のみ書き換える。items/createdAt/id はそのまま維持する。
+    const updated = historyEntries.map((entry) =>
+      entry.id === id ? { ...entry, name: editHistoryName.trim() } : entry,
+    )
+    setHistorySaveStatus('saving')
+    setHistorySaveError(null)
+    try {
+      const saved = await putHistory(category, updated)
+      setHistoryEntries(saved)
+      setEditingHistoryId(null)
+      setHistorySaveStatus('idle')
+      showAlert('success', '名前を変更しました')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '名前の変更に失敗しました。'
+      setHistorySaveError(message)
+      setHistorySaveStatus('error')
+      showAlert('error', message)
+    }
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
@@ -349,6 +429,63 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
       setCopyStatus('error')
     }
   }
+
+  // ワード一行の描画。ALL 表示（タググループ内）と単一タグ絞り込み（フラット表示）の両方で使う。
+  const renderWordRow = (word: PromptWord) =>
+    editingId === word.id ? (
+      <li key={word.id} className="pbuilder-word-row is-editing">
+        <input
+          type="text"
+          aria-label="ワード"
+          value={editText}
+          onChange={(event) => setEditText(event.target.value)}
+        />
+        <div className="pbuilder-word-form-row">
+          <input
+            type="text"
+            aria-label="説明"
+            value={editDescription}
+            onChange={(event) => setEditDescription(event.target.value)}
+          />
+          <select
+            aria-label="タグ"
+            className="pbuilder-tag-select"
+            value={editTag}
+            onChange={(event) => setEditTag(event.target.value as PromptTagId)}
+          >
+            <TagOptions />
+          </select>
+        </div>
+        <div className="pbuilder-word-row-actions">
+          <button type="button" disabled={!editText.trim()} onClick={() => commitEdit(word.id)}>
+            保存
+          </button>
+          <button type="button" onClick={cancelEdit}>
+            キャンセル
+          </button>
+        </div>
+      </li>
+    ) : (
+      <li key={word.id} className="pbuilder-word-row">
+        <div className="pbuilder-word-row-text">
+          <span className="pbuilder-word-text">{word.text}</span>
+          {word.description ? <span className="pbuilder-word-description">{word.description}</span> : null}
+        </div>
+        <div className="pbuilder-word-row-actions">
+          <button type="button" onClick={() => addToOutput(word)}>
+            出力に追加
+          </button>
+          <div className="pbuilder-word-row-actions-secondary">
+            <button type="button" onClick={() => startEdit(word)}>
+              編集
+            </button>
+            <button type="button" className="pbuilder-danger-button" onClick={() => deleteWord(word.id)}>
+              削除
+            </button>
+          </div>
+        </div>
+      </li>
+    )
 
   return (
     <div className="pbuilder-page-stack">
@@ -400,14 +537,28 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
             disabled={loadStatus !== 'ready'}
             onChange={(event) => setNewText(event.target.value)}
           />
-          <input
-            type="text"
-            placeholder="説明（任意）"
-            aria-label="説明"
-            value={newDescription}
-            disabled={loadStatus !== 'ready'}
-            onChange={(event) => setNewDescription(event.target.value)}
-          />
+          <div className="pbuilder-word-form-row">
+            <input
+              type="text"
+              placeholder="説明（任意）"
+              aria-label="説明"
+              value={newDescription}
+              disabled={loadStatus !== 'ready'}
+              onChange={(event) => setNewDescription(event.target.value)}
+            />
+            <select
+              aria-label="タグ"
+              className="pbuilder-tag-select"
+              value={newTag}
+              disabled={loadStatus !== 'ready'}
+              onChange={(event) => setNewTag(event.target.value as PromptTagId | '')}
+            >
+              <option value="" disabled>
+                タグを選択してください
+              </option>
+              <TagOptions />
+            </select>
+          </div>
           <button type="submit" disabled={loadStatus !== 'ready' || !newText.trim()}>
             追加
           </button>
@@ -424,55 +575,46 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
         ) : null}
 
         {loadStatus === 'ready' ? (
-          <ul className="pbuilder-word-list">
-            {words.map((word) =>
-              editingId === word.id ? (
-                <li key={word.id} className="pbuilder-word-row is-editing">
-                  <input
-                    type="text"
-                    aria-label="ワード"
-                    value={editText}
-                    onChange={(event) => setEditText(event.target.value)}
-                  />
-                  <input
-                    type="text"
-                    aria-label="説明"
-                    value={editDescription}
-                    onChange={(event) => setEditDescription(event.target.value)}
-                  />
-                  <div className="pbuilder-word-row-actions">
-                    <button type="button" disabled={!editText.trim()} onClick={() => commitEdit(word.id)}>
-                      保存
-                    </button>
-                    <button type="button" onClick={cancelEdit}>
-                      キャンセル
-                    </button>
-                  </div>
-                </li>
+          <>
+            <div className="pbuilder-word-filter">
+              <select
+                aria-label="タグで絞り込み"
+                className="pbuilder-tag-filter-select"
+                value={filterTag}
+                onChange={(event) => setFilterTag(event.target.value as TagFilter)}
+              >
+                <option value="">タグで絞り込み</option>
+                <option value="ALL">ALL</option>
+                <TagOptions />
+              </select>
+            </div>
+
+            {visibleWords === null ? (
+              <p className="pbuilder-word-empty">タグを選択してください。</p>
+            ) : filterTag === 'ALL' ? (
+              groupedWords.length === 0 ? (
+                <p className="pbuilder-word-empty">ワードが登録されていません。</p>
               ) : (
-                <li key={word.id} className="pbuilder-word-row">
-                  <div className="pbuilder-word-row-text">
-                    <span className="pbuilder-word-text">{word.text}</span>
-                    {word.description ? <span className="pbuilder-word-description">{word.description}</span> : null}
-                  </div>
-                  <div className="pbuilder-word-row-actions">
-                    <button type="button" onClick={() => addToOutput(word)}>
-                      出力に追加
-                    </button>
-                    <div className="pbuilder-word-row-actions-secondary">
-                      <button type="button" onClick={() => startEdit(word)}>
-                        編集
-                      </button>
-                      <button type="button" className="pbuilder-danger-button" onClick={() => deleteWord(word.id)}>
-                        削除
-                      </button>
+                <div className="pbuilder-tag-groups">
+                  {groupedWords.map((group) => (
+                    <div key={group.tag} className="pbuilder-tag-group">
+                      <div className="pbuilder-tag-group-header">
+                        <h3>{PROMPT_TAG_LABELS[group.tag]}</h3>
+                      </div>
+                      <ul className="pbuilder-word-list">{group.words.map((word) => renderWordRow(word))}</ul>
                     </div>
-                  </div>
-                </li>
-              ),
+                  ))}
+                </div>
+              )
+            ) : (
+              <ul className="pbuilder-word-list">
+                {visibleWords.map((word) => renderWordRow(word))}
+                {visibleWords.length === 0 ? (
+                  <li className="pbuilder-word-empty">該当するワードがありません。</li>
+                ) : null}
+              </ul>
             )}
-            {words.length === 0 ? <li className="pbuilder-word-empty">ワードが登録されていません。</li> : null}
-          </ul>
+          </>
         ) : null}
       </section>
       ) : null}
@@ -559,27 +701,53 @@ export const CategoryPage = ({ category }: { category: PromptCategoryId }) => {
 
           {historyLoadStatus === 'ready' ? (
             <ul className="pbuilder-history-list">
-              {historyEntries.map((entry) => (
-                <li key={entry.id} className="pbuilder-history-row">
-                  <div className="pbuilder-history-label">
-                    <span className="pbuilder-history-date">{formatHistoryDate(entry.createdAt)}</span>
-                    {entry.name ? <span className="pbuilder-history-name">{entry.name}</span> : null}
-                  </div>
-                  <div className="pbuilder-history-row-actions">
-                    <button type="button" onClick={() => restoreHistoryEntry(entry)}>
-                      復元
-                    </button>
-                    <button
-                      type="button"
-                      className="pbuilder-danger-button"
-                      disabled={historySaveStatus === 'saving'}
-                      onClick={() => deleteHistoryEntry(entry.id)}
-                    >
-                      削除
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {historyEntries.map((entry) =>
+                editingHistoryId === entry.id ? (
+                  <li key={entry.id} className="pbuilder-history-row is-editing">
+                    <input
+                      type="text"
+                      aria-label="履歴名"
+                      value={editHistoryName}
+                      onChange={(event) => setEditHistoryName(event.target.value)}
+                    />
+                    <div className="pbuilder-history-row-actions">
+                      <button type="button" disabled={historySaveStatus === 'saving'} onClick={() => renameHistoryEntry(entry.id)}>
+                        保存
+                      </button>
+                      <button type="button" onClick={cancelEditHistory}>
+                        キャンセル
+                      </button>
+                    </div>
+                  </li>
+                ) : (
+                  <li key={entry.id} className="pbuilder-history-row">
+                    <div className="pbuilder-history-label">
+                      <span className="pbuilder-history-date">{formatHistoryDate(entry.createdAt)}</span>
+                      {entry.name ? <span className="pbuilder-history-name">{entry.name}</span> : null}
+                    </div>
+                    <div className="pbuilder-history-row-actions">
+                      <button type="button" onClick={() => restoreHistoryEntry(entry)}>
+                        復元
+                      </button>
+                      <button
+                        type="button"
+                        disabled={historySaveStatus === 'saving'}
+                        onClick={() => startEditHistory(entry)}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        className="pbuilder-danger-button"
+                        disabled={historySaveStatus === 'saving'}
+                        onClick={() => deleteHistoryEntry(entry.id)}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </li>
+                ),
+              )}
               {historyEntries.length === 0 ? <li className="pbuilder-word-empty">保存履歴はありません。</li> : null}
             </ul>
           ) : null}

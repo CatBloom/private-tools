@@ -53,7 +53,7 @@ describe('prompt word routes', () => {
   })
 
   it('puts words and returns them from a subsequent get', async () => {
-    const words = [{ id: '1', text: 'foo', description: 'a foo word' }]
+    const words = [{ id: '1', text: 'foo', description: 'a foo word', tag: 'quality' }]
     const putResponse = await request('/words/character-prompt', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -93,6 +93,37 @@ describe('prompt word routes', () => {
     })
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid words payload.' } })
+  })
+
+  it('rejects a word with no tag', async () => {
+    const response = await request('/words/base-prompt', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ words: [{ id: '1', text: 'foo', description: '' }] }),
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid words payload.' } })
+  })
+
+  it('rejects a word with an invalid tag', async () => {
+    const response = await request('/words/base-prompt', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ words: [{ id: '1', text: 'foo', description: '', tag: 'not-a-tag' }] }),
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid words payload.' } })
+  })
+
+  it('accepts a word with a valid tag', async () => {
+    const words = [{ id: '1', text: 'foo', description: '', tag: 'pose' }]
+    const response = await request('/words/base-prompt', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ words }),
+    })
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true, data: { words } })
   })
 
   it('rejects a put whose words value is not an array', async () => {

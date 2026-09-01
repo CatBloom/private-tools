@@ -23,7 +23,7 @@ describe('LocalPromptStorage', () => {
   })
 
   it('round-trips putWords and getWords through real file I/O', async () => {
-    const words = [{ id: '1', text: 'foo', description: 'a foo word' }]
+    const words = [{ id: '1', text: 'foo', description: 'a foo word', tag: 'others' as const }]
 
     const put = await storage.putWords('character-prompt', words)
     expect(put).toEqual(words)
@@ -34,7 +34,7 @@ describe('LocalPromptStorage', () => {
 
   it('creates the storage directory on demand', async () => {
     const nestedStorage = new LocalPromptStorage(join(dir, 'nested', 'deep'))
-    await nestedStorage.putWords('base-prompt', [{ id: '1', text: 'x', description: '' }])
+    await nestedStorage.putWords('base-prompt', [{ id: '1', text: 'x', description: '', tag: 'others' }])
     expect(await nestedStorage.getWords('base-prompt')).toHaveLength(1)
   })
 

@@ -62,7 +62,7 @@ describe('CloudflareKvPromptStorage', () => {
   it('puts words with the expected URL, method, and body', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
     const storage = new CloudflareKvPromptStorage(config)
-    const words = [{ id: '1', text: 'foo', description: 'bar' }]
+    const words = [{ id: '1', text: 'foo', description: 'bar', tag: 'others' as const }]
 
     const result = await storage.putWords('character-negative', words)
 

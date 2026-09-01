@@ -36,7 +36,8 @@
 }
 
 .pbuilder-app button,
-.pbuilder-app input {
+.pbuilder-app input,
+.pbuilder-app select {
   font: inherit;
   color: inherit;
 }
@@ -299,6 +300,51 @@
   flex: 1;
 }
 
+/* 説明とタグを横並びにする（説明:タグ ≒ 3:1）。登録フォーム・インライン編集の両方で使う。 */
+.pbuilder-word-form-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.pbuilder-word-form-row input {
+  flex: 3;
+}
+
+.pbuilder-word-form-row .pbuilder-tag-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.pbuilder-app select.pbuilder-tag-select,
+.pbuilder-app select.pbuilder-tag-filter-select {
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  color: var(--pbuilder-text);
+  background: var(--pbuilder-bg);
+  border: 1px solid var(--pbuilder-border);
+  border-radius: 0.6rem;
+  font-size: 16px;
+}
+
+.pbuilder-app select.pbuilder-tag-select {
+  min-width: 6rem;
+  max-width: 12rem;
+}
+
+/* <option> はブラウザ既定の配色になりがちなので、ライト/ダーク両テーマで読めるよう明示する。 */
+.pbuilder-app select option {
+  color: var(--pbuilder-text);
+  background: var(--pbuilder-surface);
+}
+
+.pbuilder-word-filter {
+  margin: 0.85rem 0;
+}
+
+.pbuilder-app select.pbuilder-tag-filter-select {
+  width: 100%;
+}
+
 /* `.pbuilder-app button`（詳細度 0,1,1）が border/background を持つため、単一クラスの
    `.pbuilder-danger-button`（0,1,0）では負けて枠色が効かない。`.pbuilder-app` を前置して
    詳細度を上げ、削除ボタンの danger 枠を確実に適用する。 */
@@ -380,6 +426,30 @@
   display: flex;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+/* ALL 絞り込み時のタグ別グループ表示（並び替えなし・見出しのみ）。 */
+.pbuilder-tag-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pbuilder-tag-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pbuilder-tag-group-header {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--pbuilder-border);
+}
+
+.pbuilder-tag-group-header h3 {
+  margin: 0;
+  color: var(--pbuilder-muted);
+  font-size: 0.9rem;
 }
 
 .pbuilder-output-item {
@@ -592,11 +662,11 @@
     padding: 2rem 2rem 2.5rem;
   }
 
-  /* 編集中（is-editing）はワード/説明の入力欄とボタンを持つため横並びにしない
+  /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない
      （横並びにすると入力欄が潰れ、保存/キャンセルが折り返して崩れる）。登録フォームと
-     同じく縦積みのままにする。 */
+     同じく縦積みのままにする。履歴の名前変更も同じ理由で is-editing を除外する。 */
   .pbuilder-word-row:not(.is-editing),
-  .pbuilder-history-row {
+  .pbuilder-history-row:not(.is-editing) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;

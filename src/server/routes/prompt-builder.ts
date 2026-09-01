@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { isPromptCategoryId } from '../../tools/prompt-builder/shared/categories.js'
+import { isPromptTagId } from '../../tools/prompt-builder/shared/tags.js'
 import type { HistoryEntry, OutputItem, PromptWord } from '../../tools/prompt-builder/shared/types.js'
 import { selectPromptHistoryStorage, selectPromptStorage } from '../prompt-storage/index.js'
 import type { PromptHistoryStorage, PromptWordStorage } from '../prompt-storage/index.js'
@@ -32,7 +33,9 @@ const isPromptWord = (value: unknown): value is PromptWord =>
   typeof (value as PromptWord).text === 'string' &&
   typeof (value as PromptWord).description === 'string' &&
   (value as PromptWord).text.length <= MAX_WORD_TEXT_LENGTH &&
-  (value as PromptWord).description.length <= MAX_WORD_DESCRIPTION_LENGTH
+  (value as PromptWord).description.length <= MAX_WORD_DESCRIPTION_LENGTH &&
+  typeof (value as PromptWord).tag === 'string' &&
+  isPromptTagId((value as PromptWord).tag)
 
 const isPromptWordArray = (value: unknown): value is PromptWord[] =>
   Array.isArray(value) && value.length <= MAX_WORDS_PER_CATEGORY && value.every(isPromptWord)

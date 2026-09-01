@@ -16,6 +16,14 @@ const renderPage = () =>
     </AlertProvider>,
   )
 
+// ワード一覧はタグフィルタで「ALL」を選ぶまで非表示なので、一覧を操作するテストは
+// まずこれで全件表示にしてから進める（読み込み完了の待ち合わせも兼ねる）。
+const showAllWords = async () => {
+  const filterSelect = await screen.findByLabelText('タグで絞り込み')
+  fireEvent.change(filterSelect, { target: { value: 'ALL' } })
+  return screen.findByText('cat girl')
+}
+
 vi.mock('../api', () => ({
   getWords: vi.fn(),
   putWords: vi.fn(),
@@ -51,8 +59,8 @@ vi.mock('@dnd-kit/sortable', () => ({
 }))
 
 const sampleWords: PromptWord[] = [
-  { id: 'w1', text: 'cat girl', description: 'ネコ耳キャラ' },
-  { id: 'w2', text: 'blue sky', description: '' },
+  { id: 'w1', text: 'cat girl', description: 'ネコ耳キャラ', tag: 'illustrator' },
+  { id: 'w2', text: 'blue sky', description: '', tag: 'quality' },
 ]
 
 describe('CategoryPage', () => {
@@ -72,7 +80,7 @@ describe('CategoryPage', () => {
   it('switches between the words tab and the output tab', async () => {
     renderPage()
 
-    await screen.findByText('cat girl')
+    await screen.findByLabelText('タグで絞り込み')
     expect(screen.getByRole('tab', { name: 'ワード' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.queryByText('出力欄')).not.toBeInTheDocument()
 
@@ -83,10 +91,45 @@ describe('CategoryPage', () => {
     expect(screen.queryByText('ワード一覧')).not.toBeInTheDocument()
   })
 
-  it('loads words and adds a selected word to the output preview', async () => {
+  it('hides the word list until a tag is selected, then filters by ALL or a specific tag', async () => {
     renderPage()
 
+    const filterSelect = await screen.findByLabelText('タグで絞り込み')
+    expect(screen.getByText('タグを選択してください。')).toBeInTheDocument()
+    expect(screen.queryByText('cat girl')).not.toBeInTheDocument()
+
+    fireEvent.change(filterSelect, { target: { value: 'ALL' } })
     expect(await screen.findByText('cat girl')).toBeInTheDocument()
+    expect(screen.getByText('blue sky')).toBeInTheDocument()
+
+    fireEvent.change(filterSelect, { target: { value: 'illustrator' } })
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+    expect(screen.queryByText('blue sky')).not.toBeInTheDocument()
+  })
+
+  it('groups words by tag with headings in the fixed order when ALL is selected, and has no reorder controls', async () => {
+    renderPage()
+    await showAllWords()
+
+    // 固定順は angle, composition, expression, illustrator, pose, quality, situation, others。
+    // 0件のタグは見出しごと出さないので、sampleWords に存在する illustrator/quality のみ表示される。
+    expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      'illustrator',
+      'quality',
+    ])
+    expect(screen.queryByRole('button', { name: '上へ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '下へ' })).not.toBeInTheDocument()
+
+    const illustratorGroup = screen.getByRole('heading', { name: 'illustrator' }).closest('.pbuilder-tag-group')!
+    expect(within(illustratorGroup as HTMLElement).getByText('cat girl')).toBeInTheDocument()
+
+    const qualityGroup = screen.getByRole('heading', { name: 'quality' }).closest('.pbuilder-tag-group')!
+    expect(within(qualityGroup as HTMLElement).getByText('blue sky')).toBeInTheDocument()
+  })
+
+  it('loads words and adds a selected word to the output preview', async () => {
+    renderPage()
+    await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
@@ -98,8 +141,8 @@ describe('CategoryPage', () => {
 
   it('reflects weight changes in the output preview', async () => {
     renderPage()
+    await showAllWords()
 
-    await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
 
@@ -123,15 +166,30 @@ describe('CategoryPage', () => {
     expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
 
     resolveLoad(sampleWords)
-    await screen.findByText('cat girl')
+    await screen.findByLabelText('タグで絞り込み')
     expect(screen.getByLabelText('ワード')).toBeEnabled()
+  })
+
+  it('requires a tag to be selected before adding a word', async () => {
+    renderPage()
+    await showAllWords()
+
+    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'no tag word' } })
+    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+    // 「タグを選択してください」は未選択オプション（プレースホルダ）のラベルとも重複するため、
+    // トーストのメッセージ要素に絞って探す。
+    expect(await screen.findByText('タグを選択してください', { selector: '.fbk-alert-message' })).toBeInTheDocument()
+    expect(screen.queryByText('no tag word')).not.toBeInTheDocument()
+    expect(putWords).not.toHaveBeenCalled()
   })
 
   it('saves the current word list via putWords', async () => {
     renderPage()
+    await showAllWords()
 
-    await screen.findByText('cat girl')
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
+    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
     fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
     const saveButton = await screen.findByRole('button', { name: '保存' })
@@ -141,6 +199,7 @@ describe('CategoryPage', () => {
     const [category, words] = vi.mocked(putWords).mock.calls[0]
     expect(category).toBe('base-prompt')
     expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'new word'])
+    expect(words.map((word) => word.tag)).toEqual(['illustrator', 'quality', 'pose'])
     // 手動保存は成功トーストを出す
     expect(await screen.findByText('保存しました')).toBeInTheDocument()
   })
@@ -150,8 +209,8 @@ describe('CategoryPage', () => {
     Object.assign(navigator, { clipboard: { writeText } })
 
     renderPage()
+    await showAllWords()
 
-    await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
 
@@ -167,8 +226,8 @@ describe('CategoryPage', () => {
 
   it('saves the current output as a named history entry via putHistory', async () => {
     renderPage()
+    await showAllWords()
 
-    await screen.findByText('cat girl')
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
 
@@ -189,7 +248,7 @@ describe('CategoryPage', () => {
   it('disables saving history when the output is empty', async () => {
     renderPage()
 
-    await screen.findByText('cat girl')
+    await screen.findByLabelText('タグで絞り込み')
     fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
 
     expect(await screen.findByRole('button', { name: '履歴に保存' })).toBeDisabled()
@@ -231,10 +290,11 @@ describe('CategoryPage', () => {
     fireEvent.click(firstDelete)
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
-    // While the PUT is pending, every delete button is disabled so a second click
-    // cannot race on a stale history array.
+    // While the PUT is pending, every delete/rename-start button is disabled so a second
+    // click cannot race on a stale history array.
     await waitFor(() => {
       screen.getAllByRole('button', { name: '削除' }).forEach((button) => expect(button).toBeDisabled())
+      screen.getAllByRole('button', { name: '編集' }).forEach((button) => expect(button).toBeDisabled())
     })
 
     resolvePut(entries.filter((entry) => entry.id !== 'h1'))
@@ -283,9 +343,58 @@ describe('CategoryPage', () => {
     expect(screen.getByText('saved set', { exact: false })).toBeInTheDocument()
   })
 
+  it("renames a history entry's name via putHistory, keeping its items intact", async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
+    await screen.findByText('saved set', { exact: false })
+
+    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
+    fireEvent.change(nameInput, { target: { value: 'renamed set' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => expect(putHistory).toHaveBeenCalledTimes(1))
+    expect(putHistory).toHaveBeenCalledWith('base-prompt', [{ ...entry, name: 'renamed set' }])
+    expect(await screen.findByText('renamed set', { exact: false })).toBeInTheDocument()
+    expect(await screen.findByText('名前を変更しました')).toBeInTheDocument()
+  })
+
+  it('does not change the history entry name when the rename is cancelled', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('tab', { name: /^出力/ }))
+    await screen.findByText('saved set', { exact: false })
+
+    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
+    fireEvent.change(nameInput, { target: { value: 'renamed set' } })
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
+
+    expect(putHistory).not.toHaveBeenCalled()
+    expect(screen.getByText('saved set', { exact: false })).toBeInTheDocument()
+    expect(screen.queryByText('renamed set', { exact: false })).not.toBeInTheDocument()
+  })
+
   it('deletes a word after confirmation and shows a success toast', async () => {
     renderPage()
-    await screen.findByText('cat girl')
+    await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
@@ -297,7 +406,7 @@ describe('CategoryPage', () => {
 
   it('does not delete a word when the delete confirmation is cancelled', async () => {
     renderPage()
-    await screen.findByText('cat girl')
+    await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
     fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
@@ -308,9 +417,10 @@ describe('CategoryPage', () => {
 
   it('shows a success toast after adding a word', async () => {
     renderPage()
-    await screen.findByText('cat girl')
+    await showAllWords()
 
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
+    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
     fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
     expect(await screen.findByText('追加しました')).toBeInTheDocument()
@@ -318,7 +428,7 @@ describe('CategoryPage', () => {
 
   it('shows an info toast and does not add a duplicate when the same word is added to the output twice', async () => {
     renderPage()
-    await screen.findByText('cat girl')
+    await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
     const addButton = within(wordRow).getByRole('button', { name: '出力に追加' })
@@ -346,9 +456,10 @@ describe('CategoryPage', () => {
 
     it('auto-saves once after the debounce delay from the last change', async () => {
       renderPage()
-      await screen.findByText('cat girl')
+      await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'auto word' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       expect(putWords).not.toHaveBeenCalled()
@@ -365,15 +476,17 @@ describe('CategoryPage', () => {
 
     it('resets the debounce timer while changes keep happening', async () => {
       renderPage()
-      await screen.findByText('cat girl')
+      await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 1回目の変更からアイドルが完了する直前
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 2回目の変更でタイマーがリセットされるので、そこからアイドル完了までは発火しない
@@ -389,9 +502,10 @@ describe('CategoryPage', () => {
       vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
 
       renderPage()
-      await screen.findByText('cat girl')
+      await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -404,6 +518,7 @@ describe('CategoryPage', () => {
 
       // 次のワード編集で自動保存が再アームされる
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
       expect(putWords).toHaveBeenCalledTimes(2)
@@ -411,9 +526,10 @@ describe('CategoryPage', () => {
 
     it('does not double-save when a manual save happens before the debounce fires', async () => {
       renderPage()
-      await screen.findByText('cat girl')
+      await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'manual word' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       const saveButton = await screen.findByRole('button', { name: '保存' })
@@ -432,9 +548,10 @@ describe('CategoryPage', () => {
       )
 
       renderPage()
-      await screen.findByText('cat girl')
+      await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -442,6 +559,7 @@ describe('CategoryPage', () => {
 
       // 保存の通信中にユーザーが別のワードを追加する
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 古いスナップショットの結果（空配列）を返しても、通信中に足した 'second' は消えない

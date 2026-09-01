@@ -1,7 +1,10 @@
+import type { PromptTagId } from './tags'
+
 export type PromptWord = {
   id: string
   text: string
   description: string
+  tag: PromptTagId
 }
 
 // weight: 正=`{}` の重ね掛け段数、負=`[]` の段数、0=素。
