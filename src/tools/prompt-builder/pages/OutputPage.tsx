@@ -13,6 +13,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { getHistory, putHistory } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
+import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { buildOutput, clampWeight, reorder } from '../lib/notation'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
 import { PROMPT_TARGET_IDS, PROMPT_TARGET_LABELS, type PromptTargetId } from '../shared/targets'
@@ -23,6 +24,20 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 type CopyStatus = 'idle' | 'copied' | 'error'
 // 履歴一覧の絞り込み。'ALL' は全件表示（既定）、それ以外はその target のみ表示。永続化しない。
 type TargetFilter = PromptTargetId | 'ALL'
+
+const getEntryTarget = (entry: HistoryEntry) => entry.target
+
+// 編集・保存フォーム・絞り込みの各 target セレクトで共通の選択肢（ワード側の TagOptions と同じパターン）。
+// プレースホルダや ALL は各 select 側で持つ。
+const TargetOptions = () => (
+  <>
+    {PROMPT_TARGET_IDS.map((target) => (
+      <option key={target} value={target}>
+        {PROMPT_TARGET_LABELS[target]}
+      </option>
+    ))}
+  </>
+)
 
 const formatHistoryDate = (isoDate: string) => {
   const date = new Date(isoDate)
@@ -204,21 +219,12 @@ export const OutputPage = () => {
     }
   }
 
-  // 絞り込み選択に応じて表示する履歴を絞り込む。
-  const visibleHistoryEntries = useMemo(
-    () => (historyFilterTarget === 'ALL' ? historyEntries : historyEntries.filter((entry) => entry.target === historyFilterTarget)),
-    [historyEntries, historyFilterTarget],
-  )
-
-  // ALL 表示専用: target ごとにグループ化する（並び順は PROMPT_TARGET_IDS の固定順、並び替えなし）。
-  // 0件の target は描画しないのでここで除外しておく。ワード一覧の ALL 表示と同じ構造。
-  const groupedHistoryEntries = useMemo(
-    () =>
-      PROMPT_TARGET_IDS.map((target) => ({
-        target,
-        entries: historyEntries.filter((entry) => entry.target === target),
-      })).filter((group) => group.entries.length > 0),
-    [historyEntries],
+  // 絞り込みと ALL 表示用の target 別グループ化（並び順は PROMPT_TARGET_IDS の固定順・0件 target は除外）。
+  const { visible: visibleHistoryEntries, grouped: groupedHistoryEntries } = useGroupedFilter(
+    historyEntries,
+    PROMPT_TARGET_IDS,
+    getEntryTarget,
+    historyFilterTarget,
   )
 
   const sensors = useSensors(
@@ -259,11 +265,7 @@ export const OutputPage = () => {
             value={editHistoryTarget}
             onChange={(event) => setEditHistoryTarget(event.target.value as PromptTargetId)}
           >
-            {PROMPT_TARGET_IDS.map((target) => (
-              <option key={target} value={target}>
-                {PROMPT_TARGET_LABELS[target]}
-              </option>
-            ))}
+            <TargetOptions />
           </select>
         </div>
         <div className="pbuilder-history-row-actions">
@@ -386,11 +388,7 @@ export const OutputPage = () => {
                 <option value="" disabled>
                   保存先を選択してください
                 </option>
-                {PROMPT_TARGET_IDS.map((target) => (
-                  <option key={target} value={target}>
-                    {PROMPT_TARGET_LABELS[target]}
-                  </option>
-                ))}
+                <TargetOptions />
               </select>
             </div>
             <button
@@ -432,11 +430,7 @@ export const OutputPage = () => {
                   onChange={(event) => setHistoryFilterTarget(event.target.value as TargetFilter)}
                 >
                   <option value="ALL">ALL</option>
-                  {PROMPT_TARGET_IDS.map((target) => (
-                    <option key={target} value={target}>
-                      {PROMPT_TARGET_LABELS[target]}
-                    </option>
-                  ))}
+                  <TargetOptions />
                 </select>
               </div>
 
@@ -446,11 +440,11 @@ export const OutputPage = () => {
                 ) : (
                   <div className="pbuilder-tag-groups">
                     {groupedHistoryEntries.map((group) => (
-                      <div key={group.target} className="pbuilder-tag-group">
+                      <div key={group.id} className="pbuilder-tag-group">
                         <div className="pbuilder-tag-group-header">
-                          <h3>{PROMPT_TARGET_LABELS[group.target]}</h3>
+                          <h3>{PROMPT_TARGET_LABELS[group.id]}</h3>
                         </div>
-                        <ul className="pbuilder-history-list">{group.entries.map((entry) => renderHistoryRow(entry))}</ul>
+                        <ul className="pbuilder-history-list">{group.items.map((entry) => renderHistoryRow(entry))}</ul>
                       </div>
                     ))}
                   </div>

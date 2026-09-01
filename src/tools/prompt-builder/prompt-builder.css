@@ -539,11 +539,11 @@
 
   /* サイドバー廃止で本文が広がりすぎるため、PCではほどよい幅で中央寄せにする。
      ヘッダーは背景（.pbuilder-app）が全幅のまま、内側の要素だけ本文と同じ幅に揃える。 */
-  .tool-header,
-  .pbuilder-tabs,
-  .pbuilder-main {
-    /* 親（.pbuilder-layout）が flex column のため、auto マージンだけだと stretch が
-       効かなくなり中身幅に縮む。width:100% で全幅→max-width で頭打ちにする。 */
+  /* .pbuilder-layout の直下はヘッダー（共有 ToolHeader）・ナビタブ・本文の3つ。共有コンポーネントの
+     クラス名（.tool-header）に依存しないよう、子セレクタでまとめて幅を制限する。
+     親が flex column のため、auto マージンだけだと stretch が効かなくなり中身幅に縮む。
+     width:100% で全幅→max-width で頭打ちにする。 */
+  .pbuilder-layout > * {
     width: 100%;
     max-width: 1040px;
     margin-inline: auto;

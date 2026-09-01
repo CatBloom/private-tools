@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { getWords, putWords } from '../api'
+import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
 import { DEFAULT_TAG, PROMPT_TAG_IDS, PROMPT_TAG_LABELS, normalizeTag, type PromptTagId } from '../shared/tags'
 import type { PromptWord } from '../shared/types'
@@ -19,6 +20,8 @@ const createWord = (text: string, description: string, tag: PromptTagId): Prompt
   description: description.trim(),
   tag,
 })
+
+const getWordTag = (word: PromptWord) => word.tag
 
 // 登録・編集・絞り込みの各タグセレクトで共通の選択肢。プレースホルダや ALL は各 select 側で持つ。
 const TagOptions = () => (
@@ -128,21 +131,8 @@ export const WordsPage = () => {
     setEditingId(null)
   }
 
-  // フィルタ選択に応じて表示するワードを絞り込む。
-  const visibleWords = useMemo(() => {
-    if (filterTag === 'ALL') return words
-    return words.filter((word) => word.tag === filterTag)
-  }, [words, filterTag])
-
-  // ALL 表示専用: タグごとにグループ化する（並び順は PROMPT_TAG_IDS の固定順、並び替えなし）。
-  // 0件のタグは描画しないのでここで除外しておく。
-  const groupedWords = useMemo(
-    () =>
-      PROMPT_TAG_IDS.map((tag) => ({ tag, words: words.filter((word) => word.tag === tag) })).filter(
-        (group) => group.words.length > 0,
-      ),
-    [words],
-  )
+  // 絞り込みと ALL 表示用のタグ別グループ化（並び順は PROMPT_TAG_IDS の固定順・0件タグは除外）。
+  const { visible: visibleWords, grouped: groupedWords } = useGroupedFilter(words, PROMPT_TAG_IDS, getWordTag, filterTag)
 
   const deleteWord = async (id: string) => {
     const confirmed = await confirm('このワードを削除しますか？', { title: '削除', danger: true })
@@ -354,11 +344,11 @@ export const WordsPage = () => {
               ) : (
                 <div className="pbuilder-tag-groups">
                   {groupedWords.map((group) => (
-                    <div key={group.tag} className="pbuilder-tag-group">
+                    <div key={group.id} className="pbuilder-tag-group">
                       <div className="pbuilder-tag-group-header">
-                        <h3>{PROMPT_TAG_LABELS[group.tag]}</h3>
+                        <h3>{PROMPT_TAG_LABELS[group.id]}</h3>
                       </div>
-                      <ul className="pbuilder-word-list">{group.words.map((word) => renderWordRow(word))}</ul>
+                      <ul className="pbuilder-word-list">{group.items.map((word) => renderWordRow(word))}</ul>
                     </div>
                   ))}
                 </div>
