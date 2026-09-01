@@ -81,3 +81,231 @@ button, input { font: inherit; }
   :root { font-size: 130%; }
   .top-shell { padding: 2rem; }
 }
+
+/* ツールシェルの初期ローディング（React マウント前、#root の初期表示）。
+   TOP ページはこのクラスを使わないため影響しない。 */
+.tool-shell-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 15%);
+}
+
+.tool-shell-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--top-border);
+  border-top-color: var(--top-accent);
+  border-radius: 50%;
+  animation: tool-shell-spin .8s linear infinite;
+}
+
+@keyframes tool-shell-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   共有フィードバック基盤（Alert / Confirm / Spinner）の配色・レイアウト。
+   本番でも確実に読み込まれるよう、常時 link される styles.css に置く
+   （ツール別バンドルだと共有CSSが別チャンクに分割され shell が link しないため、
+    本番でトースト/ダイアログが無スタイルになりページ最下部に出る問題を回避）。
+   light を既定にし、OSダークは @media、ツールの明示テーマは [data-theme] で上書き
+   （明示 light はOSダークより優先＝詳細度が高いので必ず勝つ）。
+   ============================================================ */
+.fbk-alert-stack,
+.fbk-confirm-overlay,
+.fbk-spinner-wrap {
+  --fbk-surface: #ffffff;
+  --fbk-border: #d9e2ec;
+  --fbk-text: #17212b;
+  --fbk-muted: #5b6b7c;
+  --fbk-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 12%);
+  --fbk-success-bg: #e6f4ea;
+  --fbk-success-fg: #1e7d34;
+  --fbk-error-bg: #fdecea;
+  --fbk-error-fg: #b3261e;
+  --fbk-info-bg: #e8f1fb;
+  --fbk-info-fg: #1769aa;
+  --fbk-accent: #1769aa;
+  --fbk-danger: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fbk-alert-stack,
+  .fbk-confirm-overlay,
+  .fbk-spinner-wrap {
+    --fbk-surface: #182432;
+    --fbk-border: #2b3947;
+    --fbk-text: #e7edf3;
+    --fbk-muted: #94a3b3;
+    --fbk-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
+    --fbk-success-bg: #16311f;
+    --fbk-success-fg: #6fcf87;
+    --fbk-error-bg: #3a1c1a;
+    --fbk-error-fg: #ff8a80;
+    --fbk-info-bg: #142c3f;
+    --fbk-info-fg: #4ba3ff;
+    --fbk-accent: #4ba3ff;
+    --fbk-danger: #ff8a80;
+  }
+}
+
+[data-theme="dark"] .fbk-alert-stack,
+[data-theme="dark"] .fbk-confirm-overlay,
+[data-theme="dark"] .fbk-spinner-wrap {
+  --fbk-surface: #182432;
+  --fbk-border: #2b3947;
+  --fbk-text: #e7edf3;
+  --fbk-muted: #94a3b3;
+  --fbk-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
+  --fbk-success-bg: #16311f;
+  --fbk-success-fg: #6fcf87;
+  --fbk-error-bg: #3a1c1a;
+  --fbk-error-fg: #ff8a80;
+  --fbk-info-bg: #142c3f;
+  --fbk-info-fg: #4ba3ff;
+  --fbk-accent: #4ba3ff;
+  --fbk-danger: #ff8a80;
+}
+
+/* 明示 light テーマは OSダークの @media より優先させる（詳細度 0,2,0 > 0,1,0）。 */
+[data-theme="light"] .fbk-alert-stack,
+[data-theme="light"] .fbk-confirm-overlay,
+[data-theme="light"] .fbk-spinner-wrap {
+  --fbk-surface: #ffffff;
+  --fbk-border: #d9e2ec;
+  --fbk-text: #17212b;
+  --fbk-muted: #5b6b7c;
+  --fbk-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 12%);
+  --fbk-success-bg: #e6f4ea;
+  --fbk-success-fg: #1e7d34;
+  --fbk-error-bg: #fdecea;
+  --fbk-error-fg: #b3261e;
+  --fbk-info-bg: #e8f1fb;
+  --fbk-info-fg: #1769aa;
+  --fbk-accent: #1769aa;
+  --fbk-danger: #b3261e;
+}
+
+/* Alert トースト（画面上部中央に固定・縦積み） */
+.fbk-alert-stack {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(90vw, 26rem);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fbk-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--fbk-surface);
+  border: 1px solid var(--fbk-border);
+  border-radius: 0.6rem;
+  box-shadow: var(--fbk-shadow);
+  color: var(--fbk-text);
+  font-size: 0.9rem;
+  pointer-events: auto;
+}
+
+.fbk-alert-success { background: var(--fbk-success-bg); border-color: var(--fbk-success-fg); color: var(--fbk-success-fg); }
+.fbk-alert-error { background: var(--fbk-error-bg); border-color: var(--fbk-error-fg); color: var(--fbk-error-fg); }
+.fbk-alert-info { background: var(--fbk-info-bg); border-color: var(--fbk-info-fg); color: var(--fbk-info-fg); }
+
+.fbk-alert-icon { flex-shrink: 0; font-weight: 700; }
+
+.fbk-alert-message {
+  flex: 1;
+  min-width: 0;
+  /* 1行に収める（長文はどうしても入りきらない分だけ省略記号にする）。 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ツール側の `.ccsv-app button` / `.pbuilder-app button`（詳細度 0,1,1）が背景・枠を持つため、
+   単一クラスの共有ボタン（0,1,0）では負ける。Provider は各ツールの .app 配下に置く（テーマ継承のため）
+   ので、コンテナ+クラスの複合セレクタ（0,2,0）に上げてツールの button 既定に勝たせる。 */
+.fbk-alert .fbk-alert-close {
+  flex-shrink: 0;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.fbk-alert .fbk-alert-close:hover { opacity: 1; }
+
+/* Confirm ダイアログ（scrim + 中央モーダル） */
+.fbk-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 45%);
+}
+
+.fbk-confirm-dialog {
+  width: min(90vw, 24rem);
+  padding: 1.25rem;
+  background: var(--fbk-surface);
+  border: 1px solid var(--fbk-border);
+  border-radius: 1rem;
+  box-shadow: var(--fbk-shadow);
+  color: var(--fbk-text);
+}
+
+.fbk-confirm-title { margin: 0 0 0.5rem; font-size: 1.05rem; }
+.fbk-confirm-message { margin: 0; color: var(--fbk-muted); font-size: 0.9rem; }
+
+.fbk-confirm-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.25rem; }
+
+.fbk-confirm-actions button {
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+/* 複合セレクタ（0,2,0）でツールの `.app button`（0,1,1）背景・枠に勝たせる。 */
+.fbk-confirm-actions .fbk-confirm-cancel { color: var(--fbk-text); background: var(--fbk-surface); border: 1px solid var(--fbk-border); }
+.fbk-confirm-actions .fbk-confirm-confirm { color: #fff; background: var(--fbk-accent); border: 1px solid var(--fbk-accent); }
+.fbk-confirm-actions .fbk-confirm-confirm-danger { color: #fff; background: var(--fbk-danger); border-color: var(--fbk-danger); }
+
+/* Spinner（シェルの起動時スピナー .tool-shell-spinner と同じ見た目） */
+.fbk-spinner-wrap { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--fbk-muted); }
+
+.fbk-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--fbk-border);
+  border-top-color: var(--fbk-accent);
+  border-radius: 50%;
+  animation: fbk-spin 0.8s linear infinite;
+}
+
+.fbk-spinner-label { font-size: 0.85rem; }
+
+@keyframes fbk-spin {
+  to { transform: rotate(360deg); }
+}

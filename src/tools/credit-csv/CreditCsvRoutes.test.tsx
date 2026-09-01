@@ -222,6 +222,34 @@ describe('CreditCsvRoutes', () => {
     expect(store.some((entry) => entry.name === '202605.csv')).toBe(true)
   })
 
+  it('shows a success alert when an upload succeeds', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    expect(await screen.findByText('202604.csv')).toBeInTheDocument()
+
+    const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
+
+    const alertMessage = await screen.findByText('202605.csv をアップロードしました。')
+    expect(alertMessage.closest('.fbk-alert')).toHaveClass('fbk-alert-success')
+  })
+
+  it('shows an error alert when an upload fails', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    expect(await screen.findByText('202604.csv')).toBeInTheDocument()
+
+    ;(fetch as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(async () =>
+      jsonResponse({ ok: false, error: { message: 'アップロードに失敗しました。(テスト)' } }, 400)
+    )
+
+    const file = new File([MAY_CSV], '202699.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
+
+    const alertMessage = await screen.findByText('アップロードに失敗しました。(テスト)')
+    expect(alertMessage.closest('.fbk-alert')).toHaveClass('fbk-alert-error')
+  })
+
   it('redirects unknown internal paths back to the detail page', async () => {
     renderApp('/does-not-exist')
 
@@ -251,8 +279,7 @@ describe('CreditCsvRoutes', () => {
     expect(menuButton).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('deletes a file through the files page', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('deletes a file through the files page after confirming the dialog', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
@@ -260,20 +287,22 @@ describe('CreditCsvRoutes', () => {
     expect(row).not.toBeNull()
 
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
+    // 共有の確認ダイアログで OK を押す
+    fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(screen.queryByText('202604.csv')).not.toBeInTheDocument())
     expect(store).toHaveLength(0)
   })
 
   it('does not delete when the confirmation dialog is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderApp()
     fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
 
     const row = (await screen.findByText('202604.csv')).closest('tr')
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
+    // ダイアログでキャンセルすると削除されない
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    // キャンセル時は削除されない
     expect(screen.getByText('202604.csv')).toBeInTheDocument()
     expect(store).toHaveLength(1)
   })

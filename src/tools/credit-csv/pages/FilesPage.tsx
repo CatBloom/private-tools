@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { useAlert, useConfirm } from '../../../components/feedback'
 import { useAppDataContext } from '../state/AppDataContext'
 
 const formatFileSize = (size: number) => {
@@ -23,16 +24,15 @@ const formatUploadedAt = (isoDate: string) => {
   })
 }
 
-type FeedbackMessage = { kind: 'info' | 'error'; text: string }
-
 export const FilesPage = () => {
   const { files, upload, remove } = useAppDataContext()
+  const { showAlert } = useAlert()
+  const { confirm } = useConfirm()
   // アップロード日の降順（最新が上）で表示する
   const sortedFiles = [...files].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
-  const [message, setMessage] = useState<FeedbackMessage | null>(null)
 
   // ファイルを選択した時点で自動アップロードする（アップロードボタンは廃止）
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -42,13 +42,12 @@ export const FilesPage = () => {
     }
 
     setIsUploading(true)
-    setMessage(null)
 
     try {
       await upload(file)
-      setMessage({ kind: 'info', text: `${file.name} をアップロードしました。` })
+      showAlert('success', `${file.name} をアップロードしました。`)
     } catch (error) {
-      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'アップロードに失敗しました。' })
+      showAlert('error', error instanceof Error ? error.message : 'アップロードに失敗しました。')
     } finally {
       setIsUploading(false)
       // 同じファイルを選び直しても onChange が再発火するよう値をリセットする
@@ -59,17 +58,19 @@ export const FilesPage = () => {
   }
 
   const handleDelete = async (name: string) => {
-    if (!window.confirm(`${name} を削除しますか？この操作は取り消せません。`)) {
-      return
-    }
+    const confirmed = await confirm(`${name} を削除しますか？この操作は取り消せません。`, {
+      title: '削除',
+      danger: true,
+    })
+    if (!confirmed) return
 
     setPendingDelete(name)
-    setMessage(null)
 
     try {
       await remove(name)
+      showAlert('success', `${name} を削除しました。`)
     } catch (error) {
-      setMessage({ kind: 'error', text: error instanceof Error ? error.message : '削除に失敗しました。' })
+      showAlert('error', error instanceof Error ? error.message : '削除に失敗しました。')
     } finally {
       setPendingDelete(null)
     }
@@ -101,14 +102,6 @@ export const FilesPage = () => {
             </span>
           </div>
         </div>
-        {message ? (
-          <p
-            className={message.kind === 'error' ? 'ccsv-status-message ccsv-status-message-error' : 'ccsv-status-message'}
-            role={message.kind === 'error' ? 'alert' : 'status'}
-          >
-            {message.text}
-          </p>
-        ) : null}
       </section>
 
       <section className="ccsv-panel">
