@@ -7,7 +7,6 @@ import type { PromptHistoryStorage } from './history-storage.js'
 
 export type { PromptWordStorage } from './prompt-storage.js'
 export type { PromptHistoryStorage } from './history-storage.js'
-export { assertValidCategory } from './prompt-storage.js'
 export { CloudflareKvPromptStorage } from './kv-prompt-storage.js'
 export { LocalPromptStorage } from './local-prompt-storage.js'
 export { CloudflareKvHistoryStorage } from './kv-history-storage.js'
@@ -30,7 +29,7 @@ export const selectPromptStorage = (): PromptWordStorage => {
 }
 
 // Same Cloudflare KV env vars as selectPromptStorage(), just a separate key
-// namespace (history:${category} vs words:${category}).
+// namespace ('history' vs 'words').
 export const selectPromptHistoryStorage = (): PromptHistoryStorage => {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
   const namespaceId = process.env.CLOUDFLARE_KV_PROMPT_NAMESPACE_ID

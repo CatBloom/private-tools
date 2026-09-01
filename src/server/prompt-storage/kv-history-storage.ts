@@ -1,10 +1,8 @@
-import type { PromptCategoryId } from '../../tools/prompt-builder/shared/categories.js'
 import type { HistoryEntry } from '../../tools/prompt-builder/shared/types.js'
-import { assertValidCategory } from './prompt-storage.js'
 import type { CloudflareKvPromptConfig } from './kv-prompt-storage.js'
 import type { PromptHistoryStorage } from './history-storage.js'
 
-const kvKey = (category: PromptCategoryId) => `history:${category}`
+const KV_KEY = 'history'
 
 // Production backend, not yet wired up (Cloudflare KV namespace/token are not
 // provisioned for this tool). Verified against a mocked fetch only.
@@ -17,17 +15,15 @@ export class CloudflareKvHistoryStorage implements PromptHistoryStorage {
     this.headers = { Authorization: `Bearer ${config.apiToken}` }
   }
 
-  async getHistory(category: PromptCategoryId): Promise<HistoryEntry[]> {
-    assertValidCategory(category)
-    const response = await this.request(`/values/${kvKey(category)}`, { method: 'GET' })
+  async getHistory(): Promise<HistoryEntry[]> {
+    const response = await this.request(`/values/${KV_KEY}`, { method: 'GET' })
     if (response.status === 404) return []
     if (!response.ok) throw new Error(`Cloudflare KV get failed with status ${response.status}`)
     return JSON.parse(await response.text()) as HistoryEntry[]
   }
 
-  async putHistory(category: PromptCategoryId, entries: HistoryEntry[]): Promise<HistoryEntry[]> {
-    assertValidCategory(category)
-    const response = await this.request(`/values/${kvKey(category)}`, {
+  async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
+    const response = await this.request(`/values/${KV_KEY}`, {
       method: 'PUT',
       body: JSON.stringify(entries),
     })

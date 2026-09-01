@@ -17,16 +17,16 @@ describe('CloudflareKvHistoryStorage', () => {
   })
 
   it('gets history with the expected URL, method, and auth header', async () => {
-    const entries = [{ id: '1', name: 'snapshot', createdAt: '2024-01-01T00:00:00.000Z', items: [] }]
+    const entries = [{ id: '1', name: 'snapshot', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' }]
     fetchMock.mockResolvedValue(new Response(JSON.stringify(entries), { status: 200 }))
     const storage = new CloudflareKvHistoryStorage(config)
 
-    const result = await storage.getHistory('base-prompt')
+    const result = await storage.getHistory()
 
     expect(result).toEqual(entries)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/history:base-prompt`)
+    expect(url).toBe(`${baseUrl}/values/history`)
     expect(init.method).toBe('GET')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
   })
@@ -34,7 +34,7 @@ describe('CloudflareKvHistoryStorage', () => {
   it('returns an empty array on a 404 get', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
     const storage = new CloudflareKvHistoryStorage(config)
-    expect(await storage.getHistory('base-prompt')).toEqual([])
+    expect(await storage.getHistory()).toEqual([])
   })
 
   it('throws a clear error on a non-2xx get response without leaking the token', async () => {
@@ -43,7 +43,7 @@ describe('CloudflareKvHistoryStorage', () => {
 
     let caught: unknown
     try {
-      await storage.getHistory('base-prompt')
+      await storage.getHistory()
     } catch (error) {
       caught = error
     }
@@ -53,22 +53,16 @@ describe('CloudflareKvHistoryStorage', () => {
     expect((caught as Error).message).not.toContain('secret-token')
   })
 
-  it('rejects an invalid category before making a request', async () => {
-    const storage = new CloudflareKvHistoryStorage(config)
-    await expect(storage.getHistory('not-a-category' as never)).rejects.toThrow()
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
   it('puts history with the expected URL, method, and body', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
     const storage = new CloudflareKvHistoryStorage(config)
-    const entries = [{ id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [] }]
+    const entries = [{ id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'negative' as const }]
 
-    const result = await storage.putHistory('character-negative', entries)
+    const result = await storage.putHistory(entries)
 
     expect(result).toEqual(entries)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/history:character-negative`)
+    expect(url).toBe(`${baseUrl}/values/history`)
     expect(init.method).toBe('PUT')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
     expect(init.body).toBe(JSON.stringify(entries))
@@ -77,6 +71,6 @@ describe('CloudflareKvHistoryStorage', () => {
   it('throws when a put response is not ok', async () => {
     fetchMock.mockResolvedValue(new Response('bad request', { status: 400 }))
     const storage = new CloudflareKvHistoryStorage(config)
-    await expect(storage.putHistory('base-prompt', [])).rejects.toThrow(/400/)
+    await expect(storage.putHistory([])).rejects.toThrow(/400/)
   })
 })

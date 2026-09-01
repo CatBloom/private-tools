@@ -41,6 +41,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `src/server/storage/` — Credit CSV 永続化のストレージ抽象。
 - `src/server/prompt-storage/` — Prompt Builder 用の別ストレージ抽象（credit-csv とは分離。KV Namespace も別）。
 - `src/components/feedback/` — 両ツール共通の UI フィードバック（`AlertProvider`/`useAlert` トースト、`ConfirmProvider`/`useConfirm` 確認ダイアログ、`Spinner`）。各ツールは `Layout` の内側（`.<tool>-app[data-theme]` 配下）で Provider をラップする（トースト/ダイアログが `[data-theme]` を継承できるように）。**スタイルは `src/public/styles.css` に置く**（下記の理由）。
+- `src/components/layout/` — **サイドバー無しツールのデフォルトヘッダー** `ToolHeader`（props は `title` と右側要素用の `children` のみ。タイトル左・右側に「← ツール一覧」固定リンク＋children〈テーマ切替等をツール側から渡す〉。テーマフックに依存しない）。スタイル（`.tool-header-*`）も styles.css に置く。
 - `src/public/` — 静的資産。`styles.css`（TOP・両ツールのシェルが常時 link）は Git 管理、`assets/`（ビルド生成物）は gitignore。**共有フィードバックの CSS（`.fbk-*`）は styles.css に置く**：コンポーネント側で `import './x.css'` すると Vite が共有チャンクの CSS（`assets/ConfirmProvider.css` 等）に分割し、シェルは `client.css`/`client-prompt.css` しか link しないため**本番で無スタイル化**する（トースト/ダイアログが素の状態でページ最下部に出る）。常時 link される styles.css に置けば dev/prod とも確実に読み込まれる。
 
 ### ルーティングと画面構成（`src/server/app.ts`）
@@ -64,13 +65,13 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 ### Prompt Builder（`src/tools/prompt-builder/`）
 
-画像生成プロンプトの「ワード」を分類ごとに管理し、選択順に並べてカンマ区切りで組み立て・コピーするツール。**UI に「NovelAI」表記は出さない**。分類は固定4つ（`base-prompt` / `base-negative` / `character-prompt` / `character-negative`）で、**分類ごとにページを分ける**（1つの `CategoryPage` を4分類で再利用、パスは `/${category}`、不明パスは先頭分類へリダイレクト）。
+画像生成プロンプトの「ワード」をタグで管理し、選択順に並べてカンマ区切りで組み立て・コピーするツール。**UI に「NovelAI」表記は出さない**。ワードは**分類を持たない共有プール**（タグ9種で絞り込み管理）。保存履歴には**ターゲット属性**（`HistoryEntry.target`＝どの入力欄に貼るか。3値: `base` / `character` / `negative`）を付ける。ページは `/words`（ワード管理）と `/output`（出力組み立て）の2つで、不明パス（旧分類パス含む）は `/words` へリダイレクト。
 
-- `shared/` — **react 非依存の純粋モジュール**（`categories.ts` の分類 ID／ラベル／`isPromptCategoryId`、`types.ts` の `PromptWord = {id,text,description}`／`OutputItem = {id,wordId,text,weight}`）。**サーバー route からも import する**ため JSX を含めない。
-- `lib/notation.ts` — 純粋ロジック（`applyNotation`：weight 正=`{}`／負=`[]` の重ね掛け段数・±5 クランプ、`buildOutput`：カンマ結合、`reorder`）。`lib/outputStorage.ts` — **組み立て中の**出力欄状態を localStorage に永続化。**分類ごとに独立したキー** `prompt-builder:output:${category}`（コピー先が分類ごとに異なるため出力も分類別に管理）。
-- **保存履歴**：組み立てた出力を名前付きスナップショット（`HistoryEntry = {id,name,createdAt,items}`）として **KV に保存**するライブラリ。出力タブ内・現在の出力の下に配置し、保存・復元（現在の出力を置換）・削除ができる。KV キーは `history:${category}`（`shared/types.ts` の `HistoryEntry`、サーバーは `src/server/prompt-storage/` の履歴ストレージ）。**組み立て中の出力は localStorage・保存した履歴は KV** と役割が分かれる。
-- UI（`.tsx`）: `index.tsx` が default export `PromptBuilderApp`（`prompt-builder.css` を import）。CategoryPage のルート要素は **`key={category}`** を付け、分類切替で再マウントしてその分類の状態を正しく初期化する（付けないと React がインスタンスを再利用し出力欄が分類間で混ざる）。各ページは**ページ内タブ**で「ワード」（一覧・登録フォーム内包・インライン編集・削除）と「出力」（選択→積む、**@dnd-kit で並べ替え**〈`PointerSensor`＋`TouchSensor` でモバイル対応〉、個別削除、強調記法付与、カンマ結合＋コピー）を切り替える。ワードの `id` はクライアントで採番。出力アイテムの `text` は**選択時点のスナップショット**（ワード編集後も復元が壊れない）。
-- **ワードの保存**：手動「保存」ボタン（即時 PUT）＋**デバウンス自動保存**（変更が止まって10秒後にまとめて1回 PUT。`AUTO_SAVE_DELAY_MS`）の併用。1分類=1KVキーに配列まるごと PUT なので、Cloudflare KV 無料枠（**書き込み1,000回/日・同一キー1秒1回**）を消費しすぎないよう「操作ごと」ではなく「アイドル10秒でまとめて」保存する。保存失敗時は**自動リトライしない**（次のワード編集が `saveStatus` を `idle` に戻して再アーム。放置すると10秒ごとに書き込みクォータを浪費するため）。分類切替（再マウント）で未保存分が消えないようアンマウント時に best-effort で flush する。**履歴の保存は明示操作のまま**（自動保存の対象外）。
+- `shared/` — **react 非依存の純粋モジュール**（`targets.ts` は履歴ターゲットの ID／ラベル／`isPromptTargetId`、`tags.ts` はタグ9種（アルファベット順＋others 最下）と `normalizeTag`、`types.ts` の `PromptWord = {id,text,description,tag}`／`OutputItem = {id,wordId,text,weight}`／`HistoryEntry = {id,name,createdAt,target,items}`）。**サーバー route からも import する**ため JSX を含めない。
+- `lib/notation.ts` — 純粋ロジック（`applyNotation`：weight 正=`{}`／負=`[]` の重ね掛け段数・±5 クランプ、`buildOutput`：カンマ結合、`reorder`）。`lib/outputStorage.ts` — **組み立て中の**出力欄状態を localStorage に永続化。キーは単一の `prompt-builder:output`。WordsPage の「出力に追加」は `readOutputItems`/`writeOutputItems` で localStorage を直接読み書きして追記する（両ページは同時マウントされないため整合する）。
+- **保存履歴**：組み立てた出力を名前付きスナップショット（`HistoryEntry`、保存時に `target` をセレクトで選択）として **KV に保存**するライブラリ。出力ページ・現在の出力の下に配置し、保存・復元（現在の出力を置換）・削除・名前編集ができ、一覧は target のバッジ表示＋絞り込みに対応。KV キーは単一の `history`（サーバーは `src/server/prompt-storage/` の履歴ストレージ）。**組み立て中の出力は localStorage・保存した履歴は KV** と役割が分かれる。
+- UI（`.tsx`）: `index.tsx` が default export `PromptBuilderApp`（`prompt-builder.css` を import）。`Layout` は共有 `ToolHeader`（サイドバー無し）＋直下にナビタブ「ワード」「出力」。デスクトップ（48rem 以上）はヘッダー内側・タブ・本文を `max-width: 1040px` で中央寄せ。`WordsPage` — 一覧・登録フォーム内包・インライン編集・削除・タグ絞り込み（初期値「ALL」＝タグ見出し付きグループ表示、特定タグでフラット表示）・「出力に追加」（タグ未選択の間は追加ボタン disabled）。`OutputPage` — **@dnd-kit で並べ替え**〈`PointerSensor`＋`TouchSensor` でモバイル対応〉、個別削除、強調記法付与、カンマ結合＋コピー、保存履歴（保存時に target をセレクトで選択・未選択は保存ボタン disabled、一覧はワードと同じく「ALL＝target 見出し付きグループ表示／特定 target＝フラット表示」の絞り込み、編集で名前と target を変更可・復元/更新/削除はトースト通知）。ワードの `id` はクライアントで採番。出力アイテムの `text` は**選択時点のスナップショット**（ワード編集後も復元が壊れない）。
+- **ワードの保存**：手動「保存」ボタン（即時 PUT）＋**デバウンス自動保存**（変更が止まって10秒後にまとめて1回 PUT。`AUTO_SAVE_DELAY_MS`）の併用。1KVキー（`words`）に配列まるごと PUT なので、Cloudflare KV 無料枠（**書き込み1,000回/日・同一キー1秒1回**）を消費しすぎないよう「操作ごと」ではなく「アイドル10秒でまとめて」保存する。保存失敗時は**自動リトライしない**（次のワード編集が `saveStatus` を `idle` に戻して再アーム。放置すると10秒ごとに書き込みクォータを浪費するため）。ページ遷移（アンマウント）で未保存分が消えないようアンマウント時に best-effort で flush する。**履歴の保存は明示操作のまま**（自動保存の対象外）。
 - テーマ切替は `.pbuilder-app[data-theme]` にスコープ（credit-csv と同じ `THEME_STORAGE_KEY` を共有、`documentElement` は触らない）。フック（`useTheme`/`usePersistedState`）は credit-csv 配下を import せず prompt-builder 内に自前で持つ（ツール間結合を避ける）。
 - **@dnd-kit**: `@dnd-kit/core` と `@dnd-kit/sortable` を使う。`@dnd-kit/utilities` は依存に入れず、`useSortable` の `transform` は自前で `translate3d(...)` の CSS 文字列にする（単一リストの並べ替えでは scale 不要）。CSP の `style-src` に `'unsafe-inline'` が必要なのはこの inline transform のため。
 
@@ -84,11 +85,11 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 ### Prompt ストレージ（`src/server/prompt-storage/`）
 
-Prompt Builder 専用。ワード用と履歴用の2系統。どちらも**同じ KV Namespace／同じ env** を使い、キーのプレフィックスで分ける。
-- ワード：`PromptWordStorage`（`getWords/putWords`、分類単位で `PromptWord[]` を丸ごと読み書き）。KV キー `words:${category}`、Local は `.data/prompt-builder/${category}.json`。
-- 履歴：`PromptHistoryStorage`（`getHistory/putHistory`、分類単位で `HistoryEntry[]` を丸ごと読み書き）。KV キー `history:${category}`、Local は `.data/prompt-builder/history-${category}.json`。
+Prompt Builder 専用。ワード用と履歴用の2系統。どちらも**同じ KV Namespace／同じ env** を使い、キー名で分ける。
+- ワード：`PromptWordStorage`（`getWords/putWords`、`PromptWord[]` を丸ごと読み書き）。KV キーは単一の `words`、Local は `.data/prompt-builder/words.json`。
+- 履歴：`PromptHistoryStorage`（`getHistory/putHistory`、`HistoryEntry[]` を丸ごと読み書き）。KV キーは単一の `history`、Local は `.data/prompt-builder/history.json`。
 - 実装は各 `LocalPromptStorage`／`CloudflareKvPromptStorage`／`LocalHistoryStorage`／`CloudflareKvHistoryStorage`。環境変数は Account ID / API Token（`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_KV_API_TOKEN`）を credit-csv と**共有**し、**Namespace のみ別立て**の `CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`（**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**）。
-- `selectPromptStorage()`／`selectPromptHistoryStorage()` は Account ID＋`CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`＋API Token が揃えば KV、なければ Local を返す。分類は必ず `isPromptCategoryId`（`assertValidCategory`）で検証してからキー/パスに使う（キー汚染・パストラバーサル対策）。
+- `selectPromptStorage()`／`selectPromptHistoryStorage()` は Account ID＋`CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`＋API Token が揃えば KV、なければ Local を返す。キー・パスは固定文字列のみで動的要素を含まない（履歴の `target` は route 層で `isPromptTargetId` により検証する）。
 
 ### CSV アップロード API（`src/server/routes/credit-csv.ts`）
 
@@ -97,9 +98,9 @@ Prompt Builder 専用。ワード用と履歴用の2系統。どちらも**同�
 ### ワード API（`src/server/routes/prompt-builder.ts`）
 
 `createPromptWordRoutes(storage?, historyStorage?)` が Hono サブアプリを返す（`/tools/prompt-builder/api` にマウント）。
-- ワード：`GET /words/:category`（分類のワード一覧）、`PUT /words/:category`（JSON `{ words }` で丸ごと置換）。
-- 履歴：`GET /history/:category`（保存履歴一覧）、`PUT /history/:category`（JSON `{ entries }` で丸ごと置換）。
-- バリデーション: 分類不正 400、非 JSON 415、payload 不正 400、ボディ 4MiB 超 413、ワード数 2000 超／履歴エントリ数 200 超 413。`{ ok, data }` 規約は共通。
+- ワード：`GET /words`（共有プールのワード一覧）、`PUT /words`（JSON `{ words }` で丸ごと置換）。
+- 履歴：`GET /history`（保存履歴一覧）、`PUT /history`（JSON `{ entries }` で丸ごと置換。各エントリの `target` は `isPromptTargetId` で検証）。
+- バリデーション: 非 JSON 415、payload 不正（`target` 不正含む）400、ボディ 4MiB 超 413、ワード数 2000 超／履歴エントリ数 200 超 413。`{ ok, data }` 規約は共通。
 
 ### 静的資産の配信（dev と production で経路が違う）
 

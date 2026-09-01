@@ -1,6 +1,4 @@
-import type { PromptCategoryId } from '../../tools/prompt-builder/shared/categories.js'
 import type { PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import { assertValidCategory } from './prompt-storage.js'
 import type { PromptWordStorage } from './prompt-storage.js'
 
 export type CloudflareKvPromptConfig = {
@@ -9,7 +7,7 @@ export type CloudflareKvPromptConfig = {
   apiToken: string
 }
 
-const kvKey = (category: PromptCategoryId) => `words:${category}`
+const KV_KEY = 'words'
 
 // Production backend, not yet wired up (Cloudflare KV namespace/token are not
 // provisioned for this tool). Verified against a mocked fetch only.
@@ -22,17 +20,15 @@ export class CloudflareKvPromptStorage implements PromptWordStorage {
     this.headers = { Authorization: `Bearer ${config.apiToken}` }
   }
 
-  async getWords(category: PromptCategoryId): Promise<PromptWord[]> {
-    assertValidCategory(category)
-    const response = await this.request(`/values/${kvKey(category)}`, { method: 'GET' })
+  async getWords(): Promise<PromptWord[]> {
+    const response = await this.request(`/values/${KV_KEY}`, { method: 'GET' })
     if (response.status === 404) return []
     if (!response.ok) throw new Error(`Cloudflare KV get failed with status ${response.status}`)
     return JSON.parse(await response.text()) as PromptWord[]
   }
 
-  async putWords(category: PromptCategoryId, words: PromptWord[]): Promise<PromptWord[]> {
-    assertValidCategory(category)
-    const response = await this.request(`/values/${kvKey(category)}`, {
+  async putWords(words: PromptWord[]): Promise<PromptWord[]> {
+    const response = await this.request(`/values/${KV_KEY}`, {
       method: 'PUT',
       body: JSON.stringify(words),
     })

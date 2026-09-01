@@ -18,28 +18,26 @@ describe('LocalHistoryStorage', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  it('returns an empty array for a category with no history yet', async () => {
-    expect(await storage.getHistory('base-prompt')).toEqual([])
+  it('returns an empty array when no history is stored yet', async () => {
+    expect(await storage.getHistory()).toEqual([])
   })
 
   it('round-trips putHistory and getHistory through real file I/O', async () => {
-    const entries = [{ id: '1', name: 'snapshot', createdAt: '2024-01-01T00:00:00.000Z', items: [] }]
+    const entries = [
+      { id: '1', name: 'snapshot', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'character' as const },
+    ]
 
-    const put = await storage.putHistory('character-prompt', entries)
+    const put = await storage.putHistory(entries)
     expect(put).toEqual(entries)
 
-    expect(await storage.getHistory('character-prompt')).toEqual(entries)
-    expect(await storage.getHistory('base-negative')).toEqual([])
+    expect(await storage.getHistory()).toEqual(entries)
   })
 
   it('creates the storage directory on demand', async () => {
     const nestedStorage = new LocalHistoryStorage(join(dir, 'nested', 'deep'))
-    await nestedStorage.putHistory('base-prompt', [{ id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [] }])
-    expect(await nestedStorage.getHistory('base-prompt')).toHaveLength(1)
-  })
-
-  it('rejects an invalid category', async () => {
-    await expect(storage.getHistory('not-a-category' as never)).rejects.toThrow()
-    await expect(storage.putHistory('not-a-category' as never, [])).rejects.toThrow()
+    await nestedStorage.putHistory([
+      { id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' },
+    ])
+    expect(await nestedStorage.getHistory()).toHaveLength(1)
   })
 })

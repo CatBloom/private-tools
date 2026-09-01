@@ -18,28 +18,22 @@ describe('LocalPromptStorage', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  it('returns an empty array for a category with no words yet', async () => {
-    expect(await storage.getWords('base-prompt')).toEqual([])
+  it('returns an empty array when no words are stored yet', async () => {
+    expect(await storage.getWords()).toEqual([])
   })
 
   it('round-trips putWords and getWords through real file I/O', async () => {
     const words = [{ id: '1', text: 'foo', description: 'a foo word', tag: 'others' as const }]
 
-    const put = await storage.putWords('character-prompt', words)
+    const put = await storage.putWords(words)
     expect(put).toEqual(words)
 
-    expect(await storage.getWords('character-prompt')).toEqual(words)
-    expect(await storage.getWords('base-negative')).toEqual([])
+    expect(await storage.getWords()).toEqual(words)
   })
 
   it('creates the storage directory on demand', async () => {
     const nestedStorage = new LocalPromptStorage(join(dir, 'nested', 'deep'))
-    await nestedStorage.putWords('base-prompt', [{ id: '1', text: 'x', description: '', tag: 'others' }])
-    expect(await nestedStorage.getWords('base-prompt')).toHaveLength(1)
-  })
-
-  it('rejects an invalid category', async () => {
-    await expect(storage.getWords('not-a-category' as never)).rejects.toThrow()
-    await expect(storage.putWords('not-a-category' as never, [])).rejects.toThrow()
+    await nestedStorage.putWords([{ id: '1', text: 'x', description: '', tag: 'others' }])
+    expect(await nestedStorage.getWords()).toHaveLength(1)
   })
 })

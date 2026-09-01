@@ -309,3 +309,68 @@ button, input { font: inherit; }
 @keyframes fbk-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   ツールヘッダー（サイドバー無しツールの共通トップバー、src/components/layout/ToolHeader.tsx）。
+   feedback の .fbk-* と同じ理由で、常時 link される styles.css に自己完結の
+   トークンを持たせる（ツール別バンドルの CSS はシェルが link しないため）。
+   ============================================================ */
+.tool-header {
+  --tool-header-text: #17212b;
+  --tool-header-muted: #5b6b7c;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tool-header {
+    --tool-header-text: #e7edf3;
+    --tool-header-muted: #94a3b3;
+  }
+}
+
+[data-theme="dark"] .tool-header {
+  --tool-header-text: #e7edf3;
+  --tool-header-muted: #94a3b3;
+}
+
+/* 明示 light テーマは OSダークの @media より優先させる（詳細度 0,2,0 > 0,1,0）。 */
+[data-theme="light"] .tool-header {
+  --tool-header-text: #17212b;
+  --tool-header-muted: #5b6b7c;
+}
+
+.tool-header-titlebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tool-header-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--tool-header-text);
+}
+
+.tool-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tool-header-back-link {
+  color: var(--tool-header-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 48rem) {
+  .tool-header {
+    padding: 1.5rem 2rem 0;
+  }
+}

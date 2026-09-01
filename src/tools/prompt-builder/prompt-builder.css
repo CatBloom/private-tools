@@ -46,111 +46,13 @@
   flex-direction: column;
 }
 
-.pbuilder-topbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-
-.pbuilder-menu-button {
-  padding: 0.4rem 0.7rem;
-  background: var(--pbuilder-surface);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.65rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.pbuilder-topbar-brand {
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
-.pbuilder-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgb(0 0 0 / 45%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.pbuilder-overlay.is-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.pbuilder-sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 16rem;
-  max-width: 80vw;
-  padding: 1rem;
-  overflow-y: auto;
-  background: var(--pbuilder-surface);
-  border-right: 1px solid var(--pbuilder-border);
-  transform: translateX(-100%);
-  transition: transform 0.2s ease;
-}
-
-.pbuilder-sidebar.is-open {
-  transform: translateX(0);
-}
-
-.pbuilder-back-link {
-  color: var(--pbuilder-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.pbuilder-brand {
-  color: var(--pbuilder-text);
-  font-size: 1.25rem;
-  font-weight: 800;
-}
-
-.pbuilder-sidebar-brand {
-  display: flex;
-  flex-direction: column;
-}
-
 .pbuilder-theme-toggle {
-  align-self: flex-start;
-  margin-top: auto;
   flex-shrink: 0;
   padding: 0.5rem 0.9rem;
   background: var(--pbuilder-bg);
   border: 1px solid var(--pbuilder-border);
   border-radius: 0.65rem;
   cursor: pointer;
-}
-
-.pbuilder-nav-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.pbuilder-nav-tabs a {
-  padding: 0.6rem 0.9rem;
-  color: var(--pbuilder-muted);
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  border-radius: 0.65rem;
-}
-
-.pbuilder-nav-tabs a.active {
-  color: #fff;
-  background: var(--pbuilder-accent);
 }
 
 .pbuilder-main {
@@ -164,19 +66,29 @@
   gap: 1rem;
 }
 
+/* トップバー直下の「ワード」「出力」ページ切替ナビ。ヘッダーとくっつかないよう上に余白を取る。 */
 .pbuilder-tabs {
   display: flex;
   gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0 1rem 0.75rem;
 }
 
 .pbuilder-tab-button {
+  display: flex;
   flex: 1;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 0.65rem 0.9rem;
+  /* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になり
+     テーマに追従しない。 */
+  color: var(--pbuilder-text);
   background: var(--pbuilder-surface);
   border: 1px solid var(--pbuilder-border);
   border-radius: 0.75rem;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -184,22 +96,6 @@
   color: #fff;
   background: var(--pbuilder-accent);
   border-color: var(--pbuilder-accent);
-}
-
-.pbuilder-tab-badge {
-  display: inline-block;
-  min-width: 1.1rem;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.35rem;
-  color: var(--pbuilder-accent);
-  background: var(--pbuilder-surface);
-  border-radius: 999px;
-  font-size: 0.75rem;
-}
-
-.pbuilder-tab-button.is-active .pbuilder-tab-badge {
-  color: var(--pbuilder-accent);
-  background: #fff;
 }
 
 .pbuilder-panel {
@@ -422,6 +318,11 @@
   flex-shrink: 0;
 }
 
+/* 編集中（保存/キャンセルのみ）は表示行の space-between を使わず、履歴編集と同じく右寄せにする。 */
+.pbuilder-word-row.is-editing .pbuilder-word-row-actions {
+  justify-content: flex-end;
+}
+
 /* ALL 絞り込み時のタグ別グループ表示（並び替えなし・見出しのみ）。 */
 .pbuilder-tag-groups {
   display: flex;
@@ -567,10 +468,6 @@
   gap: 0.6rem;
 }
 
-.pbuilder-history-form input {
-  flex: 1;
-}
-
 .pbuilder-history-list {
   display: flex;
   flex-direction: column;
@@ -632,28 +529,24 @@
     font-size: 130%;
   }
 
-  .pbuilder-layout {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .pbuilder-topbar,
-  .pbuilder-overlay {
-    display: none;
-  }
-
-  .pbuilder-sidebar {
-    position: sticky;
-    top: 0;
-    flex-shrink: 0;
-    width: 16rem;
-    max-width: none;
-    height: 100vh;
-    transform: none;
+  .pbuilder-tabs {
+    padding: 0 2rem 1rem;
   }
 
   .pbuilder-main {
-    padding: 2rem 2rem 2.5rem;
+    padding: 0 2rem 2.5rem;
+  }
+
+  /* サイドバー廃止で本文が広がりすぎるため、PCではほどよい幅で中央寄せにする。
+     ヘッダーは背景（.pbuilder-app）が全幅のまま、内側の要素だけ本文と同じ幅に揃える。 */
+  .tool-header,
+  .pbuilder-tabs,
+  .pbuilder-main {
+    /* 親（.pbuilder-layout）が flex column のため、auto マージンだけだと stretch が
+       効かなくなり中身幅に縮む。width:100% で全幅→max-width で頭打ちにする。 */
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
   }
 
   /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない
@@ -668,5 +561,10 @@
 
   .pbuilder-history-form {
     flex-direction: row;
+  }
+
+  /* 名前+保存先の行を、隣の「履歴に保存」ボタン分を除いた残り幅いっぱいに広げる。 */
+  .pbuilder-history-form .pbuilder-word-form-row {
+    flex: 1;
   }
 }

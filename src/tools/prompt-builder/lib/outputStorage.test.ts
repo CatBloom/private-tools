@@ -9,31 +9,21 @@ describe('outputStorage', () => {
     localStorage.clear()
   })
 
-  it('stores each category under its own key', () => {
-    writeOutputItems('base-prompt', [item('cat girl')])
-    writeOutputItems('base-negative', [item('blurry')])
-
-    expect(readOutputItems('base-prompt')).toEqual([item('cat girl')])
-    expect(readOutputItems('base-negative')).toEqual([item('blurry')])
+  it('returns an empty array when nothing is stored yet', () => {
+    expect(readOutputItems()).toEqual([])
   })
 
-  it('does not let a write to one category affect another', () => {
-    writeOutputItems('base-prompt', [item('cat girl')])
-    writeOutputItems('base-prompt', [item('cat girl'), item('blue sky')])
+  it('round-trips items written under the shared key', () => {
+    writeOutputItems([item('cat girl'), item('blue sky')])
 
-    expect(readOutputItems('base-negative')).toEqual([])
-    expect(readOutputItems('character-prompt')).toEqual([])
-    expect(readOutputItems('base-prompt')).toEqual([item('cat girl'), item('blue sky')])
+    expect(readOutputItems()).toEqual([item('cat girl'), item('blue sky')])
+    expect(localStorage.getItem('prompt-builder:output')).not.toBeNull()
   })
 
-  it('returns an empty array for a category with nothing stored', () => {
-    expect(readOutputItems('character-negative')).toEqual([])
-  })
+  it('overwrites the previous value on each write', () => {
+    writeOutputItems([item('cat girl')])
+    writeOutputItems([item('blue sky')])
 
-  it('does not use the old shared cross-category key', () => {
-    writeOutputItems('base-prompt', [item('cat girl')])
-
-    expect(localStorage.getItem('prompt-builder:output-state')).toBeNull()
-    expect(localStorage.getItem('prompt-builder:output:base-prompt')).not.toBeNull()
+    expect(readOutputItems()).toEqual([item('blue sky')])
   })
 })
