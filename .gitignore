@@ -22,3 +22,4 @@ task/
 
 # Local storage fallback (CSV persistence, dev only)
 .data/
+.vercel
