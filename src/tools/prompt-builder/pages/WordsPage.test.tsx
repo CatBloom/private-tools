@@ -349,6 +349,32 @@ describe('WordsPage', () => {
       expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
     })
 
+    it('does not duplicate the write when navigating during a successful save with no further edit', async () => {
+      let resolveSave: (value: PromptWord[]) => void = () => {}
+      vi.mocked(putWords).mockImplementationOnce(
+        () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
+      )
+
+      const { unmount } = renderPage()
+      await showAllWords()
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'only' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+      expect(putWords).toHaveBeenCalledTimes(1) // 通信中（未解決）
+
+      // 追加編集せずに遷移（アンマウント）する
+      unmount()
+
+      // 実行中の保存が成功すると、その内容がそのまま現在値なので、cleanup は二重送信しない
+      resolveSave([])
+      await vi.runAllTimersAsync()
+      await Promise.resolve()
+      expect(putWords).toHaveBeenCalledTimes(1)
+    })
+
     it('re-sends the pending edit on unmount after a failed save with no further edits', async () => {
       vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
 

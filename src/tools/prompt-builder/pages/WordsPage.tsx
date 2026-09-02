@@ -203,14 +203,17 @@ export const WordsPage = () => {
       // 1回 flush する。これで (1) 保存の通信中に再編集して遷移したケースと (2) 保存失敗後に
       // 追加編集なしで遷移したケースの両方で、未保存の最新を送れる（保存成功済みと同参照なら送らない）。
       if (dirtyRef.current && wordsRef.current !== lastSentRef.current) {
-        const latest = wordsRef.current
         const pending = inFlightRef.current
-        // in-flight の保存が確定してから最新を送る（A→B の順序を保証し、古い保存 A が後着で
-        // 最新 B を上書きするレースを防ぐ）。in-flight が無ければ即送る。
         if (pending) {
-          pending.catch(() => {}).then(() => putWords(latest)).catch(() => {})
+          // in-flight の保存が確定してから、まだ現在値が保存されていない場合だけ送る。これで
+          // A→B の順序を保証しつつ（古い保存 A が後着で最新を上書きするレースを回避）、A がその
+          // まま現在値を保存したケースの二重送信（KV 書き込みの無駄）を防ぐ。A が失敗/古い内容
+          // だったときは現在値を確実に送る（wordsRef はアンマウント後は不変）。
+          pending.catch(() => {}).then(() => {
+            if (wordsRef.current !== lastSentRef.current) putWords(wordsRef.current).catch(() => {})
+          })
         } else {
-          putWords(latest).catch(() => {})
+          putWords(wordsRef.current).catch(() => {})
         }
       }
     }
