@@ -12,6 +12,11 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  /* iPhone (iOS Safari) で横方向にラバーバンド（左右に少し動く／ピンチ後に変な位置で固定
+     される）のを防ぐ。ページは横スクロールを持たない設計なので、実機のサブピクセルはみ出し
+     を clip して body が横スクロール可能になるのを断つ。clip は縦スクロール・固定トースト
+     （fixed 子孫）に影響しない（.pbuilder-app に transform 等の包含ブロック生成が無いため）。 */
+  overflow-x: clip;
   background: var(--pbuilder-bg);
   color: var(--pbuilder-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
