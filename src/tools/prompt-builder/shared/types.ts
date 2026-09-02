@@ -1,3 +1,4 @@
+import type { PromptTargetId } from './targets'
 import type { PromptTagId } from './tags'
 
 export type PromptWord = {
@@ -15,10 +16,11 @@ export type OutputItem = {
   weight: number
 }
 
-// 出力の保存履歴。分類ごとに複数件持てる名前付きスナップショット。
+// 出力の保存履歴。複数件持てる名前付きスナップショット。target はどの分類向けに使う想定かを表す。
 export type HistoryEntry = {
   id: string
   name: string
   createdAt: string
   items: OutputItem[]
+  target: PromptTargetId
 }

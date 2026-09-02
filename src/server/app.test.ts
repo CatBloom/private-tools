@@ -3,7 +3,6 @@ import app from '../index'
 import { createApp } from './app'
 import type { Storage, StoredFileMeta } from './storage/index'
 import type { PromptHistoryStorage, PromptWordStorage } from './prompt-storage/index'
-import type { PromptCategoryId } from '../tools/prompt-builder/shared/categories'
 import type { HistoryEntry, PromptWord } from '../tools/prompt-builder/shared/types'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
@@ -42,27 +41,27 @@ class InMemoryStorage implements Storage {
 }
 
 class InMemoryPromptStorage implements PromptWordStorage {
-  private words = new Map<PromptCategoryId, PromptWord[]>()
+  private words: PromptWord[] = []
 
-  async getWords(category: PromptCategoryId): Promise<PromptWord[]> {
-    return this.words.get(category) ?? []
+  async getWords(): Promise<PromptWord[]> {
+    return this.words
   }
 
-  async putWords(category: PromptCategoryId, words: PromptWord[]): Promise<PromptWord[]> {
-    this.words.set(category, words)
+  async putWords(words: PromptWord[]): Promise<PromptWord[]> {
+    this.words = words
     return words
   }
 }
 
 class InMemoryHistoryStorage implements PromptHistoryStorage {
-  private entries = new Map<PromptCategoryId, HistoryEntry[]>()
+  private entries: HistoryEntry[] = []
 
-  async getHistory(category: PromptCategoryId): Promise<HistoryEntry[]> {
-    return this.entries.get(category) ?? []
+  async getHistory(): Promise<HistoryEntry[]> {
+    return this.entries
   }
 
-  async putHistory(category: PromptCategoryId, entries: HistoryEntry[]): Promise<HistoryEntry[]> {
-    this.entries.set(category, entries)
+  async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
+    this.entries = entries
     return entries
   }
 }
@@ -160,7 +159,7 @@ describe('server application', () => {
   })
 
   it('serves the prompt builder SSR shell for the tool root and deep links, relaxing style-src', async () => {
-    for (const path of ['/tools/prompt-builder', '/tools/prompt-builder/base-prompt']) {
+    for (const path of ['/tools/prompt-builder', '/tools/prompt-builder/words', '/tools/prompt-builder/output']) {
       const response = await request(path)
       const html = await response.text()
 
@@ -199,7 +198,7 @@ describe('server application', () => {
       promptWordStorage: new InMemoryPromptStorage(),
       promptHistoryStorage: new InMemoryHistoryStorage(),
     })
-    const response = await testApp.request('http://localhost/tools/prompt-builder/api/words/base-prompt')
+    const response = await testApp.request('http://localhost/tools/prompt-builder/api/words')
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ ok: true, data: { words: [] } })
@@ -210,7 +209,7 @@ describe('server application', () => {
       promptWordStorage: new InMemoryPromptStorage(),
       promptHistoryStorage: new InMemoryHistoryStorage(),
     })
-    const response = await testApp.request('http://localhost/tools/prompt-builder/api/history/base-prompt')
+    const response = await testApp.request('http://localhost/tools/prompt-builder/api/history')
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ ok: true, data: { entries: [] } })

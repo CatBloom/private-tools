@@ -21,12 +21,12 @@ describe('CloudflareKvPromptStorage', () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify(words), { status: 200 }))
     const storage = new CloudflareKvPromptStorage(config)
 
-    const result = await storage.getWords('base-prompt')
+    const result = await storage.getWords()
 
     expect(result).toEqual(words)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/words:base-prompt`)
+    expect(url).toBe(`${baseUrl}/values/words`)
     expect(init.method).toBe('GET')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
   })
@@ -34,7 +34,7 @@ describe('CloudflareKvPromptStorage', () => {
   it('returns an empty array on a 404 get', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
     const storage = new CloudflareKvPromptStorage(config)
-    expect(await storage.getWords('base-prompt')).toEqual([])
+    expect(await storage.getWords()).toEqual([])
   })
 
   it('throws a clear error on a non-2xx get response without leaking the token', async () => {
@@ -43,7 +43,7 @@ describe('CloudflareKvPromptStorage', () => {
 
     let caught: unknown
     try {
-      await storage.getWords('base-prompt')
+      await storage.getWords()
     } catch (error) {
       caught = error
     }
@@ -53,22 +53,16 @@ describe('CloudflareKvPromptStorage', () => {
     expect((caught as Error).message).not.toContain('secret-token')
   })
 
-  it('rejects an invalid category before making a request', async () => {
-    const storage = new CloudflareKvPromptStorage(config)
-    await expect(storage.getWords('not-a-category' as never)).rejects.toThrow()
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
   it('puts words with the expected URL, method, and body', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
     const storage = new CloudflareKvPromptStorage(config)
     const words = [{ id: '1', text: 'foo', description: 'bar', tag: 'others' as const }]
 
-    const result = await storage.putWords('character-negative', words)
+    const result = await storage.putWords(words)
 
     expect(result).toEqual(words)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/words:character-negative`)
+    expect(url).toBe(`${baseUrl}/values/words`)
     expect(init.method).toBe('PUT')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
     expect(init.body).toBe(JSON.stringify(words))
@@ -77,6 +71,6 @@ describe('CloudflareKvPromptStorage', () => {
   it('throws when a put response is not ok', async () => {
     fetchMock.mockResolvedValue(new Response('bad request', { status: 400 }))
     const storage = new CloudflareKvPromptStorage(config)
-    await expect(storage.putWords('base-prompt', [])).rejects.toThrow(/400/)
+    await expect(storage.putWords([])).rejects.toThrow(/400/)
   })
 })
