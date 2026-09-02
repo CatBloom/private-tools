@@ -6,9 +6,11 @@ export const PROMPT_TAG_IDS = [
   'expression',
   'illustrator',
   'negative',
+  'parts',
   'pose',
   'quality',
   'situation',
+  'text',
   'others',
 ] as const
 
@@ -21,9 +23,11 @@ export const PROMPT_TAG_LABELS: Record<PromptTagId, string> = {
   expression: 'expression',
   illustrator: 'illustrator',
   negative: 'negative',
+  parts: 'parts',
   pose: 'pose',
   quality: 'quality',
   situation: 'situation',
+  text: 'text',
   others: 'others',
 }
 
