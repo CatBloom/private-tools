@@ -155,16 +155,16 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('base set', { exact: false })
 
-    const baseGroup = screen.getByRole('heading', { name: 'base' }).closest('.pbuilder-tag-group')!
+    const baseGroup = screen.getByRole('heading', { name: 'Base' }).closest('.pbuilder-tag-group')!
     expect(within(baseGroup as HTMLElement).getByText('base set', { exact: false })).toBeInTheDocument()
 
-    const characterGroup = screen.getByRole('heading', { name: 'character' }).closest('.pbuilder-tag-group')!
+    const characterGroup = screen.getByRole('heading', { name: 'Character' }).closest('.pbuilder-tag-group')!
     expect(within(characterGroup as HTMLElement).getByText('char set', { exact: false })).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('保存先で絞り込み'), { target: { value: 'character' } })
 
     // 特定 target 絞り込みではグループ見出しを出さず、フラット表示に戻る。
-    expect(screen.queryByRole('heading', { name: 'base' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Base' })).not.toBeInTheDocument()
     expect(screen.queryByText('base set', { exact: false })).not.toBeInTheDocument()
     expect(screen.getByText('char set', { exact: false })).toBeInTheDocument()
   })
@@ -319,7 +319,7 @@ describe('OutputPage', () => {
     await waitFor(() => expect(putHistory).toHaveBeenCalledTimes(1))
     expect(putHistory).toHaveBeenCalledWith([{ ...entry, target: 'negative' }])
     // ALL 絞り込みのままなので、target 変更後は "negative" グループに移って見出しが出る。
-    expect(await screen.findByRole('heading', { name: 'negative' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Negative' })).toBeInTheDocument()
     expect(await screen.findByText('履歴を更新しました')).toBeInTheDocument()
   })
 

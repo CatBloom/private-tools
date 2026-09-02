@@ -16,6 +16,7 @@ import { SortableOutputItem } from '../components/SortableOutputItem'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { buildOutput, clampWeight, reorder } from '../lib/notation'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
+import { formatLabel } from '../shared/labels'
 import { PROMPT_TARGET_IDS, PROMPT_TARGET_LABELS, type PromptTargetId } from '../shared/targets'
 import type { HistoryEntry, OutputItem } from '../shared/types'
 
@@ -33,7 +34,7 @@ const TargetOptions = () => (
   <>
     {PROMPT_TARGET_IDS.map((target) => (
       <option key={target} value={target}>
-        {PROMPT_TARGET_LABELS[target]}
+        {formatLabel(PROMPT_TARGET_LABELS[target])}
       </option>
     ))}
   </>
@@ -442,7 +443,7 @@ export const OutputPage = () => {
                     {groupedHistoryEntries.map((group) => (
                       <div key={group.id} className="pbuilder-tag-group">
                         <div className="pbuilder-tag-group-header">
-                          <h3>{PROMPT_TARGET_LABELS[group.id]}</h3>
+                          <h3>{formatLabel(PROMPT_TARGET_LABELS[group.id])}</h3>
                         </div>
                         <ul className="pbuilder-history-list">{group.items.map((entry) => renderHistoryRow(entry))}</ul>
                       </div>

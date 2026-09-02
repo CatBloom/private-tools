@@ -3,6 +3,7 @@ import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { getWords, putWords } from '../api'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
+import { formatLabel } from '../shared/labels'
 import { DEFAULT_TAG, PROMPT_TAG_IDS, PROMPT_TAG_LABELS, normalizeTag, type PromptTagId } from '../shared/tags'
 import type { PromptWord } from '../shared/types'
 
@@ -28,7 +29,7 @@ const TagOptions = () => (
   <>
     {PROMPT_TAG_IDS.map((tag) => (
       <option key={tag} value={tag}>
-        {PROMPT_TAG_LABELS[tag]}
+        {formatLabel(PROMPT_TAG_LABELS[tag])}
       </option>
     ))}
   </>
@@ -346,7 +347,7 @@ export const WordsPage = () => {
                   {groupedWords.map((group) => (
                     <div key={group.id} className="pbuilder-tag-group">
                       <div className="pbuilder-tag-group-header">
-                        <h3>{PROMPT_TAG_LABELS[group.id]}</h3>
+                        <h3>{formatLabel(PROMPT_TAG_LABELS[group.id])}</h3>
                       </div>
                       <ul className="pbuilder-word-list">{group.items.map((word) => renderWordRow(word))}</ul>
                     </div>

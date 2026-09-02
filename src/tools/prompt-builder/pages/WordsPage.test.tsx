@@ -69,14 +69,14 @@ describe('WordsPage', () => {
     // 固定順は angle, composition, expression, illustrator, pose, quality, situation, others。
     // 0件のタグは見出しごと出さないので、sampleWords に存在する illustrator/quality のみ表示される。
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
-      'illustrator',
-      'quality',
+      'Illustrator',
+      'Quality',
     ])
 
-    const illustratorGroup = screen.getByRole('heading', { name: 'illustrator' }).closest('.pbuilder-tag-group')!
+    const illustratorGroup = screen.getByRole('heading', { name: 'Illustrator' }).closest('.pbuilder-tag-group')!
     expect(within(illustratorGroup as HTMLElement).getByText('cat girl')).toBeInTheDocument()
 
-    const qualityGroup = screen.getByRole('heading', { name: 'quality' }).closest('.pbuilder-tag-group')!
+    const qualityGroup = screen.getByRole('heading', { name: 'Quality' }).closest('.pbuilder-tag-group')!
     expect(within(qualityGroup as HTMLElement).getByText('blue sky')).toBeInTheDocument()
   })
 
