@@ -198,6 +198,9 @@
 
 .pbuilder-word-form-row input {
   flex: 3;
+  /* min-width:auto のままだとテキスト入力の既定サイズを下回って縮まず、狭い画面で隣の
+     select を右へ押し出す（横スクロール／select が画面外にはみ出す）。0 で縮小を許可する。 */
+  min-width: 0;
 }
 
 .pbuilder-word-form-row .pbuilder-tag-select {
