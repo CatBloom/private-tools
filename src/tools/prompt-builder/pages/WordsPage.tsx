@@ -53,6 +53,9 @@ export const WordsPage = () => {
   // 直近で putWords に「成功」したスナップショット（参照）。保存の通信中の再編集や保存失敗後の遷移で、
   // アンマウント flush が「現在値が未保存か」を参照比較で判定するために持つ（失敗時は更新しない）。
   const lastSentRef = useRef<PromptWord[] | null>(null)
+  // 実行中の putWords（保存は1度に1つ）。アンマウント flush をこの後ろに直列化して、古い保存が
+  // 後着で最新を上書きするレースを防ぐために保持する。
+  const inFlightRef = useRef<Promise<unknown> | null>(null)
 
   const [newText, setNewText] = useState('')
   const [newDescription, setNewDescription] = useState('')
@@ -151,8 +154,11 @@ export const WordsPage = () => {
     const snapshot = wordsRef.current
     setSaveStatus('saving')
     setSaveError(null)
+    // アンマウント flush が「この保存の後ろ」に直列化できるよう、in-flight の promise を保持する。
+    const request = putWords(snapshot)
+    inFlightRef.current = request
     try {
-      await putWords(snapshot)
+      await request
       // 送信に「成功」したスナップショットとして記録する（失敗時は記録しない＝アンマウント flush で
       // 再送させる）。保存中の再編集は wordsRef が別参照になるので、その後の遷移でも最新を送れる。
       lastSentRef.current = snapshot
@@ -169,6 +175,9 @@ export const WordsPage = () => {
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : '保存に失敗しました。')
       setSaveStatus('error')
+    } finally {
+      // 自分が最新の in-flight のときだけ解除する（後続保存に差し替わっていれば触らない）。
+      if (inFlightRef.current === request) inFlightRef.current = null
     }
   }, [showAlert])
 
@@ -193,9 +202,16 @@ export const WordsPage = () => {
       // 未保存の変更があり、かつ「最後に保存成功した内容」と現在値が参照で異なるなら best-effort で
       // 1回 flush する。これで (1) 保存の通信中に再編集して遷移したケースと (2) 保存失敗後に
       // 追加編集なしで遷移したケースの両方で、未保存の最新を送れる（保存成功済みと同参照なら送らない）。
-      // in-flight との到着順までは保証しないが、遷移で編集が確実に消えるよりは良い。
       if (dirtyRef.current && wordsRef.current !== lastSentRef.current) {
-        putWords(wordsRef.current).catch(() => {})
+        const latest = wordsRef.current
+        const pending = inFlightRef.current
+        // in-flight の保存が確定してから最新を送る（A→B の順序を保証し、古い保存 A が後着で
+        // 最新 B を上書きするレースを防ぐ）。in-flight が無ければ即送る。
+        if (pending) {
+          pending.catch(() => {}).then(() => putWords(latest)).catch(() => {})
+        } else {
+          putWords(latest).catch(() => {})
+        }
       }
     }
   }, [])
