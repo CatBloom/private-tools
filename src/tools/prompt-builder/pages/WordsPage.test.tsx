@@ -315,5 +315,51 @@ describe('WordsPage', () => {
       await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
       expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
     })
+
+    it('flushes the newest edit on unmount when navigating during an in-flight save', async () => {
+      // 1回目の保存は解決させない（通信中のまま）。この間の再編集がアンマウントで失われないこと。
+      vi.mocked(putWords).mockImplementationOnce(() => new Promise<PromptWord[]>(() => {}))
+
+      const { unmount } = renderPage()
+      await showAllWords()
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+      expect(putWords).toHaveBeenCalledTimes(1) // 通信中（未解決）
+
+      // 通信中に別のワードを追加し、保存が終わる前にページ遷移（アンマウント）する
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      unmount()
+
+      // アンマウント flush で最新（'second' を含む）が送られ、遷移で編集が消えない
+      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
+      expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
+    })
+
+    it('re-sends the pending edit on unmount after a failed save with no further edits', async () => {
+      vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
+
+      const { unmount } = renderPage()
+      await showAllWords()
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+      expect(putWords).toHaveBeenCalledTimes(1)
+      await screen.findByText('save failed')
+
+      // 失敗後、追加編集せずに遷移（アンマウント）しても、未保存の変更が再送される
+      unmount()
+      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
+      expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('first')
+    })
   })
 })

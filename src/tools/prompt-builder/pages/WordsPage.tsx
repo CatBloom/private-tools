@@ -50,8 +50,9 @@ export const WordsPage = () => {
   wordsRef.current = words
   const dirtyRef = useRef(dirty)
   dirtyRef.current = dirty
-  const saveStatusRef = useRef(saveStatus)
-  saveStatusRef.current = saveStatus
+  // 直近で putWords に「成功」したスナップショット（参照）。保存の通信中の再編集や保存失敗後の遷移で、
+  // アンマウント flush が「現在値が未保存か」を参照比較で判定するために持つ（失敗時は更新しない）。
+  const lastSentRef = useRef<PromptWord[] | null>(null)
 
   const [newText, setNewText] = useState('')
   const [newDescription, setNewDescription] = useState('')
@@ -152,6 +153,9 @@ export const WordsPage = () => {
     setSaveError(null)
     try {
       await putWords(snapshot)
+      // 送信に「成功」したスナップショットとして記録する（失敗時は記録しない＝アンマウント flush で
+      // 再送させる）。保存中の再編集は wordsRef が別参照になるので、その後の遷移でも最新を送れる。
+      lastSentRef.current = snapshot
       if (wordsRef.current === snapshot) {
         // 通信中に編集が無ければ保存完了。手動・自動どちらの保存でも成功トーストを出す。
         setDirty(false)
@@ -186,7 +190,11 @@ export const WordsPage = () => {
   // best-effort で1回だけ flush する。state 更新は行わない。
   useEffect(() => {
     return () => {
-      if (dirtyRef.current && saveStatusRef.current !== 'saving') {
+      // 未保存の変更があり、かつ「最後に保存成功した内容」と現在値が参照で異なるなら best-effort で
+      // 1回 flush する。これで (1) 保存の通信中に再編集して遷移したケースと (2) 保存失敗後に
+      // 追加編集なしで遷移したケースの両方で、未保存の最新を送れる（保存成功済みと同参照なら送らない）。
+      // in-flight との到着順までは保証しないが、遷移で編集が確実に消えるよりは良い。
+      if (dirtyRef.current && wordsRef.current !== lastSentRef.current) {
         putWords(wordsRef.current).catch(() => {})
       }
     }
