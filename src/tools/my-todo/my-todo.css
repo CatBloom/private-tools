@@ -237,7 +237,9 @@
   background: var(--mytodo-bg);
   border: 1px solid var(--mytodo-border);
   border-radius: 0.75rem;
-  touch-action: none;
+  /* ドラッグ開始は .mytodo-drag-handle の listeners のみ（行本体には付与しない）。
+     行に touch-action:none を付けると、テキスト・チェック・余白を起点にした縦スクロールが
+     モバイルで阻害されるため付けない（抑制はハンドル側だけに限定する）。 */
 }
 
 .mytodo-item.is-dragging {
@@ -259,7 +261,6 @@
 .mytodo-item.is-editing {
   flex-direction: column;
   align-items: stretch;
-  touch-action: auto;
 }
 
 .mytodo-drag-handle {
