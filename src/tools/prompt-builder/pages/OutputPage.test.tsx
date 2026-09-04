@@ -111,6 +111,39 @@ describe('OutputPage', () => {
     expect(await screen.findByText('コピーしました')).toBeInTheDocument()
   })
 
+  it('falls back to document.execCommand when the Clipboard API fails (e.g. iOS Brave)', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('clipboard denied'))
+    Object.assign(navigator, { clipboard: { writeText } })
+    const execCommand = vi.fn().mockReturnValue(true)
+    Object.assign(document, { execCommand })
+
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
+
+    await waitFor(() => expect(execCommand).toHaveBeenCalledWith('copy'))
+    // execCommand フォールバックが成功したら手動コピーの案内は出さず、成功トーストを出す
+    expect(await screen.findByText('コピーしました')).toBeInTheDocument()
+    expect(screen.queryByText(/選択済みのテキストを手動でコピーしてください/)).not.toBeInTheDocument()
+  })
+
+  it('falls back to manual selection when both the Clipboard API and execCommand fail', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('clipboard denied'))
+    Object.assign(navigator, { clipboard: { writeText } })
+    const execCommand = vi.fn().mockReturnValue(false)
+    Object.assign(document, { execCommand })
+
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
+
+    expect(await screen.findByText(/選択済みのテキストを手動でコピーしてください/)).toBeInTheDocument()
+  })
+
   it('saves the current output as a named history entry with a selected target via putHistory', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
