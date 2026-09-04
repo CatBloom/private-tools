@@ -29,6 +29,16 @@ export const TopPage = () =>
         null,
         createElement(
           'a',
+          { className: 'top-tool-card', href: '/tools/my-todo' },
+          createElement('span', { className: 'top-tool-name' }, 'MyTodo'),
+          createElement('span', { className: 'top-tool-desc' }, '今日やることを管理するシンプルなToDoリスト'),
+        ),
+      ),
+      createElement(
+        'li',
+        null,
+        createElement(
+          'a',
           { className: 'top-tool-card', href: '/tools/credit-csv' },
           createElement('span', { className: 'top-tool-name' }, 'Credit CSV Viewer'),
           createElement('span', { className: 'top-tool-desc' }, 'クレジットカード利用明細CSVを集計・閲覧する'),
