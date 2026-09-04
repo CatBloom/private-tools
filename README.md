@@ -43,7 +43,7 @@ pnpm run dev     # http://localhost:5173
 CSV の保存・一覧・削除を本番で使うには、Cloudflare KV を用意し、Vercel に次の環境変数を設定して再デプロイする（トークンは Vercel の環境変数にのみ置き、コード・Git・ログに残さない）。
 
 - `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_KV_NAMESPACE_ID`
+- `CLOUDFLARE_KV_CREDIT_NAMESPACE_ID`
 - `CLOUDFLARE_KV_API_TOKEN`（Workers KV Storage: Edit 権限）
 
 3つすべてが揃うと KV を使用し、揃わない場合はローカルフォールバックになる（Vercel の読み取り専用 FS では書き込みに失敗するため、本番では KV 設定が必須）。
