@@ -62,11 +62,56 @@ describe('WordsPage', () => {
     expect(screen.getByText('blue sky')).toBeInTheDocument()
   })
 
+  it('filters words by name or description (case-insensitive partial match), combined with tag filter as AND', async () => {
+    renderPage()
+    await showAllWords()
+
+    const searchInput = screen.getByLabelText('名前・説明で検索')
+
+    // 名前の部分一致（大文字小文字を区別しない）
+    fireEvent.change(searchInput, { target: { value: 'CAT' } })
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+    expect(screen.queryByText('blue sky')).not.toBeInTheDocument()
+
+    // 説明の部分一致
+    fireEvent.change(searchInput, { target: { value: 'ネコ耳' } })
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+    expect(screen.queryByText('blue sky')).not.toBeInTheDocument()
+
+    // 検索とタグ絞り込みは AND（検索にヒットしても別タグなら出さない）
+    const filterSelect = screen.getByLabelText('タグで絞り込み')
+    fireEvent.change(filterSelect, { target: { value: 'quality' } })
+    expect(screen.queryByText('cat girl')).not.toBeInTheDocument()
+
+    // 空欄に戻すと全件表示に戻る
+    fireEvent.change(searchInput, { target: { value: '' } })
+    fireEvent.change(filterSelect, { target: { value: 'ALL' } })
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+    expect(screen.getByText('blue sky')).toBeInTheDocument()
+  })
+
+  it('shows a no-match empty state (not the empty-registry message) when a search matches nothing', async () => {
+    renderPage()
+    await showAllWords()
+
+    fireEvent.change(screen.getByLabelText('名前・説明で検索'), { target: { value: 'no such word' } })
+
+    expect(await screen.findByText('該当するワードがありません。')).toBeInTheDocument()
+    expect(screen.queryByText('ワードが登録されていません。')).not.toBeInTheDocument()
+
+    // フラット表示（特定タグ絞り込み）でも検索が効く
+    fireEvent.change(screen.getByLabelText('タグで絞り込み'), { target: { value: 'illustrator' } })
+    fireEvent.change(screen.getByLabelText('名前・説明で検索'), { target: { value: 'cat' } })
+    expect(screen.getByText('cat girl')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('名前・説明で検索'), { target: { value: 'blue' } })
+    expect(await screen.findByText('該当するワードがありません。')).toBeInTheDocument()
+  })
+
   it('groups words by tag with headings in the fixed order when ALL is selected', async () => {
     renderPage()
     await showAllWords()
 
-    // 固定順は angle, composition, expression, illustrator, pose, quality, situation, others。
+    // 固定順は appearance, character, expression, illustrator, negative, quality, scene, text, others。
     // 0件のタグは見出しごと出さないので、sampleWords に存在する illustrator/quality のみ表示される。
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'Illustrator',
@@ -130,7 +175,7 @@ describe('WordsPage', () => {
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'no tag word' } })
     expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
 
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
     expect(screen.getByRole('button', { name: '追加' })).toBeEnabled()
   })
 
@@ -139,7 +184,7 @@ describe('WordsPage', () => {
     await showAllWords()
 
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
     fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
     const saveButton = await screen.findByRole('button', { name: '保存' })
@@ -148,7 +193,7 @@ describe('WordsPage', () => {
     await waitFor(() => expect(putWords).toHaveBeenCalledTimes(1))
     const [words] = vi.mocked(putWords).mock.calls[0]
     expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'new word'])
-    expect(words.map((word) => word.tag)).toEqual(['illustrator', 'quality', 'pose'])
+    expect(words.map((word) => word.tag)).toEqual(['illustrator', 'quality', 'expression'])
     // 手動保存は成功トーストを出す
     expect(await screen.findByText('保存しました')).toBeInTheDocument()
   })
@@ -181,7 +226,7 @@ describe('WordsPage', () => {
     await showAllWords()
 
     fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
     fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
     expect(await screen.findByText('追加しました')).toBeInTheDocument()
@@ -203,7 +248,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'auto word' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       expect(putWords).not.toHaveBeenCalled()
@@ -222,14 +267,14 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 1回目の変更からアイドルが完了する直前
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 2回目の変更でタイマーがリセットされるので、そこからアイドル完了までは発火しない
@@ -248,7 +293,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -261,7 +306,7 @@ describe('WordsPage', () => {
 
       // 次のワード編集で自動保存が再アームされる
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
       expect(putWords).toHaveBeenCalledTimes(2)
@@ -272,7 +317,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'manual word' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       const saveButton = await screen.findByRole('button', { name: '保存' })
@@ -294,7 +339,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -302,7 +347,7 @@ describe('WordsPage', () => {
 
       // 保存の通信中にユーザーが別のワードを追加する
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       // 古いスナップショットの結果（空配列）を返しても、通信中に足した 'second' は消えない
@@ -326,7 +371,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -334,7 +379,7 @@ describe('WordsPage', () => {
 
       // 通信中に別のワードを追加し、保存が終わる前にページ遷移（アンマウント）する
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       unmount()
@@ -359,7 +404,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'only' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
@@ -382,7 +427,7 @@ describe('WordsPage', () => {
       await showAllWords()
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'pose' } })
+      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)

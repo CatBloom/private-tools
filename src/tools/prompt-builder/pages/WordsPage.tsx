@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { getWords, putWords } from '../api'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
@@ -69,6 +69,8 @@ export const WordsPage = () => {
 
   // タグでの絞り込み。永続化しない（リロードのたびに既定の ALL に戻る）。
   const [filterTag, setFilterTag] = useState<TagFilter>('ALL')
+  // 名前・説明の部分一致検索。永続化しない（タグ絞り込みと同じ扱い）。タグ絞り込みとは AND。
+  const [searchQuery, setSearchQuery] = useState('')
 
   const loadWords = useCallback(async () => {
     setLoadStatus('loading')
@@ -136,8 +138,22 @@ export const WordsPage = () => {
     setEditingId(null)
   }
 
+  // 名前・説明の部分一致で絞り込んだワード（タグ絞り込みより先に適用し AND で効かせる）。
+  const searchedWords = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return words
+    return words.filter(
+      (word) => word.text.toLowerCase().includes(query) || word.description.toLowerCase().includes(query),
+    )
+  }, [words, searchQuery])
+
   // 絞り込みと ALL 表示用のタグ別グループ化（並び順は PROMPT_TAG_IDS の固定順・0件タグは除外）。
-  const { visible: visibleWords, grouped: groupedWords } = useGroupedFilter(words, PROMPT_TAG_IDS, getWordTag, filterTag)
+  const { visible: visibleWords, grouped: groupedWords } = useGroupedFilter(
+    searchedWords,
+    PROMPT_TAG_IDS,
+    getWordTag,
+    filterTag,
+  )
 
   const deleteWord = async (id: string) => {
     const confirmed = await confirm('このワードを削除しますか？', { title: '削除', danger: true })
@@ -354,7 +370,7 @@ export const WordsPage = () => {
 
         {loadStatus === 'ready' ? (
           <>
-            <div className="pbuilder-word-filter">
+            <div className="pbuilder-word-filter pbuilder-word-filter-search">
               <select
                 aria-label="タグで絞り込み"
                 className="pbuilder-tag-filter-select"
@@ -364,11 +380,21 @@ export const WordsPage = () => {
                 <option value="ALL">ALL</option>
                 <TagOptions />
               </select>
+              <input
+                type="text"
+                className="pbuilder-word-search"
+                aria-label="名前・説明で検索"
+                placeholder="名前・説明で検索"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
             </div>
 
             {filterTag === 'ALL' ? (
               groupedWords.length === 0 ? (
-                <p className="pbuilder-word-empty">ワードが登録されていません。</p>
+                <p className="pbuilder-word-empty">
+                  {words.length === 0 ? 'ワードが登録されていません。' : '該当するワードがありません。'}
+                </p>
               ) : (
                 <div className="pbuilder-tag-groups">
                   {groupedWords.map((group) => (
