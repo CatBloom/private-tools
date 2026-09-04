@@ -331,6 +331,15 @@ export const OutputPage = () => {
   }
 
   const handleCopy = async () => {
+    // execCommand は user activation を要求する。iOS/WebKit は最初の await を
+    // またぐと activation が失効するため、同期のうちに execCommand を先に試す。
+    if (copyWithExecCommand(outputText)) {
+      setCopyStatus('idle')
+      showAlert('success', 'コピーしました')
+      return
+    }
+
+    // execCommand が使えない環境（無効化・非対応）は Clipboard API を試す。
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
       await navigator.clipboard.writeText(outputText)
@@ -338,16 +347,10 @@ export const OutputPage = () => {
       showAlert('success', 'コピーしました')
       return
     } catch {
-      // Clipboard API が失敗した場合は execCommand へフォールバックする（下記）
+      // どちらも失敗した場合は下記で選択状態にして手動コピーへ落とす
     }
 
-    if (copyWithExecCommand(outputText)) {
-      setCopyStatus('idle')
-      showAlert('success', 'コピーしました')
-      return
-    }
-
-    // execCommand も使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
+    // どちらも使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
     const node = outputTextRef.current
     const selection = typeof window.getSelection === 'function' ? window.getSelection() : null
     if (node && selection) {
