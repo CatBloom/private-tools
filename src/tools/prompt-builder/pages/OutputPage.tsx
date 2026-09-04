@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
+import { copyText } from '../../../lib/copyText'
 import { getHistory, putHistory } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
@@ -303,54 +304,14 @@ export const OutputPage = () => {
       </li>
     )
 
-  // iOS Brave 等、async Clipboard API が失敗しやすい環境向けの同期フォールバック。
-  // 一時 textarea を選択状態にして document.execCommand('copy') を試す。
-  const copyWithExecCommand = (text: string): boolean => {
-    let textarea: HTMLTextAreaElement | null = null
-    try {
-      textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.top = '0'
-      textarea.style.left = '0'
-      textarea.style.opacity = '0'
-      textarea.style.pointerEvents = 'none'
-      textarea.style.fontSize = '16px' // iOS のフォーカス時ズームを防ぐ
-      document.body.appendChild(textarea)
-      textarea.contentEditable = 'true'
-      textarea.readOnly = false
-      textarea.focus()
-      textarea.setSelectionRange(0, text.length) // iOS は select() だけだと効かないことがある
-      return document.execCommand('copy')
-    } catch {
-      return false
-    } finally {
-      // append 前に例外が出た場合は textarea が未接続のままなので、接続済みのときだけ除去する
-      if (textarea?.parentNode) textarea.parentNode.removeChild(textarea)
-    }
-  }
-
   const handleCopy = async () => {
-    // execCommand は user activation を要求する。iOS/WebKit は最初の await を
-    // またぐと activation が失効するため、同期のうちに execCommand を先に試す。
-    if (copyWithExecCommand(outputText)) {
+    if (await copyText(outputText)) {
       setCopyStatus('idle')
       showAlert('success', 'コピーしました')
       return
     }
 
-    // execCommand が使えない環境（無効化・非対応）は Clipboard API を試す。
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
-      await navigator.clipboard.writeText(outputText)
-      setCopyStatus('idle')
-      showAlert('success', 'コピーしました')
-      return
-    } catch {
-      // どちらも失敗した場合は下記で選択状態にして手動コピーへ落とす
-    }
-
-    // どちらも使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
+    // どちらの手段も使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
     const node = outputTextRef.current
     const selection = typeof window.getSelection === 'function' ? window.getSelection() : null
     if (node && selection) {
