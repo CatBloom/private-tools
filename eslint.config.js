@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig } from 'eslint/config'
 
 export default defineConfig(
-  { ignores: ['coverage/', 'src/public/assets/'] },
+  { ignores: ['coverage/', 'src/public/assets/', '.claude/'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
