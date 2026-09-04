@@ -11,6 +11,11 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 const EMPTY_STATE: TodoState = { today: [], someday: [], lastRolloverDate: null }
 
+// KV の「同一キー1秒1回」制約を守るための書き込み最小間隔。単発編集では影響しない
+// （前回書き込みから十分時間が経っていれば delay=0 で即時に送る）。1秒未満に連続編集した
+// ときだけ、残り時間ぶんだけ次の書き込みを遅らせる（スペーシング）。
+const MIN_WRITE_INTERVAL_MS = 1000
+
 const createItem = (text: string): TodoItem => ({
   id: crypto.randomUUID(),
   text: text.trim(),
@@ -36,14 +41,18 @@ type TodoContextValue = {
 const TodoContext = createContext<TodoContextValue | null>(null)
 
 // Today/Someday の状態を1箇所に持ち上げ、ページ（ルート）を切り替えても保持する。
-// 保存はデバウンス無しの即時 PUT（ユーザー要望「追加・変更時に即保存／時間制にしない」）。
-// ただし送信は直列化する: in-flight 中の変更は待たせておき、完了後に最新値との差分が
-// あればもう一度だけ送る（in-flight guard + 最新へ集約）。これで同時実行は高々1本、
-// 連続操作（連打トグル・並べ替え）でも中間状態は畳まれて最終状態だけが届き、書き込み
-// 回数を最小化する。※これは「往復時間に律速して1000回/日枠を無駄打ちしない」ための集約で
-// あって、KV の「同一キー1秒1回」の最小間隔を厳密に保証するものではない（即時保存を優先した
-// 設計判断。個人利用の頻度では日次枠に十分収まる）。失敗時は自動リトライしない
-// （lastSentRef を進めないので、次の操作が再アームする）。
+// 保存はデバウンス無しの即時 PUT（ユーザー要望「追加・変更時に即保存／時間制にしない」）が
+// 基本だが、KV の「同一キー1秒1回」を守るため書き込みは最小間隔でゲートする: 前回の書き込み
+// 開始から MIN_WRITE_INTERVAL_MS 未満なら、残り時間だけ setTimeout してから最新状態を
+// 取り直して送る。前回の書き込みから十分時間が経っていれば delay=0 で即時に送るので、
+// アイドル後の単発編集は体感上「即時保存」のまま。1秒未満の連続編集（バースト）だけが
+// スペーシングされ、中間状態は畳まれて最終状態だけが届く。
+// これとは別に送信そのものも直列化する: in-flight 中の変更はそのタイミングでは送らず、
+// 完了後に最新値との差分があればもう一度だけ（＝上記のゲートを経て）送る
+// （in-flight guard + 最新へ集約）。同時実行は常に高々1本。
+// 失敗時（ネットワーク/認証等のハード失敗）は自動リトライしない
+// （lastSentRef を進めないので、次の操作が再アームする。無限リトライによる書き込み
+// クォータの浪費を避けるため）。
 export const TodoProvider = ({ children }: { children: ReactNode }) => {
   const { showAlert } = useAlert()
   const { confirm } = useConfirm()
@@ -61,13 +70,24 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
   // 「保存すべき差分が無い」とみなす（失敗時は更新しない）。
   const lastSentRef = useRef<TodoState | null>(null)
   // 実行中の putTodos（常に高々1つ）。in-flight の間に来た変更はここでは送らず、
-  // 完了後に最新値との差分を見て必要なら続けて1回だけ送る。
+  // 完了後に最新値との差分を見て必要なら続けて1回だけ送る（ゲートを経て）。
   const inFlightRef = useRef<Promise<unknown> | null>(null)
+  // 直前に putTodos を呼び始めた時刻（Date.now()）。書き込み最小間隔のゲートで
+  // 「前回の書き込み開始からどれだけ経ったか」を判定するために使う。
+  const lastWriteStartedAtRef = useRef<number | null>(null)
+  // スペーシングのために張った pending タイマー（高々1本。新たにスケジュールする前や
+  // アンマウント時に必ず clear する）。
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // runSave の成功コールバックから最新の scheduleSave を呼ぶための ref。scheduleSave は
+  // runSave に依存して定義される（宣言順で後）ため、runSave の useCallback 依存配列に
+  // 直接は書けない（TDZ）。ref 経由にすることで循環参照を避けつつ常に最新を呼べるようにする。
+  const scheduleSaveRef = useRef<() => void>(() => {})
 
   const runSave = useCallback(
     (snapshot: TodoState) => {
       setSaveStatus('saving')
       setSaveError(null)
+      lastWriteStartedAtRef.current = Date.now()
       const request = putTodos(snapshot)
       inFlightRef.current = request
       request.then(
@@ -75,8 +95,8 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
           lastSentRef.current = snapshot
           inFlightRef.current = null
           if (todoStateRef.current !== snapshot) {
-            // 通信中にさらに変更があった。最新の状態でもう一度だけ送る。
-            runSave(todoStateRef.current)
+            // 通信中にさらに変更があった。scheduleSave 経由（＝ゲートを経て）もう一度だけ送る。
+            scheduleSaveRef.current()
           } else {
             setSaveStatus('saved')
           }
@@ -93,12 +113,44 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
     [showAlert],
   )
 
+  // 保存の唯一のエントリポイント。in-flight 中・差分無しなら何もしない。前回の書き込み開始
+  // から MIN_WRITE_INTERVAL_MS 経っていなければ、残り時間だけ pending タイマーで遅らせてから
+  // （発火時に最新状態・in-flight を再評価して）送る。経っていれば即時に送る。
   const scheduleSave = useCallback(() => {
     if (inFlightRef.current) return
     const snapshot = todoStateRef.current
     if (snapshot === lastSentRef.current) return
-    runSave(snapshot)
+
+    if (pendingTimerRef.current !== null) {
+      clearTimeout(pendingTimerRef.current)
+      pendingTimerRef.current = null
+    }
+
+    const elapsed = lastWriteStartedAtRef.current === null ? Infinity : Date.now() - lastWriteStartedAtRef.current
+    const delay = Math.max(0, MIN_WRITE_INTERVAL_MS - elapsed)
+
+    if (delay <= 0) {
+      runSave(snapshot)
+      return
+    }
+
+    pendingTimerRef.current = setTimeout(() => {
+      pendingTimerRef.current = null
+      scheduleSave()
+    }, delay)
   }, [runSave])
+  scheduleSaveRef.current = scheduleSave
+
+  // アンマウント時に pending タイマーが残らないようにする（発火しても setTodoState 等は
+  // 呼ばないため実害は無いが、不要なタイマーは残さない）。
+  useEffect(() => {
+    return () => {
+      if (pendingTimerRef.current !== null) {
+        clearTimeout(pendingTimerRef.current)
+        pendingTimerRef.current = null
+      }
+    }
+  }, [])
 
   const loadTodos = useCallback(async () => {
     setLoadStatus('loading')

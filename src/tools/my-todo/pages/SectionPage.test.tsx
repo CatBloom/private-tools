@@ -63,6 +63,9 @@ describe('SectionPage', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    // フェイクタイマーを使うテストが途中で失敗した場合でも、以降のテストに fake timers が
+    // 漏れ出さないようにする（vi.useRealTimers は real timers 中に呼んでも安全）。
+    vi.useRealTimers()
   })
 
   it('renders items loaded for the given section', async () => {
@@ -112,12 +115,97 @@ describe('SectionPage', () => {
     fireEvent.click(addButton)
     expect(putTodos).toHaveBeenCalledTimes(1)
 
-    // 1件目の完了後、最新状態でもう一度だけ送る（3件目・2件目を個別には送らない）。
+    // 1件目の完了後、最新状態でもう一度だけ送る（3件目・2件目を個別には送らない）。書き込み
+    // 最小間隔のゲートで即時には送られない可能性があるため、余裕を持った timeout で待つ
+    // （フェイクタイマーを使う厳密なタイミング検証は下の2ケースで行う）。
     resolvers[0](vi.mocked(putTodos).mock.calls[0][0])
-    await waitFor(() => expect(putTodos).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(putTodos).toHaveBeenCalledTimes(2), { timeout: 2000 })
     expect(vi.mocked(putTodos).mock.calls[1][0].today.map((item) => item.text)).toEqual(['first', 'second', 'third'])
 
     resolvers[1](vi.mocked(putTodos).mock.calls[1][0])
     await waitFor(() => expect(screen.getByText('保存済み')).toBeInTheDocument())
+  }, 10_000)
+
+  it('spaces a burst of writes to respect the minimum write interval (single edits stay immediate)', async () => {
+    const resolvers: Array<(state: TodoState) => void> = []
+    vi.mocked(putTodos).mockImplementation(
+      (state) =>
+        new Promise((resolve) => {
+          resolvers.push(() => resolve(state))
+        }),
+    )
+    renderSection()
+
+    const input = await screen.findByPlaceholderText('タスクを追加')
+    const addButton = screen.getByRole('button', { name: '追加' })
+
+    // 単発の編集は前回書き込みから十分時間が経っている（初回）ため即時に送られる。
+    fireEvent.change(input, { target: { value: 'first' } })
+    fireEvent.click(addButton)
+    await waitFor(() => expect(putTodos).toHaveBeenCalledTimes(1))
+
+    // ここから先だけタイマー・Date.now を fake にして、間隔ゲートのタイミングを厳密に検証する
+    // （切り替え時点の実時刻を引き継ぐので、直前に記録した書き込み開始時刻との差分計算は壊れない）。
+    vi.useFakeTimers()
+
+    // 1件目がまだ in-flight のうちに2件追加（バースト）。
+    fireEvent.change(input, { target: { value: 'second' } })
+    fireEvent.click(addButton)
+    fireEvent.change(input, { target: { value: 'third' } })
+    fireEvent.click(addButton)
+    expect(putTodos).toHaveBeenCalledTimes(1)
+
+    // 1件目が完了しても、前回の書き込み開始からまだ最小間隔（1秒）経っていないので
+    // follow-up はまだ送られない（pending タイマーで待たされる）。
+    resolvers[0](vi.mocked(putTodos).mock.calls[0][0])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(putTodos).toHaveBeenCalledTimes(1)
+
+    // 残り時間が経過すると、畳まれた最新状態でもう一度だけ送る。
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(putTodos).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(putTodos).mock.calls[1][0].today.map((item) => item.text)).toEqual(['first', 'second', 'third'])
+
+    resolvers[1](vi.mocked(putTodos).mock.calls[1][0])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(screen.getByText('保存済み')).toBeInTheDocument()
+
+    vi.useRealTimers()
+  })
+
+  it('clears the pending write timer on unmount so a delayed follow-up never fires', async () => {
+    const resolvers: Array<(state: TodoState) => void> = []
+    vi.mocked(putTodos).mockImplementation(
+      (state) =>
+        new Promise((resolve) => {
+          resolvers.push(() => resolve(state))
+        }),
+    )
+    const { unmount } = renderSection()
+
+    const input = await screen.findByPlaceholderText('タスクを追加')
+    const addButton = screen.getByRole('button', { name: '追加' })
+
+    fireEvent.change(input, { target: { value: 'first' } })
+    fireEvent.click(addButton)
+    await waitFor(() => expect(putTodos).toHaveBeenCalledTimes(1))
+
+    vi.useFakeTimers()
+
+    fireEvent.change(input, { target: { value: 'second' } })
+    fireEvent.click(addButton)
+
+    // 1件目の完了で follow-up の pending タイマーが張られる（最小間隔未満なのでまだ送らない）。
+    resolvers[0](vi.mocked(putTodos).mock.calls[0][0])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(putTodos).toHaveBeenCalledTimes(1)
+
+    unmount()
+
+    // アンマウントで pending タイマーが clear されていれば、時間を進めても送信されない。
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(putTodos).toHaveBeenCalledTimes(1)
+
+    vi.useRealTimers()
   })
 })
