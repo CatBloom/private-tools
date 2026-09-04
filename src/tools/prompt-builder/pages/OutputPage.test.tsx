@@ -2,10 +2,17 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { AlertProvider, ConfirmProvider } from '../../../components/feedback'
+import { copyText } from '../../../lib/copyText'
 import { OutputPage } from './OutputPage'
 import { getHistory, putHistory } from '../api'
 import { writeOutputItems } from '../lib/outputStorage'
 import type { HistoryEntry, OutputItem } from '../shared/types'
+
+// execCommand/Clipboard API の分岐は src/lib/copyText.test.ts で網羅済み。ここでは
+// copyText の成否を受けた OutputPage 側の UI 分岐（トースト・手動選択フォールバック）だけを見る。
+vi.mock('../../../lib/copyText', () => ({
+  copyText: vi.fn(),
+}))
 
 // OutputPage は useAlert/useConfirm を使うため、常に Provider でラップして render する。
 const renderPage = () =>
@@ -96,9 +103,8 @@ describe('OutputPage', () => {
     expect(screen.getByText('cat girl', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
   })
 
-  it('copies the output preview text to the clipboard', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.assign(navigator, { clipboard: { writeText } })
+  it('shows a success toast and no manual-copy notice when copyText succeeds', async () => {
+    vi.mocked(copyText).mockResolvedValue(true)
 
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
@@ -106,9 +112,22 @@ describe('OutputPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith('cat girl'))
-    // コピー成功をトーストで通知する
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith('cat girl'))
     expect(await screen.findByText('コピーしました')).toBeInTheDocument()
+    expect(screen.queryByText(/選択済みのテキストを手動でコピーしてください/)).not.toBeInTheDocument()
+  })
+
+  it('falls back to manual selection when copyText fails', async () => {
+    vi.mocked(copyText).mockResolvedValue(false)
+
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
+
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith('cat girl'))
+    expect(await screen.findByText(/選択済みのテキストを手動でコピーしてください/)).toBeInTheDocument()
   })
 
   it('saves the current output as a named history entry with a selected target via putHistory', async () => {

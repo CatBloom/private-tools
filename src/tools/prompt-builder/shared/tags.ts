@@ -1,15 +1,12 @@
 // アルファベット順、ただし others だけ常に最下（絞り込み・ALLグループ表示・各セレクトの並びに反映される）。
 export const PROMPT_TAG_IDS = [
-  'angle',
+  'appearance',
   'character',
-  'composition',
   'expression',
   'illustrator',
   'negative',
-  'parts',
-  'pose',
   'quality',
-  'situation',
+  'scene',
   'text',
   'others',
 ] as const
@@ -17,16 +14,13 @@ export const PROMPT_TAG_IDS = [
 export type PromptTagId = (typeof PROMPT_TAG_IDS)[number]
 
 export const PROMPT_TAG_LABELS: Record<PromptTagId, string> = {
-  angle: 'angle',
+  appearance: 'appearance',
   character: 'character',
-  composition: 'composition',
   expression: 'expression',
   illustrator: 'illustrator',
   negative: 'negative',
-  parts: 'parts',
-  pose: 'pose',
   quality: 'quality',
-  situation: 'situation',
+  scene: 'scene',
   text: 'text',
   others: 'others',
 }

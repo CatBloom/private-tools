@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
+import { copyText } from '../../../lib/copyText'
 import { getHistory, putHistory } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
@@ -304,22 +305,22 @@ export const OutputPage = () => {
     )
 
   const handleCopy = async () => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
-      await navigator.clipboard.writeText(outputText)
+    if (await copyText(outputText)) {
+      setCopyStatus('idle')
       showAlert('success', 'コピーしました')
-    } catch {
-      // クリップボード API が使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
-      const node = outputTextRef.current
-      const selection = typeof window.getSelection === 'function' ? window.getSelection() : null
-      if (node && selection) {
-        const range = document.createRange()
-        range.selectNodeContents(node)
-        selection.removeAllRanges()
-        selection.addRange(range)
-      }
-      setCopyStatus('error')
+      return
     }
+
+    // どちらの手段も使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
+    const node = outputTextRef.current
+    const selection = typeof window.getSelection === 'function' ? window.getSelection() : null
+    if (node && selection) {
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
+    setCopyStatus('error')
   }
 
   return (

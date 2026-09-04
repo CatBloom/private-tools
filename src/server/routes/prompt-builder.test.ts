@@ -100,7 +100,7 @@ describe('prompt word routes', () => {
   })
 
   it('accepts a word with a valid tag', async () => {
-    const words = [{ id: '1', text: 'foo', description: '', tag: 'pose' }]
+    const words = [{ id: '1', text: 'foo', description: '', tag: 'expression' }]
     const response = await request('/words', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
