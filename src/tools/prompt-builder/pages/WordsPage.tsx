@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
+import { RowMenu } from '../../../components/RowMenu'
 import { getWords, putWords } from '../api'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
@@ -283,22 +284,22 @@ export const WordsPage = () => {
       </li>
     ) : (
       <li key={word.id} className="pbuilder-word-row">
-        <div className="pbuilder-word-row-text">
+        <button
+          type="button"
+          className="pbuilder-word-row-text pbuilder-word-row-button"
+          aria-label={`${word.text}を出力に追加`}
+          onClick={() => addToOutput(word)}
+        >
           <span className="pbuilder-word-text">{word.text}</span>
           {word.description ? <span className="pbuilder-word-description">{word.description}</span> : null}
-        </div>
+        </button>
         <div className="pbuilder-word-row-actions">
-          <button type="button" onClick={() => addToOutput(word)}>
-            出力に追加
-          </button>
-          <div className="pbuilder-word-row-actions-secondary">
-            <button type="button" onClick={() => startEdit(word)}>
-              編集
-            </button>
-            <button type="button" className="pbuilder-danger-button" onClick={() => deleteWord(word.id)}>
-              削除
-            </button>
-          </div>
+          <RowMenu
+            items={[
+              { key: 'edit', label: '編集', onClick: () => startEdit(word) },
+              { key: 'delete', label: '削除', onClick: () => deleteWord(word.id), danger: true },
+            ]}
+          />
         </div>
       </li>
     )

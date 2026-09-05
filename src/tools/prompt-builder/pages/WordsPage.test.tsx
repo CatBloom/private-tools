@@ -23,6 +23,9 @@ const showAllWords = async () => {
   return screen.findByText('cat girl')
 }
 
+// 編集/削除は行の「⋯」メニューに集約されている（RowMenu）。
+const openRowMenu = (row: HTMLElement) => fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
+
 vi.mock('../api', () => ({
   getWords: vi.fn(),
   putWords: vi.fn(),
@@ -125,12 +128,12 @@ describe('WordsPage', () => {
     expect(within(qualityGroup as HTMLElement).getByText('blue sky')).toBeInTheDocument()
   })
 
-  it('adds a selected word to the shared output storage', async () => {
+  it('adds a selected word to the shared output storage when the row is clicked', async () => {
     renderPage()
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
+    fireEvent.click(within(wordRow).getByRole('button', { name: 'cat girlを出力に追加' }))
 
     expect(await screen.findByText('出力に追加しました')).toBeInTheDocument()
     expect(readOutputItems().map((item) => item.text)).toEqual(['cat girl'])
@@ -141,7 +144,7 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    const addButton = within(wordRow).getByRole('button', { name: '出力に追加' })
+    const addButton = within(wordRow).getByRole('button', { name: 'cat girlを出力に追加' })
 
     fireEvent.click(addButton)
     expect(await screen.findByText('出力に追加しました')).toBeInTheDocument()
@@ -203,7 +206,8 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    openRowMenu(wordRow)
+    fireEvent.click(within(wordRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(screen.queryByText('cat girl')).not.toBeInTheDocument())
@@ -215,7 +219,8 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    openRowMenu(wordRow)
+    fireEvent.click(within(wordRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(screen.getByText('cat girl')).toBeInTheDocument()

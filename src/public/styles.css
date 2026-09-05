@@ -388,6 +388,12 @@ button, input { font: inherit; }
   transform: translateX(0);
 }
 
+.tool-layout-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 .tool-layout-nav {
   display: flex;
   flex-direction: column;
@@ -440,16 +446,19 @@ button, input { font: inherit; }
 }
 
 .tool-layout-back-link {
-  padding: 0.6rem 0.9rem;
-  color: var(--pt-muted);
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pt-text);
   font-weight: 700;
   text-decoration: none;
 }
 
-/* テーマ切替ボタン本体のスタイルは共通 .theme-toggle。ドロワー最下部への配置だけをここで足す。 */
-.tool-layout-menu .theme-toggle {
-  align-self: flex-start;
+/* 「← ツール一覧」とテーマ切替を同じボタン規格（.pt-button）で横並び・同幅にし、ドロワー最下部に固定する。 */
+.tool-layout-menu-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
   margin-top: auto;
 }
 
@@ -500,8 +509,80 @@ button, input { font: inherit; }
   padding: 0.5rem 0.9rem;
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
-  border-radius: 0.65rem;
+  border-radius: var(--pt-radius-md);
   cursor: pointer;
+}
+
+/* ============================================================
+   行の操作（移動・編集・削除等）を「⋯」に集約するオーバーフローメニュー（my-todo/prompt-builder
+   共通、src/components/RowMenu.tsx）。行内の button 既定スタイル（`.pbuilder-app button` 等）に
+   勝たせるため、アンカー/メニュー配下の子孫セレクタで specificity を確保する。
+   ============================================================ */
+.row-menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* 「⋯」トリガーはアイコンのみのアイコンボタン（意味は aria-label で伝える）。 */
+.row-menu-anchor .row-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+}
+
+.row-menu-anchor .row-menu-trigger:hover:not(:disabled) {
+  background: var(--pt-surface);
+  border-color: var(--pt-accent);
+}
+
+.row-menu-anchor .row-menu-trigger:focus-visible,
+.row-menu-anchor .row-menu-trigger[aria-expanded="true"] {
+  outline: 2px solid var(--pt-accent);
+  outline-offset: 1px;
+}
+
+/* トリガー基準で右寄せ・下方向に開くポップアップ（.row-menu-anchor が position:relative の
+   アンカー）。行側は overflow を持たないのでクリップされない。 */
+.row-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  /* 項目は「移動」「編集」「削除」等の短い語のみ。内容幅にフィットさせ、箱が横に間延びしない
+     ようにする（軽い下限だけ設ける）。 */
+  width: max-content;
+  min-width: 6rem;
+  padding: 0.35rem;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--pt-shadow);
+}
+
+.row-menu .row-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.row-menu .row-menu-item:hover:not(:disabled) {
+  background: var(--pt-bg);
+}
+
+.row-menu .row-menu-item:focus-visible {
+  outline: 2px solid var(--pt-accent);
+  outline-offset: -2px;
 }
 
 /* ============================================================
@@ -537,8 +618,7 @@ button, input { font: inherit; }
 
 /* ボタン（danger）: 削除など破壊的操作。枠線のみで背景は透過。 */
 .pt-button-danger,
-.pbuilder-app .pbuilder-danger-button,
-.mytodo-app .mytodo-danger-button {
+.pbuilder-app .pbuilder-danger-button {
   color: var(--pt-danger);
   border-color: var(--pt-danger);
   background: transparent;
@@ -603,8 +683,7 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
-/* ナビタブ（`.tool-layout-tabs` 内。ToolLayout の tabs=true のツールのみ）。credit-csv は
-   tabs=false のため本文上のタブを持たない（機能ナビはドロワーメニュー内の `.tool-layout-nav` のみ）。 */
+/* ナビタブ（`.tool-layout-tabs` 内。ToolLayout の tabs=true のツールのみ）。 */
 .pt-tab {
   display: flex;
   flex: 1;

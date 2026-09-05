@@ -185,26 +185,41 @@
 
 .pbuilder-word-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
+  /* 説明の有無に関わらずワード＋説明の2行分の高さを確保する（スマホ幅でも行の高さを揃える）。 */
+  min-height: 3.75rem;
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
 .pbuilder-word-row.is-editing {
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.5rem;
+  min-height: 0;
 }
 
 .pbuilder-word-row-text {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  /* 説明が長くてもボタンを押し出さず、テキスト側で折り返す（min-width:0 が必須）。 */
+  /* 説明が長くても隣の「⋯」を押し出さず、テキスト側で折り返す（min-width:0 が必須）。 */
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
+}
+
+/* ワード行そのものをクリックで出力に追加できるボタンにする（既定のボタン背景/枠は解除し、
+   行に埋め込まれた見た目にする）。 */
+.pbuilder-app .pbuilder-word-row-button {
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
 }
 
 .pbuilder-word-text {
@@ -221,20 +236,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  /* 長い説明でボタン群が縮まないように固定する（表示行）。 */
-  flex-shrink: 0;
-  /* スマホ（縦積み時）はボタン列が全幅になるので、出力に追加を左・編集/削除を右に分けて
-     バランスを取る。PC 側（行レイアウト）では内容幅なので space-between は実質無効。 */
-  justify-content: space-between;
-}
-
-.pbuilder-word-row-actions-secondary {
-  display: flex;
-  gap: 0.5rem;
   flex-shrink: 0;
 }
 
-/* 編集中（保存/キャンセルのみ）は表示行の space-between を使わず、履歴編集と同じく右寄せにする。 */
+/* 編集中（保存/キャンセルのみ）は縦積みの行内で右寄せにする。 */
 .pbuilder-word-row.is-editing .pbuilder-word-row-actions {
   justify-content: flex-end;
 }
@@ -447,8 +452,7 @@
 
   /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない
      （横並びにすると入力欄が潰れ、保存/キャンセルが折り返して崩れる）。登録フォームと
-     同じく縦積みのままにする。履歴の名前変更も同じ理由で is-editing を除外する。 */
-  .pbuilder-word-row:not(.is-editing),
+     同じく縦積みのままにする（ワード行は編集中以外は元々ずっと横並び。history はここで PC のみ切替）。 */
   .pbuilder-history-row:not(.is-editing) {
     flex-direction: row;
     align-items: center;

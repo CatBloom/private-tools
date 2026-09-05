@@ -15,7 +15,7 @@ const YearlyPage = lazy(() => import('./pages/YearlyPage').then((m) => ({ defaul
 // トースト/ダイアログが .ccsv-app と兄弟要素になり、テーマ切替の [data-theme] スコープ変数を継承できない。
 export const CreditCsvRoutes = () => (
   <AppDataProvider>
-    <ToolLayout toolId="credit-csv" appClassName="ccsv-app">
+    <ToolLayout toolId="credit-csv" appClassName="ccsv-app" tabs>
       <AlertProvider>
         <ConfirmProvider>
           <Suspense fallback={<Spinner label="読み込み中" />}>

@@ -11,7 +11,7 @@ import { ToolTabs } from './ToolTabs'
 // （credit-csv が持っていたデスクトップ固定サイドバーは廃止し、3ツールで揃える）。
 // `tabs` は本文上のページ切替タブ（旧 my-todo/prompt-builder の Layout.tsx が持っていた
 // タブの後継）。ドロワーの機能ナビと併存させる仕様のため、廃止はせず tabs=true のツールで
-// 明示的に有効化する（credit-csv は従来どおりタブなし）。
+// 明示的に有効化する。
 type ToolLayoutProps = {
   toolId: ToolId
   // テーマ切替スコープ・ツール別 CSS の適用先ラッパーの className（'ccsv-app' 等）。

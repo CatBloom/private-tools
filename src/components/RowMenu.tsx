@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { ExpandMoreIcon } from './icons'
+
+// Material Symbols の expand_more（下向きシェブロン、行の操作メニューのトリガー）。並べ替え
+// ハンドルの ⠿（点）と形を分けて役割を区別する。装飾用途のみなので aria-hidden・
+// focusable="false" にし、意味は呼び出し側ボタンの aria-label で伝える。
+const ExpandMoreIcon = () => (
+  <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z" />
+  </svg>
+)
 
 export type RowMenuItem = {
   key: string
@@ -14,8 +22,8 @@ type RowMenuProps = {
   items: RowMenuItem[]
 }
 
-// 行の操作（移動・編集・削除）を1つの「⋯」に集約するオーバーフローメニュー。モバイルで
-// タスクテキストの表示幅を確保するため、行に並んでいた個別ボタンをこれに置き換える。
+// 行の操作（移動・編集・削除）を1つの「⋯」に集約するオーバーフローメニュー（my-todo/prompt-builder
+// 共通）。モバイルで行の表示幅を確保するため、行に並んでいた個別ボタンをこれに置き換える。
 export const RowMenu = ({ items }: RowMenuProps) => {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -51,11 +59,11 @@ export const RowMenu = ({ items }: RowMenuProps) => {
   }
 
   return (
-    <div className="mytodo-row-menu-anchor" ref={containerRef}>
+    <div className="row-menu-anchor" ref={containerRef}>
       <button
         type="button"
         ref={triggerRef}
-        className="mytodo-more-button"
+        className="row-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="操作メニュー"
@@ -65,13 +73,13 @@ export const RowMenu = ({ items }: RowMenuProps) => {
       </button>
 
       {open ? (
-        <div className="mytodo-row-menu" role="menu">
+        <div className="row-menu" role="menu">
           {items.map((item) => (
             <button
               key={item.key}
               type="button"
               role="menuitem"
-              className={`mytodo-row-menu-item${item.danger ? ' mytodo-danger-button' : ''}`}
+              className={`row-menu-item${item.danger ? ' pt-button-danger' : ''}`}
               disabled={item.disabled}
               title={item.title}
               onClick={() => handleItemClick(item)}

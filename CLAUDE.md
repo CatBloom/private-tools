@@ -61,9 +61,10 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `src/hooks/useTheme.ts`／`usePersistedState.ts` — 3ツール共通のテーマ状態・localStorage 永続化フック。テーマの localStorage キーは `src/lib/storage.ts` の `THEME_STORAGE_KEY`（TOP の `src/ui/theme.ts` も同じキーを使い、TOP とツール間でテーマを共有する）。
 - `src/components/ThemeToggle.tsx` — 3ツール共通のテーマ切替ボタン。
 - `src/components/layout/ToolLayout.tsx` — 全ツール共通のヘッダー（☰ボタン＋ツール名）＋左ドロワーメニュー＋本文レイアウト。props は `toolId`（registry から対応するツール情報を引く）・`appClassName`（テーマ切替スコープ・ツール別 CSS の適用先 wrapper の className。例: `ccsv-app`）・`children`。
-- `src/components/layout/ToolMenu.tsx` — ドロワーの中身。上から (1) そのツールの機能ナビ（registry の `nav`）、(2) 他ツールへのリンク一覧（registry から自ツールを除いた一覧）、(3)「← ツール一覧」、(4) テーマ切替の順。credit-csv が持っていたデスクトップ固定サイドバーは廃止し、3ツールとも同じドロワー構造にする。閉じている間は `<aside>` に `inert` を付け、画面外のリンクへ Tab フォーカスが渡らないようにする（`aria-hidden` は Testing Library の `getByRole` が要素を除外してテストが壊れるため使わない）。
+- `src/components/layout/ToolMenu.tsx` — ドロワーの中身。上から (1) 見出し「ツール名」＋そのツールの機能ナビ（registry の `nav`）、(2) 見出し「他のツール」＋他ツールへのリンク一覧（registry から自ツールを除いた一覧）、(3) 最下部に「← ツール一覧」（`.pt-button`）とテーマ切替を同じ幅で横並び（`.tool-layout-menu-actions`）。credit-csv が持っていたデスクトップ固定サイドバーは廃止し、3ツールとも同じドロワー構造にする。閉じている間は `<aside>` に `inert` を付け、画面外のリンクへ Tab フォーカスが渡らないようにする（`aria-hidden` は Testing Library の `getByRole` が要素を除外してテストが壊れるため使わない）。
 - `src/components/layout/ToolTabs.tsx` — 本文上のページ切替タブ。`toolId` から registry の `nav` を `.pt-tab` の `NavLink` で描画し、`ToolLayout` の `tabs?: boolean`（既定 false）で有効化する。ドロワー内の機能ナビとは併存の仕様で、my-todo・prompt-builder は有効、credit-csv は無効。見た目は styles.css の `.tool-layout-tabs`／`.pt-tab` に集約する。
 - 各ツールの `index.tsx`（または `<Tool>Routes.tsx`）は `<ToolLayout>` の内側（`.<tool>-app[data-theme]` の配下）で `AlertProvider`/`ConfirmProvider`（必要なら `TodoProvider`/`AppDataProvider` 等の状態 Provider）をラップする。`ToolLayout` の外側に置くと、トースト/ダイアログが `.<tool>-app` と兄弟要素になり `[data-theme]` スコープの CSS 変数を継承できないため。
+- `src/components/RowMenu.tsx` — 行操作を「⋯」に集約する共通オーバーフローメニュー（my-todo の行、prompt-builder のワード行）。`items: RowMenuItem[]` を受け取り、外側クリック・Escape で閉じる。スタイルは styles.css の `.row-menu-*`。
 - `src/components/feedback/` — 3ツール共通の UI フィードバック（`AlertProvider`/`useAlert` トースト、`ConfirmProvider`/`useConfirm` 確認ダイアログ、`Spinner`）。
 - `src/lib/mountTool.tsx` — 各クライアントエントリ共通の `createRoot(document.getElementById('root')!).render(app)` 定型（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。
 - `src/lib/copyText.ts` — iOS/WebKit 向けのクリップボードコピー（同期 `document.execCommand('copy')` を先に試し、失敗時のみ非同期 Clipboard API にフォールバック）。単一ツールでしか使わなくても「特定の処理」は分離してテストを付ける方針の一例。
@@ -87,7 +88,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 クレジットカード明細 CSV（Shift_JIS の `YYYYMM.csv`）をアップロードして利用月ベースで集計・閲覧するツール。移植元は別リポジトリ `CatBloom/credit-csv-viewer`。
 
 - `lib/` — 純粋ロジック（`csv.ts` パース／日付補完、`format.ts` 店名正規化・類似度グルーピング・日本円表記、`selectors.ts` 絞り込み・集計、`types.ts`）。移植元からほぼそのまま移植。**CSV の読込は `buildAppData(files)`**（アップロード済みバイト列から構築。移植元の `loadAppData`/`import.meta.glob` は廃棄）。
-- UI（`.tsx`、新規再設計）: `index.tsx` が default export `CreditCsvApp`（自己完結、`credit-csv.css` を import）。`CreditCsvRoutes.tsx` が `<ToolLayout toolId="credit-csv" appClassName="ccsv-app">` でラップする。画面は 明細／年間合計／ファイル管理＋店名別（`/merchant/:merchant`）。チャートは **recharts（クライアント専用・lazy）**。未知の内部パスは `/` にリダイレクト。
+- UI（`.tsx`、新規再設計）: `index.tsx` が default export `CreditCsvApp`（自己完結、`credit-csv.css` を import）。`CreditCsvRoutes.tsx` が `<ToolLayout toolId="credit-csv" appClassName="ccsv-app" tabs>` でラップし、本文上に 明細／年間合計／ファイル管理 のタブを出す。画面は 明細／年間合計／ファイル管理＋店名別（`/merchant/:merchant`）。チャートは **recharts（クライアント専用・lazy）**。未知の内部パスは `/` にリダイレクト。
 - テーマ切替は共通 `useTheme`/`ThemeToggle`（`.ccsv-app[data-theme]` にスコープ）。
 - CSV アップロード・アップロード済み一覧・一覧からの削除。
 
@@ -98,7 +99,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `shared/` — **react 非依存の純粋モジュール**（`targets.ts` は履歴ターゲットの ID／ラベル／`isPromptTargetId`、`tags.ts` はタグ12種（アルファベット順＋others 最下）と `normalizeTag`、`types.ts` の `PromptWord = {id,text,description,tag}`／`OutputItem = {id,wordId,text,weight}`／`HistoryEntry = {id,name,createdAt,target,items}`）。**サーバー route からも import する**ため JSX を含めない。
 - `lib/notation.ts` — 純粋ロジック（`applyNotation`：weight 正=`{}`／負=`[]` の重ね掛け段数・±5 クランプ、`buildOutput`：カンマ結合、`reorder`）。`lib/outputStorage.ts` — **組み立て中の**出力欄状態を localStorage に永続化。キーは単一の `prompt-builder:output`。WordsPage の「出力に追加」は `readOutputItems`/`writeOutputItems` で localStorage を直接読み書きして追記する（両ページは同時マウントされないため整合する）。
 - **保存履歴**：組み立てた出力を名前付きスナップショット（`HistoryEntry`、保存時に `target` をセレクトで選択）として **KV に保存**するライブラリ。出力ページ・現在の出力の下に配置し、保存・復元（現在の出力を置換）・削除・名前編集ができ、一覧は target のバッジ表示＋絞り込みに対応。KV キーは単一の `history`（サーバーは `src/server/prompt-storage/` の履歴ストレージ）。**組み立て中の出力は localStorage・保存した履歴は KV** と役割が分かれる。
-- UI（`.tsx`）: `index.tsx` が default export `PromptBuilderApp`（`prompt-builder.css` を import）。`<ToolLayout toolId="prompt-builder" appClassName="pbuilder-app">` でラップし、直下にナビタブ「ワード」「出力」（registry の `nav` から `ToolMenu` が生成）。デスクトップ（48rem 以上）はタブ・本文を `max-width: 1040px` で中央寄せ。`WordsPage` — 一覧・登録フォーム内包・インライン編集・削除・タグ絞り込み（初期値「ALL」＝タグ見出し付きグループ表示、特定タグでフラット表示）・「出力に追加」（タグ未選択の間は追加ボタン disabled）。`OutputPage`（lazy） — **@dnd-kit で並べ替え**〈`PointerSensor`＋`TouchSensor` でモバイル対応〉、個別削除、強調記法付与、カンマ結合＋コピー、保存履歴（保存時に target をセレクトで選択・未選択は保存ボタン disabled、一覧はワードと同じく「ALL＝target 見出し付きグループ表示／特定 target＝フラット表示」の絞り込み、編集で名前と target を変更可・復元/更新/削除はトースト通知）。ワードの `id` はクライアントで採番。出力アイテムの `text` は**選択時点のスナップショット**（ワード編集後も復元が壊れない）。
+- UI（`.tsx`）: `index.tsx` が default export `PromptBuilderApp`（`prompt-builder.css` を import）。`<ToolLayout toolId="prompt-builder" appClassName="pbuilder-app">` でラップし、直下にナビタブ「ワード」「出力」（registry の `nav` から `ToolMenu` が生成）。デスクトップ（48rem 以上）はタブ・本文を `max-width: 1040px` で中央寄せ。`WordsPage` — 一覧・登録フォーム内包（タグ未選択の間は追加ボタン disabled）・タグ絞り込み（初期値「ALL」＝タグ見出し付きグループ表示、特定タグでフラット表示）。ワード行（ワード＋説明の2行、スマホでも同じ高さ）はクリックで出力に追加し、編集・削除は共通 `RowMenu`（⋯）に集約する。`OutputPage`（lazy） — **@dnd-kit で並べ替え**〈`PointerSensor`＋`TouchSensor` でモバイル対応〉、個別削除、強調記法付与、カンマ結合＋コピー、保存履歴（保存時に target をセレクトで選択・未選択は保存ボタン disabled、一覧はワードと同じく「ALL＝target 見出し付きグループ表示／特定 target＝フラット表示」の絞り込み、編集で名前と target を変更可・復元/更新/削除はトースト通知）。ワードの `id` はクライアントで採番。出力アイテムの `text` は**選択時点のスナップショット**（ワード編集後も復元が壊れない）。
 - **ワードの保存**：手動「保存」ボタン（即時 PUT）＋**デバウンス自動保存**（変更が止まって10秒後にまとめて1回 PUT。`AUTO_SAVE_DELAY_MS`）の併用。1KVキー（`words`）に配列まるごと PUT なので、Cloudflare KV 無料枠（**書き込み1,000回/日・同一キー1秒1回**）を消費しすぎないよう「操作ごと」ではなく「アイドル10秒でまとめて」保存する。保存失敗時は**自動リトライしない**（次のワード編集が `saveStatus` を `idle` に戻して再アーム。放置すると10秒ごとに書き込みクォータを浪費するため）。ページ遷移（アンマウント）で未保存分が消えないようアンマウント時に best-effort で flush する。**履歴の保存は明示操作のまま**（自動保存の対象外）。
 - テーマ切替は共通 `useTheme`/`ThemeToggle`（`.pbuilder-app[data-theme]` にスコープ）。
 - **@dnd-kit**: `@dnd-kit/core` と `@dnd-kit/sortable` を使う。`@dnd-kit/utilities` は依存に入れず、`useSortable` の `transform` は自前で `translate3d(...)` の CSS 文字列にする（単一リストの並べ替えでは scale 不要）。CSP の `style-src` に `'unsafe-inline'` が必要なのはこの inline transform のため。
@@ -112,7 +113,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `lib/rollover.ts` — 日付が変わったときに1日1回だけ適用する繰り越しの純粋関数。同一日（`lastRolloverDate` が今日と一致）なら state をそのまま返す（no-op）。`lastRolloverDate` が `null`（初回起動）は日付を記録するだけでアイテムは動かさない。それ以外（日付が変わった）は全セクションの完了済みアイテムを削除し、Today に残っていた未完了アイテムを Someday の末尾へ移動する。
 - `lib/move.ts` — セクション間移動の純粋関数（`moveItem`）と Today の上限判定（`canPlaceInToday`／`countUnfinished`）。移動できない場合は state をそのまま返す（参照不変で no-op を表す）。
 - `lib/reorder.ts` — 同一セクション内の並べ替えの純粋関数。
-- `components/RowMenu.tsx` — 行の操作（セクション間移動・編集・削除）を「⋯」オーバーフローメニューに集約する（モバイルでのタスクテキスト表示幅を確保するため、行に個別ボタンを並べない）。
+- 行の操作（セクション間移動・編集・削除）は共通 `src/components/RowMenu.tsx`（⋯）に集約する（モバイルでのタスクテキスト表示幅を確保するため、行に個別ボタンを並べない）。
 - UI: `index.tsx` が default export `MyTodoApp`（`my-todo.css` を import、`<ToolLayout toolId="my-todo" appClassName="mytodo-app">` でラップ）。`SectionPage` が追加フォーム・@dnd-kit（`PointerSensor`＋`TouchSensor`＋`KeyboardSensor`）での並べ替え・完了チェック・インライン編集・削除・セクション間移動を提供する。テーマ切替は共通 `useTheme`/`ThemeToggle`（`.mytodo-app[data-theme]` にスコープ）。
 
 ### ストレージ共通骨格（`src/server/shared/`）

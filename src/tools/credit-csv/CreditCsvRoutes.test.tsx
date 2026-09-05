@@ -98,6 +98,11 @@ const renderApp = (initialEntry = '/') =>
     </MemoryRouter>
   )
 
+// tabs=true のため、ドロワー内ナビと本文上のタブに同名リンクが重複して存在する（仕様）。
+// クリックは可視のタブ側から行う。
+const clickTab = (label: string) =>
+  fireEvent.click(within(screen.getByRole('navigation', { name: 'ページ切替' })).getByRole('link', { name: label }))
+
 beforeEach(() => {
   localStorage.clear()
   store = [
@@ -186,7 +191,7 @@ describe('CreditCsvRoutes', () => {
     renderApp()
     await screen.findByText(formatCurrency(4200))
 
-    fireEvent.click(screen.getByRole('link', { name: '年間合計' }))
+    clickTab('年間合計')
 
     expect(await screen.findByText('店名別累計')).toBeInTheDocument()
   })
@@ -194,7 +199,7 @@ describe('CreditCsvRoutes', () => {
   it('sorts the yearly merchant totals table by total amount ascending and descending', async () => {
     renderApp()
     await screen.findByText(formatCurrency(4200))
-    fireEvent.click(screen.getByRole('link', { name: '年間合計' }))
+    clickTab('年間合計')
 
     const table = await screen.findByRole('table')
 
@@ -210,7 +215,7 @@ describe('CreditCsvRoutes', () => {
 
   it('uploads a new file through the files page and refreshes the list', async () => {
     renderApp()
-    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    clickTab('ファイル管理')
 
     expect(await screen.findByText('202604.csv')).toBeInTheDocument()
 
@@ -224,7 +229,7 @@ describe('CreditCsvRoutes', () => {
 
   it('shows a success alert when an upload succeeds', async () => {
     renderApp()
-    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    clickTab('ファイル管理')
     expect(await screen.findByText('202604.csv')).toBeInTheDocument()
 
     const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
@@ -236,7 +241,7 @@ describe('CreditCsvRoutes', () => {
 
   it('shows an error alert when an upload fails', async () => {
     renderApp()
-    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    clickTab('ファイル管理')
     expect(await screen.findByText('202604.csv')).toBeInTheDocument()
 
     ;(fetch as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(async () =>
@@ -281,7 +286,7 @@ describe('CreditCsvRoutes', () => {
 
   it('deletes a file through the files page after confirming the dialog', async () => {
     renderApp()
-    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    clickTab('ファイル管理')
 
     const row = (await screen.findByText('202604.csv')).closest('tr')
     expect(row).not.toBeNull()
@@ -296,7 +301,7 @@ describe('CreditCsvRoutes', () => {
 
   it('does not delete when the confirmation dialog is cancelled', async () => {
     renderApp()
-    fireEvent.click(screen.getByRole('link', { name: 'ファイル管理' }))
+    clickTab('ファイル管理')
 
     const row = (await screen.findByText('202604.csv')).closest('tr')
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))

@@ -24,7 +24,7 @@ describe('ToolLayout', () => {
   it('renders the tool name in the header and the body', () => {
     renderLayout()
 
-    expect(screen.getByText('Prompt Builder')).toBeInTheDocument()
+    expect(screen.getAllByText('Prompt Builder').length).toBeGreaterThan(0)
     expect(screen.getByText('本文')).toBeInTheDocument()
   })
 
@@ -70,11 +70,23 @@ describe('ToolLayout', () => {
     expect(screen.queryByRole('link', { name: 'Prompt Builder' })).not.toBeInTheDocument()
   })
 
-  it('renders the back-to-hub link and the theme toggle', () => {
-    renderLayout()
+  it('shows a heading for the feature nav (the tool name) and the other-tools section', () => {
+    const { container } = renderLayout()
 
-    expect(screen.getByRole('link', { name: /ツール一覧/ })).toHaveAttribute('href', '/')
-    expect(screen.getByRole('button', { name: /ダーク|ライト/ })).toBeInTheDocument()
+    const headings = container.querySelectorAll('.tool-layout-others-heading')
+    expect(Array.from(headings).map((heading) => heading.textContent)).toEqual(['Prompt Builder', '他のツール'])
+  })
+
+  it('renders the back-to-hub link and the theme toggle side by side at the bottom', () => {
+    const { container } = renderLayout()
+
+    const actions = container.querySelector('.tool-layout-menu-actions')
+    expect(actions).toBeInTheDocument()
+    const backLink = screen.getByRole('link', { name: /ツール一覧/ })
+    const themeToggle = screen.getByRole('button', { name: /ダーク|ライト/ })
+    expect(actions).toContainElement(backLink)
+    expect(actions).toContainElement(themeToggle)
+    expect(backLink).toHaveAttribute('href', '/')
   })
 
   it('does not render page tabs when tabs is omitted', () => {

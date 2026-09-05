@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { RowMenu } from './RowMenu'
+import { RowMenu } from '../../../components/RowMenu'
 import type { TodoItem } from '../shared/types'
 
 type SortableTodoItemProps = {
