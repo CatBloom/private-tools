@@ -199,6 +199,25 @@ describe('prompt word routes', () => {
     await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })
   })
 
+  it('rejects a history entry with an empty name', async () => {
+    const entries = [
+      {
+        id: 'h1',
+        name: '  ',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [],
+        target: 'base',
+      },
+    ]
+    const response = await request('/history', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entries }),
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })
+  })
+
   it('rejects a history entry with no target', async () => {
     const entries = [
       {

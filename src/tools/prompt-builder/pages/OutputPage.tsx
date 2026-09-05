@@ -159,11 +159,14 @@ export const OutputPage = () => {
   }
 
   const restoreHistoryEntry = async (entry: HistoryEntry) => {
-    const confirmed = await confirm('この履歴を復元しますか？ 現在の出力は置き換わります', {
-      title: '復元',
-      confirmLabel: '復元',
-    })
-    if (!confirmed) return
+    // 置き換えるものが無い（出力が空の）ときは確認不要で即時復元する。
+    if (outputItems.length > 0) {
+      const confirmed = await confirm('この履歴を復元しますか？ 現在の出力は置き換わります', {
+        title: '復元',
+        confirmLabel: '復元',
+      })
+      if (!confirmed) return
+    }
 
     setOutputItems(entry.items)
     showAlert('success', '復元しました')
@@ -268,7 +271,11 @@ export const OutputPage = () => {
           </select>
         </div>
         <div className="prompt-builder-word-row-actions">
-          <button type="button" disabled={historySaveStatus === 'saving'} onClick={() => commitHistoryEdit(entry.id)}>
+          <button
+            type="button"
+            disabled={historySaveStatus === 'saving' || editHistoryName.trim() === ''}
+            onClick={() => commitHistoryEdit(entry.id)}
+          >
             保存
           </button>
           <button type="button" onClick={cancelEditHistory}>
@@ -281,14 +288,11 @@ export const OutputPage = () => {
         <button
           type="button"
           className="prompt-builder-word-row-text prompt-builder-word-row-button"
-          aria-label={`${entry.name || formatHistoryDate(entry.createdAt)}を復元`}
+          aria-label={`${entry.name}を復元`}
           onClick={() => restoreHistoryEntry(entry)}
         >
-          <span className="prompt-builder-word-text">{entry.name || formatHistoryDate(entry.createdAt)}</span>
-          <span className="prompt-builder-word-description">
-            {entry.name ? `${formatHistoryDate(entry.createdAt)} ` : ''}
-            <span className="pt-badge">{formatLabel(PROMPT_TARGET_LABELS[entry.target])}</span>
-          </span>
+          <span className="prompt-builder-word-text">{entry.name}</span>
+          <span className="prompt-builder-word-description">{formatHistoryDate(entry.createdAt)}</span>
         </button>
         <div className="prompt-builder-word-row-actions">
           <RowMenu
@@ -378,7 +382,7 @@ export const OutputPage = () => {
             <div className="prompt-builder-word-form-row">
               <input
                 type="text"
-                placeholder="名前（任意）"
+                placeholder="名前"
                 aria-label="履歴名"
                 value={historyName}
                 onChange={(event) => setHistoryName(event.target.value)}
@@ -401,7 +405,8 @@ export const OutputPage = () => {
                 outputItems.length === 0 ||
                 historySaveStatus === 'saving' ||
                 historyLoadStatus !== 'ready' ||
-                historyTarget === ''
+                historyTarget === '' ||
+                historyName.trim() === ''
               }
             >
               履歴に保存

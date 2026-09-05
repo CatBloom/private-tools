@@ -170,10 +170,26 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
     expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
 
     fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'negative' } })
     expect(screen.getByRole('button', { name: '履歴に保存' })).toBeEnabled()
+  })
+
+  it('disables saving history until a name is entered', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'negative' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeEnabled()
+
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: '   ' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
   })
 
   it('groups history entries by target with headings when ALL is selected, then filters flat by a specific target', async () => {
@@ -199,7 +215,25 @@ describe('OutputPage', () => {
     expect(screen.getByText('char set', { exact: false })).toBeInTheDocument()
   })
 
-  it('restores a history entry into the current output after confirming, shows a toast, and scrolls to the output section', async () => {
+  it('shows only the name and date on a history row, with no target badge', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T12:00:00.000Z',
+      items: [],
+      target: 'base',
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+
+    renderPage()
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+
+    expect(within(row).getByText('saved set')).toBeInTheDocument()
+    expect(within(row).getByText('2024/01/01', { exact: false })).toBeInTheDocument()
+    expect(row.querySelector('.pt-badge')).not.toBeInTheDocument()
+  })
+
+  it('restores a history entry immediately without a confirmation dialog when the output is empty', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -213,9 +247,31 @@ describe('OutputPage', () => {
     expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
-    fireEvent.click(await screen.findByRole('button', { name: '復元' }))
 
     expect(await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(screen.queryByRole('button', { name: '復元' })).not.toBeInTheDocument()
+  })
+
+  it('asks for confirmation before restoring a history entry when the output already has items', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }],
+      target: 'base',
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+
+    renderPage()
+    expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
+    fireEvent.click(await screen.findByRole('button', { name: '復元' }))
+
+    expect(await screen.findByText('blue sky', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
     expect(await screen.findByText('復元しました')).toBeInTheDocument()
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
   })
@@ -225,10 +281,11 @@ describe('OutputPage', () => {
       id: 'h1',
       name: 'saved set',
       createdAt: '2024-01-01T00:00:00.000Z',
-      items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+      items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }],
       target: 'base',
     }
     vi.mocked(getHistory).mockResolvedValue([entry])
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
 
     renderPage()
     await screen.findByText('saved set', { exact: false })
@@ -236,7 +293,7 @@ describe('OutputPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    expect(screen.getByText('（出力はまだありません）')).toBeInTheDocument()
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
     expect(screen.queryByText('復元しました')).not.toBeInTheDocument()
   })
 

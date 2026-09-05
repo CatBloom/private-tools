@@ -49,6 +49,7 @@ const isHistoryEntry = (value: unknown): value is HistoryEntry =>
   value !== null &&
   typeof (value as HistoryEntry).id === 'string' &&
   typeof (value as HistoryEntry).name === 'string' &&
+  (value as HistoryEntry).name.trim().length > 0 &&
   (value as HistoryEntry).name.length <= MAX_HISTORY_NAME_LENGTH &&
   typeof (value as HistoryEntry).createdAt === 'string' &&
   typeof (value as HistoryEntry).target === 'string' &&
