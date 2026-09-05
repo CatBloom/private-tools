@@ -431,6 +431,13 @@ button, input { font: inherit; }
   margin-top: auto;
 }
 
+.tool-layout-menu-actions > * {
+  min-width: 0;
+  padding-inline: 0.5rem;
+  font-size: var(--pt-text-sm);
+  white-space: nowrap;
+}
+
 .tool-layout-main {
   flex: 1;
   padding: 0 1rem 2rem;
