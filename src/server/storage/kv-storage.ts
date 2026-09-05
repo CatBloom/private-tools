@@ -1,11 +1,9 @@
+import { CloudflareKvClient } from '../shared/kv-client.js'
+import type { CloudflareKvConfig } from '../shared/kv-client.js'
 import { assertValidFileName, isValidFileName } from './storage.js'
 import type { Storage, StoredFileMeta } from './storage.js'
 
-export type CloudflareKvConfig = {
-  accountId: string
-  namespaceId: string
-  apiToken: string
-}
+export type { CloudflareKvConfig } from '../shared/kv-client.js'
 
 type KvListKey = {
   name: string
@@ -28,12 +26,10 @@ type KvListResponse = {
 // for list — an acceptable trade-off given at most a few hundred YYYYMM
 // files.
 export class CloudflareKvStorage implements Storage {
-  private readonly baseUrl: string
-  private readonly headers: Record<string, string>
+  private readonly client: CloudflareKvClient
 
   constructor(config: CloudflareKvConfig) {
-    this.baseUrl = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/storage/kv/namespaces/${config.namespaceId}`
-    this.headers = { Authorization: `Bearer ${config.apiToken}` }
+    this.client = new CloudflareKvClient(config)
   }
 
   async list(): Promise<StoredFileMeta[]> {
@@ -41,7 +37,7 @@ export class CloudflareKvStorage implements Storage {
     let cursor: string | undefined
     do {
       const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
-      const response = await this.request(`/keys${query}`, { method: 'GET' })
+      const response = await this.client.request(`/keys${query}`, { method: 'GET' })
       if (!response.ok) throw new Error(`Cloudflare KV list failed with status ${response.status}`)
       const body = (await response.json()) as KvListResponse
       for (const key of body.result) {
@@ -57,7 +53,7 @@ export class CloudflareKvStorage implements Storage {
 
   async get(name: string): Promise<Uint8Array | null> {
     assertValidFileName(name)
-    const response = await this.request(`/values/${name}`, { method: 'GET' })
+    const response = await this.client.request(`/values/${name}`, { method: 'GET' })
     if (response.status === 404) return null
     if (!response.ok) throw new Error(`Cloudflare KV get failed with status ${response.status}`)
     return new Uint8Array(await response.arrayBuffer())
@@ -69,27 +65,16 @@ export class CloudflareKvStorage implements Storage {
     const form = new FormData()
     form.append('value', new Blob([new Uint8Array(bytes)]), name)
     form.append('metadata', JSON.stringify({ size: meta.size, uploadedAt: meta.uploadedAt }))
-    const response = await this.request(`/values/${name}`, { method: 'PUT', body: form })
+    const response = await this.client.request(`/values/${name}`, { method: 'PUT', body: form })
     if (!response.ok) throw new Error(`Cloudflare KV put failed with status ${response.status}`)
     return meta
   }
 
   async delete(name: string): Promise<void> {
     assertValidFileName(name)
-    const response = await this.request(`/values/${name}`, { method: 'DELETE' })
+    const response = await this.client.request(`/values/${name}`, { method: 'DELETE' })
     if (!response.ok && response.status !== 404) {
       throw new Error(`Cloudflare KV delete failed with status ${response.status}`)
-    }
-  }
-
-  private async request(path: string, init: RequestInit): Promise<Response> {
-    try {
-      return await fetch(`${this.baseUrl}${path}`, {
-        ...init,
-        headers: { ...this.headers, ...(init.headers as Record<string, string> | undefined) },
-      })
-    } catch (error) {
-      throw new Error(`Cloudflare KV request failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 }
