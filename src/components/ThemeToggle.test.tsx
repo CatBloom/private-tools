@@ -7,23 +7,23 @@ afterEach(() => {
 })
 
 describe('ThemeToggle', () => {
-  it('shows the label for switching to dark when the current theme is light', () => {
+  it('labels the button for switching to dark when the current theme is light', () => {
     render(<ThemeToggle theme="light" onToggle={() => {}} />)
 
-    expect(screen.getByRole('button', { name: 'ダーク' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ダークモードに切り替え' })).toBeInTheDocument()
   })
 
-  it('shows the label for switching to light when the current theme is dark', () => {
+  it('labels the button for switching to light when the current theme is dark', () => {
     render(<ThemeToggle theme="dark" onToggle={() => {}} />)
 
-    expect(screen.getByRole('button', { name: 'ライト' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ライトモードに切り替え' })).toBeInTheDocument()
   })
 
   it('calls onToggle when clicked', () => {
     const onToggle = vi.fn()
     render(<ThemeToggle theme="light" onToggle={onToggle} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'ダーク' }))
+    fireEvent.click(screen.getByRole('button', { name: 'ダークモードに切り替え' }))
 
     expect(onToggle).toHaveBeenCalledTimes(1)
   })

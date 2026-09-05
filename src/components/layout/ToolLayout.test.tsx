@@ -83,7 +83,7 @@ describe('ToolLayout', () => {
     const actions = container.querySelector('.tool-layout-menu-actions')
     expect(actions).toBeInTheDocument()
     const backLink = screen.getByRole('link', { name: /ツール一覧/ })
-    const themeToggle = screen.getByRole('button', { name: /ダーク|ライト/ })
+    const themeToggle = screen.getByRole('button', { name: /ダークモードに切り替え|ライトモードに切り替え/ })
     expect(actions).toContainElement(backLink)
     expect(actions).toContainElement(themeToggle)
     expect(backLink).toHaveAttribute('href', '/')

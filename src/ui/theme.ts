@@ -1,4 +1,5 @@
 import { readJson, THEME_STORAGE_KEY, writeJson } from '../lib/storage'
+import { themeToggleLabel } from '../lib/theme-labels'
 
 export const THEME_KEY = THEME_STORAGE_KEY
 
@@ -26,11 +27,11 @@ const applyTheme = (theme: Theme | null) => {
   if (theme) document.documentElement.dataset.theme = theme
 }
 
-const toggleLabel = (theme: Theme): string => (theme === 'dark' ? 'ライト' : 'ダーク')
-
 const updateToggleLabels = (theme: Theme) => {
+  const label = themeToggleLabel(theme)
   document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((button) => {
-    button.textContent = toggleLabel(theme)
+    button.setAttribute('aria-label', label)
+    button.title = label
   })
 }
 
