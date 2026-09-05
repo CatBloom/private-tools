@@ -270,7 +270,9 @@
 }
 
 /* チェックボックス＋タスクテキスト＋行の余白までを1つのクリック領域にする
-   （label-wraps-input の標準形。ドラッグハンドル・移動/編集/削除ボタンは label の外）。 */
+   （label-wraps-input の標準形。ドラッグハンドル・移動/編集/削除ボタンは label の外）。
+   完了表示は行のディム＋テキストの打ち消し線（下記 .mytodo-item.is-completed）で行うため、
+   見た目のチェック四角は持たない（冗長になるため廃止）。 */
 .mytodo-item-checkbox-label {
   display: flex;
   flex: 1;
@@ -295,36 +297,12 @@
   border: 0;
 }
 
-.mytodo-item-checkbox-box {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  background: var(--mytodo-surface);
-  border: 2px solid var(--mytodo-border);
-  border-radius: 0.4rem;
-  cursor: pointer;
-}
-
-.mytodo-item-checkbox-input:checked + .mytodo-item-checkbox-box {
-  background: var(--mytodo-accent);
-  border-color: var(--mytodo-accent);
-}
-
-.mytodo-item-checkbox-input:checked + .mytodo-item-checkbox-box::after {
-  content: "";
-  width: 0.4rem;
-  height: 0.75rem;
-  border: solid #fff;
-  border-width: 0 0.18rem 0.18rem 0;
-  transform: rotate(45deg) translate(-0.05rem, -0.05rem);
-}
-
-.mytodo-item-checkbox-input:focus-visible + .mytodo-item-checkbox-box {
+/* 見た目のチェック四角が無いため、キーボードでのフォーカス可視化は隣接するタスクテキストに
+   outline を出す（Tab でフォーカス→Space でトグルが視覚的に分かるようにする）。 */
+.mytodo-item-checkbox-input:focus-visible ~ .mytodo-item-text {
   outline: 2px solid var(--mytodo-accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .mytodo-item-text {

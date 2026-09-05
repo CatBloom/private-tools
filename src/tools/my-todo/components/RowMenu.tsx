@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { MoreVertIcon } from './icons'
+import { useEffect, useRef, useState } from 'react'
+import { ExpandMoreIcon } from './icons'
 
 export type RowMenuItem = {
   key: string
@@ -8,7 +8,6 @@ export type RowMenuItem = {
   disabled?: boolean
   title?: string
   danger?: boolean
-  icon?: ReactNode
 }
 
 type RowMenuProps = {
@@ -62,7 +61,7 @@ export const RowMenu = ({ items }: RowMenuProps) => {
         aria-label="操作メニュー"
         onClick={() => setOpen((current) => !current)}
       >
-        <MoreVertIcon />
+        <ExpandMoreIcon />
       </button>
 
       {open ? (
@@ -77,7 +76,6 @@ export const RowMenu = ({ items }: RowMenuProps) => {
               title={item.title}
               onClick={() => handleItemClick(item)}
             >
-              {item.icon}
               {item.label}
             </button>
           ))}
