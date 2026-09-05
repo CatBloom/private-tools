@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ToolLayout } from './ToolLayout'
@@ -75,5 +75,35 @@ describe('ToolLayout', () => {
 
     expect(screen.getByRole('link', { name: /ツール一覧/ })).toHaveAttribute('href', '/')
     expect(screen.getByRole('button', { name: /ダーク|ライト/ })).toBeInTheDocument()
+  })
+
+  it('does not render page tabs when tabs is omitted', () => {
+    renderLayout()
+
+    expect(screen.queryByRole('navigation', { name: 'ページ切替' })).not.toBeInTheDocument()
+  })
+
+  it('renders page tabs alongside the drawer nav when tabs is true', () => {
+    render(
+      <MemoryRouter initialEntries={['/words']}>
+        <ToolLayout toolId="prompt-builder" appClassName="pbuilder-app" tabs>
+          <p>本文</p>
+        </ToolLayout>
+      </MemoryRouter>
+    )
+
+    const tabsNav = screen.getByRole('navigation', { name: 'ページ切替' })
+    expect(tabsNav).toBeInTheDocument()
+    expect(within(tabsNav).getByRole('link', { name: 'ワード' })).toHaveClass('pt-tab', 'is-active')
+  })
+
+  it('marks the drawer as inert while closed and interactive while open', () => {
+    const { container } = renderLayout()
+
+    const menu = container.querySelector('#tool-layout-menu')!
+    expect(menu).toHaveAttribute('inert')
+
+    fireEvent.click(screen.getByRole('button', { name: 'メニューを開く' }))
+    expect(menu).not.toHaveAttribute('inert')
   })
 })

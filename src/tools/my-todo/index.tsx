@@ -12,7 +12,7 @@ import './my-todo.css'
 // AlertProvider/ConfirmProvider の内側・Routes の外側に置き、Today/Someday のページ遷移を
 // またいで状態（と保存直列化の状態）を保持する。
 const MyTodoRoutes = () => (
-  <ToolLayout toolId="my-todo" appClassName="mytodo-app">
+  <ToolLayout toolId="my-todo" appClassName="mytodo-app" tabs>
     <AlertProvider>
       <ConfirmProvider>
         <TodoProvider>

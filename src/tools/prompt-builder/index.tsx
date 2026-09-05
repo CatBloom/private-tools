@@ -13,7 +13,7 @@ const OutputPage = lazy(() => import('./pages/OutputPage').then((m) => ({ defaul
 // 置くと、AlertProvider/ConfirmProvider が描画するトースト/ダイアログが .pbuilder-app と
 // 兄弟要素になり、ライト/ダーク切替の CSS 変数（[data-theme] スコープ）を継承できないため。
 const PromptBuilderRoutes = () => (
-  <ToolLayout toolId="prompt-builder" appClassName="pbuilder-app">
+  <ToolLayout toolId="prompt-builder" appClassName="pbuilder-app" tabs>
     <AlertProvider>
       <ConfirmProvider>
         <Suspense fallback={<Spinner label="読み込み中" />}>

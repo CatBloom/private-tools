@@ -458,6 +458,13 @@ button, input { font: inherit; }
   padding: 0 1rem 2rem;
 }
 
+/* 本文上のページ切替タブ（tabs=true のツールのみ。ヘッダーとドロワーの機能ナビに併存する）。 */
+.tool-layout-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem 0.75rem;
+}
+
 @media (min-width: 48rem) {
   .tool-layout-header {
     padding: 1.5rem 2rem 1rem;
@@ -467,9 +474,14 @@ button, input { font: inherit; }
     padding: 0 2rem 2.5rem;
   }
 
-  /* サイドバー廃止で本文が広がりすぎるため、PC ではヘッダーと本文をほどよい幅で中央寄せにする
-     （fixed 配置のオーバーレイ・ドロワーには当てない）。 */
+  .tool-layout-tabs {
+    padding: 0 2rem 1rem;
+  }
+
+  /* サイドバー廃止で本文が広がりすぎるため、PC ではヘッダー・タブ・本文をほどよい幅で
+     中央寄せにする（fixed 配置のオーバーレイ・ドロワーには当てない）。 */
   .tool-layout-header,
+  .tool-layout-tabs,
   .tool-layout-main {
     width: 100%;
     max-width: 1040px;
@@ -591,11 +603,9 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
-/* ナビタブ（ヘッダー直下の横並びページ切替。pbuilder/mytodo のみ）。credit-csv の機能ナビは
-   ドロワーメニュー内のみ（`.tool-layout-nav`）で、本文上のタブは持たない。 */
-.pt-tab,
-.pbuilder-tab-button,
-.mytodo-tab-button {
+/* ナビタブ（`.tool-layout-tabs` 内。ToolLayout の tabs=true のツールのみ）。credit-csv は
+   tabs=false のため本文上のタブを持たない（機能ナビはドロワーメニュー内の `.tool-layout-nav` のみ）。 */
+.pt-tab {
   display: flex;
   flex: 1;
   align-items: center;
@@ -611,9 +621,7 @@ button, input { font: inherit; }
   cursor: pointer;
 }
 
-.pt-tab.is-active,
-.pbuilder-tab-button.is-active,
-.mytodo-tab-button.is-active {
+.pt-tab.is-active {
   color: #fff;
   background: var(--pt-accent);
   border-color: var(--pt-accent);

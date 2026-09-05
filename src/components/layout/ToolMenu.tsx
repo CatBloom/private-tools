@@ -8,6 +8,9 @@ import { ThemeToggle } from '../ThemeToggle'
 // 自ツールを除いた一覧）、(4) 「← ツール一覧」、(5) テーマ切替の順に並べる。
 // スタイルは src/public/styles.css の `.tool-layout-*`（ツール別バンドルの CSS はシェルが
 // link しないため、常時 link される styles.css に置く）。
+// 閉じている間は `inert` を付け、非表示のドロワー内リンクへキーボード/スクリーンリーダーの
+// フォーカスが移らないようにする（`aria-hidden` だとフォーカス可能要素を隠すだけで tab 移動を
+// 防げず、フォーカスされた要素を隠すのはアクセシビリティ違反になるため）。
 type ToolMenuProps = {
   toolId: ToolId
   open: boolean
@@ -21,7 +24,7 @@ export const ToolMenu = ({ toolId, open, theme, onToggleTheme, onNavigate }: Too
   const otherTools = TOOLS.filter((candidate) => candidate.id !== toolId)
 
   return (
-    <aside id="tool-layout-menu" className={`tool-layout-menu${open ? ' is-open' : ''}`}>
+    <aside id="tool-layout-menu" className={`tool-layout-menu${open ? ' is-open' : ''}`} inert={!open}>
       <nav className="tool-layout-nav" aria-label="ツール内ナビゲーション">
         {tool.nav.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.to === '/'} onClick={onNavigate}>

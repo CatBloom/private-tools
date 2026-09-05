@@ -61,7 +61,8 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `src/hooks/useTheme.ts`／`usePersistedState.ts` — 3ツール共通のテーマ状態・localStorage 永続化フック。テーマの localStorage キーは `src/lib/storage.ts` の `THEME_STORAGE_KEY`（TOP の `src/ui/theme.ts` も同じキーを使い、TOP とツール間でテーマを共有する）。
 - `src/components/ThemeToggle.tsx` — 3ツール共通のテーマ切替ボタン。
 - `src/components/layout/ToolLayout.tsx` — 全ツール共通のヘッダー（☰ボタン＋ツール名）＋左ドロワーメニュー＋本文レイアウト。props は `toolId`（registry から対応するツール情報を引く）・`appClassName`（テーマ切替スコープ・ツール別 CSS の適用先 wrapper の className。例: `ccsv-app`）・`children`。
-- `src/components/layout/ToolMenu.tsx` — ドロワーの中身。上から (1) そのツールの機能ナビ（registry の `nav`）、(2) 他ツールへのリンク一覧（registry から自ツールを除いた一覧）、(3)「← ツール一覧」、(4) テーマ切替の順。credit-csv が持っていたデスクトップ固定サイドバーは廃止し、3ツールとも同じドロワー構造にする。
+- `src/components/layout/ToolMenu.tsx` — ドロワーの中身。上から (1) そのツールの機能ナビ（registry の `nav`）、(2) 他ツールへのリンク一覧（registry から自ツールを除いた一覧）、(3)「← ツール一覧」、(4) テーマ切替の順。credit-csv が持っていたデスクトップ固定サイドバーは廃止し、3ツールとも同じドロワー構造にする。閉じている間は `<aside>` に `inert` を付け、画面外のリンクへ Tab フォーカスが渡らないようにする（`aria-hidden` は Testing Library の `getByRole` が要素を除外してテストが壊れるため使わない）。
+- `src/components/layout/ToolTabs.tsx` — 本文上のページ切替タブ。`toolId` から registry の `nav` を `.pt-tab` の `NavLink` で描画し、`ToolLayout` の `tabs?: boolean`（既定 false）で有効化する。ドロワー内の機能ナビとは併存の仕様で、my-todo・prompt-builder は有効、credit-csv は無効。見た目は styles.css の `.tool-layout-tabs`／`.pt-tab` に集約する。
 - 各ツールの `index.tsx`（または `<Tool>Routes.tsx`）は `<ToolLayout>` の内側（`.<tool>-app[data-theme]` の配下）で `AlertProvider`/`ConfirmProvider`（必要なら `TodoProvider`/`AppDataProvider` 等の状態 Provider）をラップする。`ToolLayout` の外側に置くと、トースト/ダイアログが `.<tool>-app` と兄弟要素になり `[data-theme]` スコープの CSS 変数を継承できないため。
 - `src/components/feedback/` — 3ツール共通の UI フィードバック（`AlertProvider`/`useAlert` トースト、`ConfirmProvider`/`useConfirm` 確認ダイアログ、`Spinner`）。
 - `src/lib/mountTool.tsx` — 各クライアントエントリ共通の `createRoot(document.getElementById('root')!).render(app)` 定型（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。

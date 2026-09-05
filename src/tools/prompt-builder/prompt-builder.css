@@ -32,17 +32,8 @@
   gap: 1rem;
 }
 
-/* トップバー直下の「ワード」「出力」ページ切替ナビ。ヘッダーとくっつかないよう上に余白を取る。 */
-.pbuilder-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0 1rem 0.75rem;
-}
-
-/* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になりテーマに
-   追従しない。基礎スタイルと is-active の状態色は共通クラス .pt-tab（src/public/styles.css）
-   に集約済み。 */
+/* ページ切替タブ（本文上・ドロワー内とも）の見た目は共通クラス .tool-layout-tabs/.pt-tab
+   （src/public/styles.css）に集約済み。 */
 
 /* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
    に集約済み。 */
@@ -452,10 +443,6 @@
   /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、credit-csv と揃える） */
   :root {
     font-size: 130%;
-  }
-
-  .pbuilder-tabs {
-    padding: 0 2rem 1rem;
   }
 
   /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない

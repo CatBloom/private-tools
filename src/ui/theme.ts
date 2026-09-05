@@ -6,7 +6,7 @@ type Theme = 'light' | 'dark'
 
 const isTheme = (value: unknown): value is Theme => value === 'light' || value === 'dark'
 
-// credit-csv ツールの usePersistedState と同じ JSON 形式で読み書きし、テーマ状態を共有する
+// 共通フック src/hooks/usePersistedState.ts と同じ JSON 形式で読み書きし、テーマ状態を共有する
 const readStoredTheme = (): Theme | null => {
   const stored = readJson<unknown>(THEME_KEY, null)
   return isTheme(stored) ? stored : null

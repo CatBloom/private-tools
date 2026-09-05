@@ -32,17 +32,8 @@
   gap: 1rem;
 }
 
-/* トップバー直下の「Today」「Someday」ページ切替ナビ（prompt-builder の .pbuilder-tabs と同じ構造）。 */
-.mytodo-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0 1rem 0.75rem;
-}
-
-/* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になりテーマに
-   追従しない。基礎スタイルと is-active の状態色は共通クラス .pt-tab（src/public/styles.css）
-   に集約済み。 */
+/* ページ切替タブ（本文上・ドロワー内とも）の見た目は共通クラス .tool-layout-tabs/.pt-tab
+   （src/public/styles.css）に集約済み。 */
 
 .mytodo-panel-header-status {
   display: flex;
@@ -293,10 +284,6 @@
   /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、他ツールと揃える）。 */
   :root {
     font-size: 130%;
-  }
-
-  .mytodo-tabs {
-    padding: 0 2rem 1rem;
   }
 
   .mytodo-item:not(.is-editing) {
