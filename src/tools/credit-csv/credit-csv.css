@@ -1,32 +1,13 @@
+/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
+   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
+   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .ccsv-app {
-  --ccsv-bg: #f4f7fb;
-  --ccsv-surface: #ffffff;
-  --ccsv-border: #d9e2ec;
-  --ccsv-text: #17212b;
-  --ccsv-muted: #5b6b7c;
-  --ccsv-accent: #1769aa;
-  --ccsv-accent-strong: #105888;
-  --ccsv-danger: #b3261e;
-  --ccsv-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
-
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--ccsv-bg);
-  color: var(--ccsv-text);
+  background: var(--pt-bg);
+  color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-.ccsv-app[data-theme="dark"] {
-  --ccsv-bg: #101820;
-  --ccsv-surface: #182432;
-  --ccsv-border: #2b3947;
-  --ccsv-text: #e7edf3;
-  --ccsv-muted: #94a3b3;
-  --ccsv-accent: #4ba3ff;
-  --ccsv-accent-strong: #79bcff;
-  --ccsv-danger: #ff8a80;
-  --ccsv-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
 }
 
 .ccsv-app * {
@@ -55,8 +36,8 @@
 
 .ccsv-menu-button {
   padding: 0.4rem 0.7rem;
-  background: var(--ccsv-surface);
-  border: 1px solid var(--ccsv-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 0.65rem;
   font-size: 1.1rem;
   line-height: 1;
@@ -94,8 +75,8 @@
   max-width: 80vw;
   padding: 1rem;
   overflow-y: auto;
-  background: var(--ccsv-surface);
-  border-right: 1px solid var(--ccsv-border);
+  background: var(--pt-surface);
+  border-right: 1px solid var(--pt-border);
   transform: translateX(-100%);
   transition: transform 0.2s ease;
 }
@@ -105,14 +86,14 @@
 }
 
 .ccsv-back-link {
-  color: var(--ccsv-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
 }
 
 .ccsv-brand {
-  color: var(--ccsv-text);
+  color: var(--pt-text);
   font-size: 1.25rem;
   font-weight: 800;
   text-decoration: none;
@@ -125,7 +106,7 @@
 
 .ccsv-hero-copy {
   margin: 0.35rem 0 0;
-  color: var(--ccsv-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
@@ -144,7 +125,7 @@
 
 .ccsv-nav-tabs a {
   padding: 0.6rem 0.9rem;
-  color: var(--ccsv-muted);
+  color: var(--pt-muted);
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -153,7 +134,7 @@
 
 .ccsv-nav-tabs a.active {
   color: #fff;
-  background: var(--ccsv-accent);
+  background: var(--pt-accent);
 }
 
 .ccsv-main {
@@ -167,13 +148,8 @@
   gap: 1rem;
 }
 
-.ccsv-panel {
-  padding: 1rem;
-  background: var(--ccsv-surface);
-  border: 1px solid var(--ccsv-border);
-  border-radius: 1rem;
-  box-shadow: var(--ccsv-shadow);
-}
+/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
+   に集約済み。ここには残らない。 */
 
 .ccsv-panel-header {
   display: flex;
@@ -207,22 +183,20 @@
   grid-column: 1 / -1;
 }
 
-.ccsv-app select,
-.ccsv-filters input,
-.ccsv-app input[type="text"] {
+/* テキスト入力の基礎（min-height/padding/border/radius/font-size）は共通クラス .pt-input
+   （src/public/styles.css）に集約済み。select は矢印装飾など ccsv 独自の見た目があるため
+   ここに残す。 */
+.ccsv-app select {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
-  background: var(--ccsv-bg);
-  border: 1px solid var(--ccsv-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.6rem;
   font-size: 16px;
-}
-
-.ccsv-app select {
   appearance: none;
   padding-right: 2.2rem;
   font-weight: 700;
-  color: var(--ccsv-text);
+  color: var(--pt-text);
   background-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235b6b7c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat;
   background-position: right 0.85rem center;
@@ -230,15 +204,13 @@
 }
 
 .ccsv-app select:hover {
-  border-color: var(--ccsv-accent);
+  border-color: var(--pt-accent);
 }
 
-.ccsv-app select:focus-visible,
-.ccsv-filters input:focus-visible,
-.ccsv-app input[type="text"]:focus-visible {
-  outline: 2px solid var(--ccsv-accent);
+.ccsv-app select:focus-visible {
+  outline: 2px solid var(--pt-accent);
   outline-offset: 1px;
-  border-color: var(--ccsv-accent);
+  border-color: var(--pt-accent);
 }
 
 .ccsv-sort-button {
@@ -256,7 +228,7 @@
 }
 
 .ccsv-sort-button:hover {
-  color: var(--ccsv-accent);
+  color: var(--pt-accent);
 }
 
 .ccsv-segmented {
@@ -265,18 +237,12 @@
   gap: 0.4rem;
 }
 
-.ccsv-segmented button {
-  padding: 0.4rem 0.8rem;
-  background: var(--ccsv-bg);
-  border: 1px solid var(--ccsv-border);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
+/* 既定のボタン見た目（padding/background/border/radius/cursor）は共通クラス .pt-button
+   （src/public/styles.css）に集約済み。 */
 .ccsv-segmented button.active {
   color: #fff;
-  background: var(--ccsv-accent);
-  border-color: var(--ccsv-accent);
+  background: var(--pt-accent);
+  border-color: var(--pt-accent);
 }
 
 .ccsv-summary-grid {
@@ -285,19 +251,16 @@
   gap: 0.75rem;
 }
 
+/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
+   に集約済み。ここには縦積みレイアウトのみ残す。 */
 .ccsv-summary-card {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 1rem;
-  background: var(--ccsv-surface);
-  border: 1px solid var(--ccsv-border);
-  border-radius: 1rem;
-  box-shadow: var(--ccsv-shadow);
 }
 
 .ccsv-summary-card span {
-  color: var(--ccsv-muted);
+  color: var(--pt-muted);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -334,7 +297,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.35rem 0;
-  border-bottom: 1px solid var(--ccsv-border);
+  border-bottom: 1px solid var(--pt-border);
   font-size: 0.85rem;
 }
 
@@ -342,22 +305,11 @@
   overflow-x: auto;
 }
 
-.ccsv-app table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.ccsv-app th,
-.ccsv-app td {
-  padding: 0.55rem 0.5rem;
-  text-align: left;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--ccsv-border);
-}
+/* テーブルの基礎（width/border-collapse/font-size、th/td の padding・border-bottom）は
+   共通クラス .pt-table（src/public/styles.css）に集約済み。 */
 
 .ccsv-app a {
-  color: var(--ccsv-accent);
+  color: var(--pt-accent);
 }
 
 /* テーブル内の店名リンクは下線を出さず、省略記号「…」が浮いて見えないようにする（ホバー時のみ下線） */
@@ -371,7 +323,7 @@
 
 /* 構成比ランキングの店名リンクもテーブルと同じ見た目（下線はホバー時のみ） */
 .ccsv-legend-row a {
-  color: var(--ccsv-accent);
+  color: var(--pt-accent);
   text-decoration: none;
 }
 
@@ -395,30 +347,19 @@
   gap: 0.6rem;
 }
 
-.ccsv-pagination-controls button {
-  padding: 0.4rem 0.8rem;
-  background: var(--ccsv-bg);
-  border: 1px solid var(--ccsv-border);
-  border-radius: 0.5rem;
-  cursor: pointer;
-}
-
-.ccsv-pagination-controls button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
+/* 既定のボタン見た目・disabled 状態は共通クラス .pt-button（src/public/styles.css）に集約済み。 */
 
 .ccsv-status-message {
   margin: 0.85rem 0 0;
   padding: 0.85rem 1rem;
-  background: var(--ccsv-surface);
-  border: 1px solid var(--ccsv-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
 .ccsv-status-message-error {
-  color: var(--ccsv-danger);
-  border-color: var(--ccsv-danger);
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
 }
 
 .ccsv-upload-form {
@@ -455,20 +396,20 @@
   padding: 0.55rem 1.1rem;
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--ccsv-accent);
-  background: var(--ccsv-bg);
-  border: 1px solid var(--ccsv-accent);
+  color: var(--pt-accent);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-accent);
   border-radius: 0.6rem;
   cursor: pointer;
 }
 
 .ccsv-file-button:hover {
   color: #fff;
-  background: var(--ccsv-accent);
+  background: var(--pt-accent);
 }
 
 .ccsv-file-input:focus-visible + .ccsv-file-button {
-  outline: 2px solid var(--ccsv-accent);
+  outline: 2px solid var(--pt-accent);
   outline-offset: 2px;
 }
 
@@ -478,7 +419,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ccsv-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
@@ -536,9 +477,9 @@
 
 .ccsv-danger-button {
   padding: 0.4rem 0.8rem;
-  color: var(--ccsv-danger);
+  color: var(--pt-danger);
   background: transparent;
-  border: 1px solid var(--ccsv-danger);
+  border: 1px solid var(--pt-danger);
   border-radius: 0.5rem;
   cursor: pointer;
 }
@@ -590,16 +531,16 @@
   align-items: center;
   justify-content: center;
   padding: 0.3rem;
-  color: var(--ccsv-danger);
+  color: var(--pt-danger);
   background: transparent;
-  border: 1px solid var(--ccsv-border);
+  border: 1px solid var(--pt-border);
   border-radius: 0.5rem;
   line-height: 0;
   cursor: pointer;
 }
 
 .ccsv-icon-button:hover {
-  border-color: var(--ccsv-danger);
+  border-color: var(--pt-danger);
 }
 
 .ccsv-icon-button:disabled {

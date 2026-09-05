@@ -1,81 +1,159 @@
+/* ============================================================
+   デザイントークン（--pt-*）。色・余白・角丸・影・フォントサイズを TOP・共有 UI・3ツール
+   横断の単一系統として定義する（issue #6 Step 5）。ライト/ダークは [data-theme] 属性で切り替える。
+   TOP は <html> に data-theme を付け（src/ui/theme.ts）、各ツールは `.xxx-app` ラッパーに付ける
+   （例: `.ccsv-app[data-theme]`）ため、色トークンの [data-theme="dark"/"light"] はどちらの要素にも
+   属性セレクタとしてそのままヒットする、クラスに紐付けないベア属性セレクタにする（そのままの
+   構造で子孫に継承される）。color-scheme・実際の color/background プロパティ（ページ全体の地色）
+   は文書ルート（:root）だけのものなので、ツールの `.xxx-app` には波及させない。
+   ブレークポイント（デスクトップ切替）はカスタムプロパティを @media 条件式に使えないため、
+   基準値をここに明記する: 48rem（≒768px）。
+   ============================================================ */
 :root {
   color-scheme: light;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #17212b;
-  background: #f4f7fb;
-  --top-bg: #f4f7fb;
-  --top-surface: #ffffff;
-  --top-border: #d9e2ec;
-  --top-text: #17212b;
-  --top-muted: #5b6b7c;
-  --top-accent: #1769aa;
-  --top-shadow: 0 .5rem 1.5rem rgb(23 33 43 / 8%);
+  color: var(--pt-text);
+  background: var(--pt-bg);
+
+  --pt-bg: #f4f7fb;
+  --pt-surface: #ffffff;
+  --pt-border: #d9e2ec;
+  --pt-text: #17212b;
+  --pt-muted: #5b6b7c;
+  --pt-accent: #1769aa;
+  --pt-accent-strong: #105888;
+  --pt-secondary: #0f766e;
+  --pt-danger: #b3261e;
+  --pt-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
+  --pt-success-bg: #e6f4ea;
+  --pt-success-fg: #1e7d34;
+  --pt-error-bg: #fdecea;
+  --pt-error-fg: #b3261e;
+  --pt-info-bg: #e8f1fb;
+  --pt-info-fg: #1769aa;
+
+  --pt-space-1: 0.25rem;
+  --pt-space-2: 0.5rem;
+  --pt-space-3: 0.75rem;
+  --pt-space-4: 1rem;
+  --pt-space-5: 1.5rem;
+  --pt-space-6: 2rem;
+
+  --pt-radius-sm: 0.5rem;
+  --pt-radius-md: 0.6rem;
+  --pt-radius-lg: 1rem;
+
+  --pt-text-sm: 0.85rem;
+  --pt-text-md: 1rem;
+  --pt-text-lg: 1.05rem;
+  --pt-text-xl: 1.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    color: #e7edf3;
-    background: #101820;
-    --top-bg: #101820;
-    --top-surface: #182432;
-    --top-border: #2b3947;
-    --top-text: #e7edf3;
-    --top-muted: #94a3b3;
-    --top-accent: #4ba3ff;
-    --top-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 30%);
+    --pt-bg: #101820;
+    --pt-surface: #182432;
+    --pt-border: #2b3947;
+    --pt-text: #e7edf3;
+    --pt-muted: #94a3b3;
+    --pt-accent: #4ba3ff;
+    --pt-accent-strong: #79bcff;
+    --pt-secondary: #2bb3a3;
+    --pt-danger: #ff8a80;
+    --pt-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
+    --pt-success-bg: #16311f;
+    --pt-success-fg: #6fcf87;
+    --pt-error-bg: #3a1c1a;
+    --pt-error-fg: #ff8a80;
+    --pt-info-bg: #142c3f;
+    --pt-info-fg: #4ba3ff;
   }
+}
+
+/* ベア属性セレクタ（:root に紐付けない）。TOP の <html data-theme> だけでなく、各ツールの
+   `.xxx-app[data-theme]` にも同じ属性が直接ヒットして --pt-* を上書きし、その子孫に継承される。
+   color-scheme はページ全体の地色に関わる文書ルート限定の設定なので、:root 側にだけ足す。 */
+[data-theme="dark"] {
+  --pt-bg: #101820;
+  --pt-surface: #182432;
+  --pt-border: #2b3947;
+  --pt-text: #e7edf3;
+  --pt-muted: #94a3b3;
+  --pt-accent: #4ba3ff;
+  --pt-accent-strong: #79bcff;
+  --pt-secondary: #2bb3a3;
+  --pt-danger: #ff8a80;
+  --pt-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
+  --pt-success-bg: #16311f;
+  --pt-success-fg: #6fcf87;
+  --pt-error-bg: #3a1c1a;
+  --pt-error-fg: #ff8a80;
+  --pt-info-bg: #142c3f;
+  --pt-info-fg: #4ba3ff;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  color: #e7edf3;
-  background: #101820;
-  --top-bg: #101820;
-  --top-surface: #182432;
-  --top-border: #2b3947;
-  --top-text: #e7edf3;
-  --top-muted: #94a3b3;
-  --top-accent: #4ba3ff;
-  --top-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 30%);
+}
+
+/* 明示 light テーマは OS ダークの @media より優先させる（詳細度 0,2,0 > 0,1,0）。ツール側の
+   `.xxx-app[data-theme="light"]` にもこのベア属性セレクタが直接ヒットする。 */
+[data-theme="light"] {
+  --pt-bg: #f4f7fb;
+  --pt-surface: #ffffff;
+  --pt-border: #d9e2ec;
+  --pt-text: #17212b;
+  --pt-muted: #5b6b7c;
+  --pt-accent: #1769aa;
+  --pt-accent-strong: #105888;
+  --pt-secondary: #0f766e;
+  --pt-danger: #b3261e;
+  --pt-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
+  --pt-success-bg: #e6f4ea;
+  --pt-success-fg: #1e7d34;
+  --pt-error-bg: #fdecea;
+  --pt-error-fg: #b3261e;
+  --pt-info-bg: #e8f1fb;
+  --pt-info-fg: #1769aa;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 0; background: var(--top-bg); color: var(--top-text); }
+body { margin: 0; min-width: 0; background: var(--pt-bg); color: var(--pt-text); }
 button, input { font: inherit; }
 
 .top-shell { width: min(100%, 42rem); margin: 0 auto; padding: 1rem; }
 .top-header { position: relative; margin-bottom: 1.5rem; }
-.top-eyebrow { margin: 0 0 .5rem; color: var(--top-accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.top-eyebrow { margin: 0 0 .5rem; color: var(--pt-accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .top-header h1 { margin: 0; font-size: clamp(1.7rem, 7vw, 2.4rem); line-height: 1.25; }
 .top-theme-toggle {
   position: absolute;
   top: 0;
   right: 0;
   padding: .4rem .9rem;
-  background: var(--top-surface);
-  border: 1px solid var(--top-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: .5rem;
-  color: var(--top-text);
+  color: var(--pt-text);
   cursor: pointer;
 }
-.top-theme-toggle:hover { border-color: var(--top-accent); }
+.top-theme-toggle:hover { border-color: var(--pt-accent); }
 .top-tool-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
 .top-tool-card {
   display: flex;
   flex-direction: column;
   gap: .35rem;
   padding: 1.25rem 1.5rem;
-  background: var(--top-surface);
-  border: 1px solid var(--top-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 1rem;
-  box-shadow: var(--top-shadow);
+  box-shadow: var(--pt-shadow);
   text-decoration: none;
   color: inherit;
 }
-.top-tool-card:hover { border-color: var(--top-accent); }
-.top-tool-name { font-size: 1.15rem; font-weight: 700; color: var(--top-accent); }
-.top-tool-desc { color: var(--top-muted); }
+.top-tool-card:hover { border-color: var(--pt-accent); }
+.top-tool-name { font-size: 1.15rem; font-weight: 700; color: var(--pt-accent); }
+.top-tool-desc { color: var(--pt-muted); }
 @media (min-width: 48rem) {
   /* credit-csv ツールと同じ約130%拡大でPC間の見た目を統一する */
   :root { font-size: 130%; }
@@ -97,8 +175,8 @@ button, input { font: inherit; }
 .tool-shell-spinner {
   width: 2.5rem;
   height: 2.5rem;
-  border: 3px solid var(--top-border);
-  border-top-color: var(--top-accent);
+  border: 3px solid var(--pt-border);
+  border-top-color: var(--pt-accent);
   border-radius: 50%;
   animation: tool-shell-spin .8s linear infinite;
 }
@@ -112,83 +190,10 @@ button, input { font: inherit; }
    本番でも確実に読み込まれるよう、常時 link される styles.css に置く
    （ツール別バンドルだと共有CSSが別チャンクに分割され shell が link しないため、
     本番でトースト/ダイアログが無スタイルになりページ最下部に出る問題を回避）。
-   light を既定にし、OSダークは @media、ツールの明示テーマは [data-theme] で上書き
-   （明示 light はOSダークより優先＝詳細度が高いので必ず勝つ）。
+   色は上部で定義した --pt-*（1系統のデザイントークン）をそのまま参照する。ライト/ダークの
+   切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
+   （Provider は各ツールの `.xxx-app[data-theme]` 配下に置かれるため、その [data-theme] が継承される）。
    ============================================================ */
-.fbk-alert-stack,
-.fbk-confirm-overlay,
-.fbk-spinner-wrap {
-  --fbk-surface: #ffffff;
-  --fbk-border: #d9e2ec;
-  --fbk-text: #17212b;
-  --fbk-muted: #5b6b7c;
-  --fbk-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 12%);
-  --fbk-success-bg: #e6f4ea;
-  --fbk-success-fg: #1e7d34;
-  --fbk-error-bg: #fdecea;
-  --fbk-error-fg: #b3261e;
-  --fbk-info-bg: #e8f1fb;
-  --fbk-info-fg: #1769aa;
-  --fbk-accent: #1769aa;
-  --fbk-danger: #b3261e;
-}
-
-@media (prefers-color-scheme: dark) {
-  .fbk-alert-stack,
-  .fbk-confirm-overlay,
-  .fbk-spinner-wrap {
-    --fbk-surface: #182432;
-    --fbk-border: #2b3947;
-    --fbk-text: #e7edf3;
-    --fbk-muted: #94a3b3;
-    --fbk-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
-    --fbk-success-bg: #16311f;
-    --fbk-success-fg: #6fcf87;
-    --fbk-error-bg: #3a1c1a;
-    --fbk-error-fg: #ff8a80;
-    --fbk-info-bg: #142c3f;
-    --fbk-info-fg: #4ba3ff;
-    --fbk-accent: #4ba3ff;
-    --fbk-danger: #ff8a80;
-  }
-}
-
-[data-theme="dark"] .fbk-alert-stack,
-[data-theme="dark"] .fbk-confirm-overlay,
-[data-theme="dark"] .fbk-spinner-wrap {
-  --fbk-surface: #182432;
-  --fbk-border: #2b3947;
-  --fbk-text: #e7edf3;
-  --fbk-muted: #94a3b3;
-  --fbk-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
-  --fbk-success-bg: #16311f;
-  --fbk-success-fg: #6fcf87;
-  --fbk-error-bg: #3a1c1a;
-  --fbk-error-fg: #ff8a80;
-  --fbk-info-bg: #142c3f;
-  --fbk-info-fg: #4ba3ff;
-  --fbk-accent: #4ba3ff;
-  --fbk-danger: #ff8a80;
-}
-
-/* 明示 light テーマは OSダークの @media より優先させる（詳細度 0,2,0 > 0,1,0）。 */
-[data-theme="light"] .fbk-alert-stack,
-[data-theme="light"] .fbk-confirm-overlay,
-[data-theme="light"] .fbk-spinner-wrap {
-  --fbk-surface: #ffffff;
-  --fbk-border: #d9e2ec;
-  --fbk-text: #17212b;
-  --fbk-muted: #5b6b7c;
-  --fbk-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 12%);
-  --fbk-success-bg: #e6f4ea;
-  --fbk-success-fg: #1e7d34;
-  --fbk-error-bg: #fdecea;
-  --fbk-error-fg: #b3261e;
-  --fbk-info-bg: #e8f1fb;
-  --fbk-info-fg: #1769aa;
-  --fbk-accent: #1769aa;
-  --fbk-danger: #b3261e;
-}
 
 /* Alert トースト（画面上部中央に固定・縦積み） */
 .fbk-alert-stack {
@@ -209,18 +214,18 @@ button, input { font: inherit; }
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.8rem;
-  background: var(--fbk-surface);
-  border: 1px solid var(--fbk-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 0.6rem;
-  box-shadow: var(--fbk-shadow);
-  color: var(--fbk-text);
+  box-shadow: var(--pt-shadow);
+  color: var(--pt-text);
   font-size: 0.9rem;
   pointer-events: auto;
 }
 
-.fbk-alert-success { background: var(--fbk-success-bg); border-color: var(--fbk-success-fg); color: var(--fbk-success-fg); }
-.fbk-alert-error { background: var(--fbk-error-bg); border-color: var(--fbk-error-fg); color: var(--fbk-error-fg); }
-.fbk-alert-info { background: var(--fbk-info-bg); border-color: var(--fbk-info-fg); color: var(--fbk-info-fg); }
+.fbk-alert-success { background: var(--pt-success-bg); border-color: var(--pt-success-fg); color: var(--pt-success-fg); }
+.fbk-alert-error { background: var(--pt-error-bg); border-color: var(--pt-error-fg); color: var(--pt-error-fg); }
+.fbk-alert-info { background: var(--pt-info-bg); border-color: var(--pt-info-fg); color: var(--pt-info-fg); }
 
 .fbk-alert-icon { flex-shrink: 0; font-weight: 700; }
 
@@ -266,15 +271,15 @@ button, input { font: inherit; }
 .fbk-confirm-dialog {
   width: min(90vw, 24rem);
   padding: 1.25rem;
-  background: var(--fbk-surface);
-  border: 1px solid var(--fbk-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 1rem;
-  box-shadow: var(--fbk-shadow);
-  color: var(--fbk-text);
+  box-shadow: var(--pt-shadow);
+  color: var(--pt-text);
 }
 
 .fbk-confirm-title { margin: 0 0 0.5rem; font-size: 1.05rem; }
-.fbk-confirm-message { margin: 0; color: var(--fbk-muted); font-size: 0.9rem; }
+.fbk-confirm-message { margin: 0; color: var(--pt-muted); font-size: 0.9rem; }
 
 .fbk-confirm-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.25rem; }
 
@@ -288,18 +293,18 @@ button, input { font: inherit; }
 }
 
 /* 複合セレクタ（0,2,0）でツールの `.app button`（0,1,1）背景・枠に勝たせる。 */
-.fbk-confirm-actions .fbk-confirm-cancel { color: var(--fbk-text); background: var(--fbk-surface); border: 1px solid var(--fbk-border); }
-.fbk-confirm-actions .fbk-confirm-confirm { color: #fff; background: var(--fbk-accent); border: 1px solid var(--fbk-accent); }
-.fbk-confirm-actions .fbk-confirm-confirm-danger { color: #fff; background: var(--fbk-danger); border-color: var(--fbk-danger); }
+.fbk-confirm-actions .fbk-confirm-cancel { color: var(--pt-text); background: var(--pt-surface); border: 1px solid var(--pt-border); }
+.fbk-confirm-actions .fbk-confirm-confirm { color: #fff; background: var(--pt-accent); border: 1px solid var(--pt-accent); }
+.fbk-confirm-actions .fbk-confirm-confirm-danger { color: #fff; background: var(--pt-danger); border-color: var(--pt-danger); }
 
 /* Spinner（シェルの起動時スピナー .tool-shell-spinner と同じ見た目） */
-.fbk-spinner-wrap { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--fbk-muted); }
+.fbk-spinner-wrap { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--pt-muted); }
 
 .fbk-spinner {
   width: 1.5rem;
   height: 1.5rem;
-  border: 3px solid var(--fbk-border);
-  border-top-color: var(--fbk-accent);
+  border: 3px solid var(--pt-border);
+  border-top-color: var(--pt-accent);
   border-radius: 50%;
   animation: fbk-spin 0.8s linear infinite;
 }
@@ -312,36 +317,16 @@ button, input { font: inherit; }
 
 /* ============================================================
    ツールヘッダー（サイドバー無しツールの共通トップバー、src/components/layout/ToolHeader.tsx）。
-   feedback の .fbk-* と同じ理由で、常時 link される styles.css に自己完結の
-   トークンを持たせる（ツール別バンドルの CSS はシェルが link しないため）。
+   feedback の .fbk-* と同じ理由で、常時 link される styles.css に置く（ツール別バンドルの
+   CSS はシェルが link しないため）。色は共通の --pt-* をそのまま参照する
+   （ToolHeader は各ツールの `.xxx-app[data-theme]` 配下に置かれるため継承される）。
    ============================================================ */
 .tool-header {
-  --tool-header-text: #17212b;
-  --tool-header-muted: #5b6b7c;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tool-header {
-    --tool-header-text: #e7edf3;
-    --tool-header-muted: #94a3b3;
-  }
-}
-
-[data-theme="dark"] .tool-header {
-  --tool-header-text: #e7edf3;
-  --tool-header-muted: #94a3b3;
-}
-
-/* 明示 light テーマは OSダークの @media より優先させる（詳細度 0,2,0 > 0,1,0）。 */
-[data-theme="light"] .tool-header {
-  --tool-header-text: #17212b;
-  --tool-header-muted: #5b6b7c;
 }
 
 .tool-header-titlebar {
@@ -353,7 +338,7 @@ button, input { font: inherit; }
 .tool-header-title {
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--tool-header-text);
+  color: var(--pt-text);
 }
 
 .tool-header-actions {
@@ -363,7 +348,7 @@ button, input { font: inherit; }
 }
 
 .tool-header-back-link {
-  color: var(--tool-header-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
@@ -377,35 +362,160 @@ button, input { font: inherit; }
 
 /* ============================================================
    テーマ切替ボタン（3ツール共通、src/components/ThemeToggle.tsx）。
-   tool-header と同じ理由で、常時 link される styles.css に自己完結の
-   トークンを持たせる。配置ごとの位置調整（credit-csv のサイドバー内など）は
+   tool-header と同じ理由で、常時 link される styles.css に置く。色は共通の --pt-* を
+   そのまま参照する。配置ごとの位置調整（credit-csv のサイドバー内など）は
    各ツールの CSS 側で `.theme-toggle` にスコープしたセレクタを足す。
    ============================================================ */
 .theme-toggle {
-  --theme-toggle-bg: #f4f7fb;
-  --theme-toggle-border: #d9e2ec;
-
   flex-shrink: 0;
   padding: 0.5rem 0.9rem;
-  background: var(--theme-toggle-bg);
-  border: 1px solid var(--theme-toggle-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.65rem;
   cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
-  .theme-toggle {
-    --theme-toggle-bg: #101820;
-    --theme-toggle-border: #2b3947;
-  }
+/* ============================================================
+   基本部品の共通クラス（issue #6 Step 5）。ボタン・入力欄・カード・バッジ・タブ・テーブルの
+   基礎スタイルをここに1本化する。3ツールの CSS にあった同等の定義は削除し、ここへ集約した
+   （新規マークアップは `.pt-*` を直接使う。既存マークアップの `.ccsv-*`/`.pbuilder-*`/
+   `.mytodo-*` は構造の識別子として残し、このセレクタ経由で同じ定義を引き続き受け取る）。
+   ツール固有のレイアウト・配置・状態色（タブのアクティブ色など基本形以外）は各ツール CSS に残す。
+   ============================================================ */
+
+/* ボタン（既定）。pbuilder/mytodo は元々 `.xxx-app button` の要素セレクタで全ボタンへ既定を
+   当てていたためそのセレクタをそのまま引き継ぐ。ccsv はページ送り・切替の素の <button> だけ
+   ここに合流させる（同じ役割で微妙に異なっていた padding/border-radius は多数派の値に揃える）。 */
+.pt-button,
+.pbuilder-app button,
+.mytodo-app button,
+.ccsv-pagination-controls button,
+.ccsv-segmented button {
+  padding: 0.5rem 0.9rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-md);
+  cursor: pointer;
 }
 
-[data-theme="dark"] .theme-toggle {
-  --theme-toggle-bg: #101820;
-  --theme-toggle-border: #2b3947;
+.pt-button:disabled,
+.pbuilder-app button:disabled,
+.mytodo-app button:disabled,
+.ccsv-pagination-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-[data-theme="light"] .theme-toggle {
-  --theme-toggle-bg: #f4f7fb;
-  --theme-toggle-border: #d9e2ec;
+/* ボタン（danger）: 削除など破壊的操作。枠線のみで背景は透過。 */
+.pt-button-danger,
+.pbuilder-app .pbuilder-danger-button,
+.mytodo-app .mytodo-danger-button {
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
+  background: transparent;
+}
+
+/* ボタン（accent）: 登録・追加など主要操作。枠線のみで背景は透過。 */
+.pt-button-accent,
+.pbuilder-app .pbuilder-word-form button[type="submit"],
+.mytodo-app .mytodo-add-form button {
+  color: var(--pt-accent);
+  border-color: var(--pt-accent);
+  background: transparent;
+}
+
+/* テキスト入力（min-height 44px でタップ領域、font-size 16px は iOS Safari のフォーカス時
+   自動ズームを防ぐため）。ccsv の `.ccsv-filters input` は type 属性を持たない素の入力欄
+   （既定で text 扱い）なのでここに含める。 */
+.pt-input,
+.ccsv-app input[type="text"],
+.ccsv-filters input,
+.pbuilder-app input[type="text"],
+.mytodo-app input[type="text"] {
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-md);
+  font-size: 16px;
+}
+
+.pt-input:focus-visible,
+.ccsv-app input[type="text"]:focus-visible,
+.ccsv-filters input:focus-visible,
+.pbuilder-app input[type="text"]:focus-visible,
+.mytodo-app input[type="text"]:focus-visible {
+  outline: 2px solid var(--pt-accent);
+  outline-offset: 1px;
+  border-color: var(--pt-accent);
+}
+
+/* カード（surface + border + radius-lg + shadow）。ccsv-summary-card の flex レイアウトなど
+   基本形以外の付加スタイルは credit-csv.css 側にツール固有として残す。 */
+.pt-card,
+.ccsv-panel,
+.ccsv-summary-card,
+.pbuilder-panel,
+.mytodo-panel {
+  padding: var(--pt-space-4);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow);
+}
+
+/* バッジ（ミュートな小さいラベル。未保存表示・件数表示・保存状態インジケーター等）。 */
+.pt-badge,
+.pbuilder-dirty-badge,
+.mytodo-count-badge,
+.mytodo-save-indicator {
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+}
+
+/* ナビタブ（ヘッダー直下の横並びページ切替）。ccsv は既存のサイドバー内タブ（`.ccsv-nav-tabs`）
+   のままで対象外（構造ごと Phase 5b で見直す）。 */
+.pt-tab,
+.pbuilder-tab-button,
+.mytodo-tab-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  color: var(--pt-text);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pt-tab.is-active,
+.pbuilder-tab-button.is-active,
+.mytodo-tab-button.is-active {
+  color: #fff;
+  background: var(--pt-accent);
+  border-color: var(--pt-accent);
+}
+
+/* テーブル（現状は credit-csv のみ使用）。 */
+.pt-table,
+.ccsv-app table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--pt-text-sm);
+}
+
+.pt-table th,
+.pt-table td,
+.ccsv-app th,
+.ccsv-app td {
+  padding: 0.55rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--pt-border);
 }

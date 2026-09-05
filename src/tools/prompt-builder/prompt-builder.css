@@ -1,14 +1,7 @@
+/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
+   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
+   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .pbuilder-app {
-  --pbuilder-bg: #f4f7fb;
-  --pbuilder-surface: #ffffff;
-  --pbuilder-border: #d9e2ec;
-  --pbuilder-text: #17212b;
-  --pbuilder-muted: #5b6b7c;
-  --pbuilder-accent: #1769aa;
-  --pbuilder-secondary: #0f766e;
-  --pbuilder-danger: #b3261e;
-  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
-
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -17,21 +10,9 @@
      を clip して body が横スクロール可能になるのを断つ。clip は縦スクロール・固定トースト
      （fixed 子孫）に影響しない（.pbuilder-app に transform 等の包含ブロック生成が無いため）。 */
   overflow-x: clip;
-  background: var(--pbuilder-bg);
-  color: var(--pbuilder-text);
+  background: var(--pt-bg);
+  color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-.pbuilder-app[data-theme="dark"] {
-  --pbuilder-bg: #101820;
-  --pbuilder-surface: #182432;
-  --pbuilder-border: #2b3947;
-  --pbuilder-text: #e7edf3;
-  --pbuilder-muted: #94a3b3;
-  --pbuilder-accent: #4ba3ff;
-  --pbuilder-secondary: #2bb3a3;
-  --pbuilder-danger: #ff8a80;
-  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
 }
 
 .pbuilder-app * {
@@ -70,37 +51,12 @@
   padding: 0 1rem 0.75rem;
 }
 
-.pbuilder-tab-button {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.65rem 0.9rem;
-  /* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になり
-     テーマに追従しない。 */
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-surface);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.75rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
+/* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になりテーマに
+   追従しない。基礎スタイルと is-active の状態色は共通クラス .pt-tab（src/public/styles.css）
+   に集約済み。 */
 
-.pbuilder-tab-button.is-active {
-  color: #fff;
-  background: var(--pbuilder-accent);
-  border-color: var(--pbuilder-accent);
-}
-
-.pbuilder-panel {
-  padding: 1rem;
-  background: var(--pbuilder-surface);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 1rem;
-  box-shadow: var(--pbuilder-shadow);
-}
+/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
+   に集約済み。 */
 
 .pbuilder-panel-header {
   display: flex;
@@ -123,51 +79,21 @@
   gap: 0.6rem;
 }
 
-.pbuilder-dirty-badge {
-  color: var(--pbuilder-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.pbuilder-app button {
-  padding: 0.5rem 0.9rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
-.pbuilder-app button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.pbuilder-app input[type="text"] {
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.6rem;
-  font-size: 16px;
-}
-
-.pbuilder-app input[type="text"]:focus-visible {
-  outline: 2px solid var(--pbuilder-accent);
-  outline-offset: 1px;
-  border-color: var(--pbuilder-accent);
-}
+/* 未保存バッジの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。
+   既定のボタン見た目・disabled 状態は共通クラス .pt-button、テキスト入力の基礎は
+   .pt-input に集約済み（同じく styles.css）。 */
 
 .pbuilder-status-message {
   margin: 0.85rem 0;
   padding: 0.85rem 1rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
 .pbuilder-status-message-error {
-  color: var(--pbuilder-danger);
-  border-color: var(--pbuilder-danger);
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
 }
 
 
@@ -209,9 +135,9 @@
 .pbuilder-app input.pbuilder-word-search {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  color: var(--pt-text);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.6rem;
   font-size: 16px;
 }
@@ -223,8 +149,8 @@
 
 /* <option> はブラウザ既定の配色になりがちなので、ライト/ダーク両テーマで読めるよう明示する。 */
 .pbuilder-app select option {
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-surface);
+  color: var(--pt-text);
+  background: var(--pt-surface);
 }
 
 .pbuilder-word-filter {
@@ -258,21 +184,8 @@
   max-width: 12rem;
 }
 
-/* `.pbuilder-app button`（詳細度 0,1,1）が border/background を持つため、単一クラスの
-   `.pbuilder-danger-button`（0,1,0）では負けて枠色が効かない。`.pbuilder-app` を前置して
-   詳細度を上げ、削除ボタンの danger 枠を確実に適用する。 */
-.pbuilder-app .pbuilder-danger-button {
-  color: var(--pbuilder-danger);
-  border-color: var(--pbuilder-danger);
-  background: transparent;
-}
-
-/* 登録（追加）ボタンはアクセント色の枠にする（同じ詳細度の理由で `.pbuilder-app` を前置）。 */
-.pbuilder-app .pbuilder-word-form button[type="submit"] {
-  color: var(--pbuilder-accent);
-  border-color: var(--pbuilder-accent);
-  background: transparent;
-}
+/* 削除ボタンの danger 枠・登録ボタンの accent 枠は共通クラス .pt-button-danger /
+   .pt-button-accent（src/public/styles.css）に集約済み。 */
 
 .pbuilder-word-list,
 .pbuilder-output-list {
@@ -286,7 +199,7 @@
 
 .pbuilder-word-empty,
 .pbuilder-empty {
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
@@ -295,8 +208,8 @@
   flex-direction: column;
   gap: 0.6rem;
   padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
@@ -319,7 +232,7 @@
 }
 
 .pbuilder-word-description {
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
@@ -361,12 +274,12 @@
 
 .pbuilder-tag-group-header {
   padding-bottom: 0.35rem;
-  border-bottom: 1px solid var(--pbuilder-border);
+  border-bottom: 1px solid var(--pt-border);
 }
 
 .pbuilder-tag-group-header h3 {
   margin: 0;
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
@@ -375,15 +288,15 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
   touch-action: none;
 }
 
 .pbuilder-output-item.is-dragging {
   z-index: 1;
-  box-shadow: var(--pbuilder-shadow);
+  box-shadow: var(--pt-shadow);
 }
 
 .pbuilder-drag-handle {
@@ -416,13 +329,13 @@
 
 .pbuilder-app .pbuilder-icon-button {
   padding: 0.3rem 0.55rem;
-  color: var(--pbuilder-danger);
+  color: var(--pt-danger);
   background: transparent;
-  border: 1px solid var(--pbuilder-border);
+  border: 1px solid var(--pt-border);
 }
 
 .pbuilder-app .pbuilder-icon-button:hover {
-  border-color: var(--pbuilder-danger);
+  border-color: var(--pt-danger);
 }
 
 .pbuilder-output-preview {
@@ -436,8 +349,8 @@
 .pbuilder-output-text {
   margin: 0;
   padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
   overflow-wrap: break-word;
   user-select: text;
@@ -456,19 +369,19 @@
 .pbuilder-app .pbuilder-copy-button {
   width: 100%;
   color: #fff;
-  background: var(--pbuilder-secondary);
-  border-color: var(--pbuilder-secondary);
+  background: var(--pt-secondary);
+  border-color: var(--pt-secondary);
   font-weight: 700;
 }
 
 .pbuilder-copy-feedback {
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
 
 .pbuilder-copy-feedback-error {
-  color: var(--pbuilder-danger);
+  color: var(--pt-danger);
 }
 
 .pbuilder-history {
@@ -477,7 +390,7 @@
   gap: 0.6rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--pbuilder-border);
+  border-top: 1px solid var(--pt-border);
 }
 
 .pbuilder-history h3 {
@@ -505,8 +418,8 @@
   flex-direction: column;
   gap: 0.6rem;
   padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
@@ -523,12 +436,12 @@
 /* 「履歴に保存」はコピー（塗り）と対のセカンダリー系アクションとして、枠線を
    セカンダリー色にする（アウトライン）。`.pbuilder-app` 前置で既定ボタンに勝たせる。 */
 .pbuilder-app .pbuilder-history-form button {
-  color: var(--pbuilder-secondary);
-  border-color: var(--pbuilder-secondary);
+  color: var(--pt-secondary);
+  border-color: var(--pt-secondary);
 }
 
 .pbuilder-history-date {
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 

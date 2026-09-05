@@ -1,13 +1,7 @@
+/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
+   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
+   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .mytodo-app {
-  --mytodo-bg: #f4f7fb;
-  --mytodo-surface: #ffffff;
-  --mytodo-border: #d9e2ec;
-  --mytodo-text: #17212b;
-  --mytodo-muted: #5b6b7c;
-  --mytodo-accent: #1769aa;
-  --mytodo-danger: #b3261e;
-  --mytodo-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
-
   display: flex;
   flex-direction: column;
   /* 親（#root/body）に高さ指定が無く min-height:100% は auto に解決されコンテンツ高さで
@@ -17,20 +11,9 @@
   min-height: 100dvh;
   /* iPhone (iOS Safari) の横ラバーバンドを防ぐ（prompt-builder の .pbuilder-app と同じ理由）。 */
   overflow-x: clip;
-  background: var(--mytodo-bg);
-  color: var(--mytodo-text);
+  background: var(--pt-bg);
+  color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-.mytodo-app[data-theme="dark"] {
-  --mytodo-bg: #101820;
-  --mytodo-surface: #182432;
-  --mytodo-border: #2b3947;
-  --mytodo-text: #e7edf3;
-  --mytodo-muted: #94a3b3;
-  --mytodo-accent: #4ba3ff;
-  --mytodo-danger: #ff8a80;
-  --mytodo-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
 }
 
 .mytodo-app * {
@@ -68,29 +51,9 @@
   padding: 0 1rem 0.75rem;
 }
 
-.mytodo-tab-button {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.65rem 0.9rem;
-  /* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になり
-     テーマに追従しない。 */
-  color: var(--mytodo-text);
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.75rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.mytodo-tab-button.is-active {
-  color: #fff;
-  background: var(--mytodo-accent);
-  border-color: var(--mytodo-accent);
-}
+/* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になりテーマに
+   追従しない。基礎スタイルと is-active の状態色は共通クラス .pt-tab（src/public/styles.css）
+   に集約済み。 */
 
 .mytodo-panel-header-status {
   display: flex;
@@ -98,64 +61,29 @@
   gap: 0.6rem;
 }
 
-.mytodo-save-indicator {
-  color: var(--mytodo-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.mytodo-app button {
-  padding: 0.5rem 0.9rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
-.mytodo-app button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.mytodo-app input[type="text"] {
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.6rem;
-  font-size: 16px;
-}
-
-.mytodo-app input[type="text"]:focus-visible {
-  outline: 2px solid var(--mytodo-accent);
-  outline-offset: 1px;
-  border-color: var(--mytodo-accent);
-}
+/* 保存状態インジケーターの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。
+   既定のボタン見た目・disabled 状態は共通クラス .pt-button、テキスト入力の基礎は
+   .pt-input に集約済み（同じく styles.css）。 */
 
 .mytodo-status-message {
   margin: 0;
   padding: 0.85rem 1rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
 .mytodo-status-message-error {
-  color: var(--mytodo-danger);
-  border-color: var(--mytodo-danger);
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
 }
 
 .mytodo-status-message-error button {
   margin-left: 0.6rem;
 }
 
-.mytodo-panel {
-  padding: 1rem;
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 1rem;
-  box-shadow: var(--mytodo-shadow);
-}
+/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
+   に集約済み。 */
 
 .mytodo-panel-header {
   display: flex;
@@ -171,11 +99,7 @@
   font-size: 1.05rem;
 }
 
-.mytodo-count-badge {
-  color: var(--mytodo-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
+/* 件数バッジの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。 */
 
 .mytodo-add-form {
   display: flex;
@@ -188,16 +112,11 @@
   min-width: 0;
 }
 
-/* 登録（追加）ボタンはアクセント色の枠にする（`.mytodo-app` 前置で既定ボタン背景に勝たせる）。 */
-.mytodo-app .mytodo-add-form button {
-  color: var(--mytodo-accent);
-  border-color: var(--mytodo-accent);
-  background: transparent;
-}
+/* 登録（追加）ボタンの accent 枠は共通クラス .pt-button-accent（src/public/styles.css）に集約済み。 */
 
 .mytodo-limit-reason {
   margin: 0 0 0.85rem;
-  color: var(--mytodo-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
@@ -215,7 +134,7 @@
 .mytodo-empty {
   margin: 0;
   padding: 0.6rem 0;
-  color: var(--mytodo-muted);
+  color: var(--pt-muted);
   font-size: 0.9rem;
   list-style: none;
 }
@@ -225,8 +144,8 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
   /* ドラッグ開始は .mytodo-drag-handle の listeners のみ（行本体には付与しない）。
      行に touch-action:none を付けると、テキスト・チェック・余白を起点にした縦スクロールが
@@ -235,17 +154,17 @@
 
 .mytodo-item.is-dragging {
   z-index: 1;
-  box-shadow: var(--mytodo-shadow);
+  box-shadow: var(--pt-shadow);
 }
 
 /* 完了時は行全体をディムして未完了と一目で見分けられるようにする。 */
 .mytodo-item.is-completed {
-  background: color-mix(in srgb, var(--mytodo-bg) 85%, var(--mytodo-text) 15%);
+  background: color-mix(in srgb, var(--pt-bg) 85%, var(--pt-text) 15%);
   opacity: 0.75;
 }
 
 .mytodo-item.is-completed .mytodo-item-text {
-  color: var(--mytodo-muted);
+  color: var(--pt-muted);
   text-decoration: line-through;
 }
 
@@ -291,7 +210,7 @@
 /* 見た目のチェック四角が無いため、キーボードでのフォーカス可視化は隣接するタスクテキストに
    outline を出す（Tab でフォーカス→Space でトグルが視覚的に分かるようにする）。 */
 .mytodo-item-checkbox-input:focus-visible ~ .mytodo-item-text {
-  outline: 2px solid var(--mytodo-accent);
+  outline: 2px solid var(--pt-accent);
   outline-offset: 2px;
   border-radius: 0.25rem;
 }
@@ -311,11 +230,7 @@
   flex-shrink: 0;
 }
 
-.mytodo-app .mytodo-danger-button {
-  color: var(--mytodo-danger);
-  border-color: var(--mytodo-danger);
-  background: transparent;
-}
+/* 削除ボタンの danger 枠は共通クラス .pt-button-danger（src/public/styles.css）に集約済み。 */
 
 /* 行の操作（移動・編集・削除）を集約した「⋯」オーバーフローメニュー。 */
 .mytodo-row-menu-anchor {
@@ -334,13 +249,13 @@
 }
 
 .mytodo-app .mytodo-more-button:hover:not(:disabled) {
-  background: var(--mytodo-surface);
-  border-color: var(--mytodo-accent);
+  background: var(--pt-surface);
+  border-color: var(--pt-accent);
 }
 
 .mytodo-app .mytodo-more-button:focus-visible,
 .mytodo-app .mytodo-more-button[aria-expanded="true"] {
-  outline: 2px solid var(--mytodo-accent);
+  outline: 2px solid var(--pt-accent);
   outline-offset: 1px;
 }
 
@@ -358,10 +273,10 @@
   width: max-content;
   min-width: 6rem;
   padding: 0.35rem;
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
-  box-shadow: var(--mytodo-shadow);
+  box-shadow: var(--pt-shadow);
 }
 
 .mytodo-app .mytodo-row-menu-item {
@@ -377,11 +292,11 @@
 }
 
 .mytodo-app .mytodo-row-menu-item:hover:not(:disabled) {
-  background: var(--mytodo-bg);
+  background: var(--pt-bg);
 }
 
 .mytodo-app .mytodo-row-menu-item:focus-visible {
-  outline: 2px solid var(--mytodo-accent);
+  outline: 2px solid var(--pt-accent);
   outline-offset: -2px;
 }
 
