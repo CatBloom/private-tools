@@ -33,6 +33,19 @@ describe('theme toggle script', () => {
     expect(button.title).toBe('ダークモードに切り替え')
   })
 
+  it('resolves the OS dark preference on load when nothing is stored, without persisting it', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    try {
+      await loadTheme()
+      expect(document.documentElement.dataset.theme).toBe('dark')
+      const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]')!
+      expect(button.getAttribute('aria-label')).toBe('ライトモードに切り替え')
+      expect(localStorage.getItem(THEME_KEY)).toBeNull()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('applies a previously stored theme on load', async () => {
     localStorage.setItem(THEME_KEY, JSON.stringify('dark'))
     await loadTheme()

@@ -42,7 +42,8 @@ const handleToggleClick = () => {
   updateToggleLabels(next)
 }
 
-applyTheme(readStoredTheme())
+// 保存が無いときも OS 設定を解決して data-theme を付け、アイコンとラベルが実際の表示と一致するようにする
+applyTheme(effectiveTheme())
 updateToggleLabels(effectiveTheme())
 document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((button) => {
   button.addEventListener('click', handleToggleClick)
