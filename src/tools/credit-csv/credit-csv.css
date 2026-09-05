@@ -11,13 +11,6 @@
   box-sizing: border-box;
 }
 
-.credit-csv-app button,
-.credit-csv-app input,
-.credit-csv-app select {
-  font: inherit;
-  color: inherit;
-}
-
 .credit-csv-hero-copy {
   margin: 0.35rem 0 0;
   color: var(--pt-muted);
@@ -178,7 +171,8 @@
   overflow-x: auto;
 }
 
-.credit-csv-app a {
+/* 店名リンク用。ドロワー（共有レイアウト）のリンクに漏れないよう本文配下に限定する。 */
+.credit-csv-app .tool-layout-main a {
   color: var(--pt-accent);
 }
 
@@ -384,7 +378,6 @@
   text-align: right;
 }
 
-/* `.credit-csv-app button { color: inherit }` に勝つよう `.credit-csv-app` を付けて詳細度を上げる。 */
 .credit-csv-app .credit-csv-icon-button {
   display: inline-flex;
   align-items: center;

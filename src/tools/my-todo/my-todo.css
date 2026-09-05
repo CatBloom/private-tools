@@ -14,12 +14,6 @@
   box-sizing: border-box;
 }
 
-.my-todo-app button,
-.my-todo-app input {
-  font: inherit;
-  color: inherit;
-}
-
 .my-todo-page-stack {
   display: flex;
   flex-direction: column;

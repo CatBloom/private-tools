@@ -13,13 +13,6 @@
   box-sizing: border-box;
 }
 
-.prompt-builder-app button,
-.prompt-builder-app input,
-.prompt-builder-app select {
-  font: inherit;
-  color: inherit;
-}
-
 .prompt-builder-page-stack {
   display: flex;
   flex-direction: column;
