@@ -25,29 +25,29 @@ export const MerchantSummaryTable = ({ rows, viewMode, onViewModeChange }: Merch
   const pagination = usePaginatedRows(sortedRows)
 
   return (
-    <section className="ccsv-panel">
-      <div className="ccsv-panel-header">
+    <section className="credit-csv-panel">
+      <div className="credit-csv-panel-header">
         <h2>月内合計</h2>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
       </div>
-      <div className="ccsv-table-wrap">
-        <table className="ccsv-summary-table">
+      <div className="credit-csv-table-wrap">
+        <table className="credit-csv-summary-table">
           <colgroup>
-            <col className="ccsv-col-merchant" />
-            <col className="ccsv-col-count" />
-            <col className="ccsv-col-amount" />
+            <col className="credit-csv-col-merchant" />
+            <col className="credit-csv-col-count" />
+            <col className="credit-csv-col-amount" />
           </colgroup>
           <thead>
             <tr>
               <th>店名</th>
-              <th className="ccsv-cell-numeric" aria-sort={ariaSort('count')}>
-                <button type="button" className="ccsv-sort-button" onClick={() => toggleSort('count')}>
-                  件数<span className="ccsv-sort-indicator" aria-hidden="true">{sortIndicator('count')}</span>
+              <th className="credit-csv-cell-numeric" aria-sort={ariaSort('count')}>
+                <button type="button" className="credit-csv-sort-button" onClick={() => toggleSort('count')}>
+                  件数<span className="credit-csv-sort-indicator" aria-hidden="true">{sortIndicator('count')}</span>
                 </button>
               </th>
-              <th className="ccsv-cell-numeric" aria-sort={ariaSort('totalAmount')}>
-                <button type="button" className="ccsv-sort-button" onClick={() => toggleSort('totalAmount')}>
-                  合計金額<span className="ccsv-sort-indicator" aria-hidden="true">{sortIndicator('totalAmount')}</span>
+              <th className="credit-csv-cell-numeric" aria-sort={ariaSort('totalAmount')}>
+                <button type="button" className="credit-csv-sort-button" onClick={() => toggleSort('totalAmount')}>
+                  合計金額<span className="credit-csv-sort-indicator" aria-hidden="true">{sortIndicator('totalAmount')}</span>
                 </button>
               </th>
             </tr>
@@ -55,13 +55,13 @@ export const MerchantSummaryTable = ({ rows, viewMode, onViewModeChange }: Merch
           <tbody>
             {pagination.pageRows.map((row) => (
               <tr key={row.merchantKey}>
-                <td className="ccsv-cell-truncate">
+                <td className="credit-csv-cell-truncate">
                   <Link to={`/merchant/${encodeURIComponent(row.merchantKey)}`} title={row.merchant}>
                     {row.merchant}
                   </Link>
                 </td>
-                <td className="ccsv-cell-numeric">{row.count.toLocaleString('ja-JP')}件</td>
-                <td className="ccsv-cell-numeric">{formatCurrency(row.totalAmount)}</td>
+                <td className="credit-csv-cell-numeric">{row.count.toLocaleString('ja-JP')}件</td>
+                <td className="credit-csv-cell-numeric">{formatCurrency(row.totalAmount)}</td>
               </tr>
             ))}
           </tbody>

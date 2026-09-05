@@ -30,29 +30,29 @@ export const TransactionsTable = ({ rows, viewMode, onViewModeChange }: Transact
   const pagination = usePaginatedRows(sortedRows)
 
   return (
-    <section className="ccsv-panel">
-      <div className="ccsv-panel-header">
+    <section className="credit-csv-panel">
+      <div className="credit-csv-panel-header">
         <h2>明細一覧</h2>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
       </div>
-      <div className="ccsv-table-wrap">
-        <table className="ccsv-transactions-table">
+      <div className="credit-csv-table-wrap">
+        <table className="credit-csv-transactions-table">
           <colgroup>
-            <col className="ccsv-col-date" />
-            <col className="ccsv-col-merchant" />
-            <col className="ccsv-col-amount" />
+            <col className="credit-csv-col-date" />
+            <col className="credit-csv-col-merchant" />
+            <col className="credit-csv-col-amount" />
           </colgroup>
           <thead>
             <tr>
               <th aria-sort={ariaSort('date')}>
-                <button type="button" className="ccsv-sort-button" onClick={() => toggleSort('date')}>
-                  利用日<span className="ccsv-sort-indicator" aria-hidden="true">{sortIndicator('date')}</span>
+                <button type="button" className="credit-csv-sort-button" onClick={() => toggleSort('date')}>
+                  利用日<span className="credit-csv-sort-indicator" aria-hidden="true">{sortIndicator('date')}</span>
                 </button>
               </th>
               <th>店名</th>
-              <th className="ccsv-cell-numeric" aria-sort={ariaSort('amount')}>
-                <button type="button" className="ccsv-sort-button" onClick={() => toggleSort('amount')}>
-                  金額<span className="ccsv-sort-indicator" aria-hidden="true">{sortIndicator('amount')}</span>
+              <th className="credit-csv-cell-numeric" aria-sort={ariaSort('amount')}>
+                <button type="button" className="credit-csv-sort-button" onClick={() => toggleSort('amount')}>
+                  金額<span className="credit-csv-sort-indicator" aria-hidden="true">{sortIndicator('amount')}</span>
                 </button>
               </th>
             </tr>
@@ -61,12 +61,12 @@ export const TransactionsTable = ({ rows, viewMode, onViewModeChange }: Transact
             {pagination.pageRows.map((row) => (
               <tr key={row.id}>
                 <td>{isMobile ? formatDisplayDate(row.date) : row.sortableDate}</td>
-                <td className="ccsv-cell-truncate">
+                <td className="credit-csv-cell-truncate">
                   <Link to={`/merchant/${encodeURIComponent(row.merchantKey)}`} title={row.merchantLabel}>
                     {row.merchantLabel}
                   </Link>
                 </td>
-                <td className="ccsv-cell-numeric">{formatCurrency(row.amount)}</td>
+                <td className="credit-csv-cell-numeric">{formatCurrency(row.amount)}</td>
               </tr>
             ))}
           </tbody>

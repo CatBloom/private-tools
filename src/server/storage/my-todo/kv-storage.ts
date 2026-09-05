@@ -1,11 +1,11 @@
-import type { TodoState } from '../../tools/my-todo/shared/types.js'
+import type { TodoState } from '../../../tools/my-todo/shared/types.js'
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
-import type { TodoStorage } from './todo-storage.js'
+import type { MyTodoStorage } from './types.js'
 
 const KV_KEY = 'todos'
 
-export class CloudflareKvTodoStorage implements TodoStorage {
+export class CloudflareKvMyTodoStorage implements MyTodoStorage {
   private readonly client: CloudflareKvClient
 
   constructor(config: CloudflareKvConfig) {

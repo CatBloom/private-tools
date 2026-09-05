@@ -1,16 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { TodoState } from '../../tools/my-todo/shared/types.js'
-import type { TodoStorage } from './todo-storage.js'
+import type { TodoState } from '../../../tools/my-todo/shared/types.js'
+import type { MyTodoStorage } from './types.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const defaultDir = join(repoRoot, '.data', 'my-todo')
 
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-export class LocalTodoStorage implements TodoStorage {
+export class LocalMyTodoStorage implements MyTodoStorage {
   private readonly dir: string
 
   constructor(dir: string = defaultDir) {

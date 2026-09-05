@@ -5,10 +5,10 @@ import { SectionPage } from './pages/SectionPage'
 import { TodoProvider } from './state/TodoContext'
 import './my-todo.css'
 
-// Provider は ToolLayout の内側（.mytodo-app[data-theme] 配下）に置く。外側に置くとトースト/
-// ダイアログが .mytodo-app と兄弟要素になり [data-theme] スコープの CSS 変数を継承できない。
+// Provider は ToolLayout の内側（.my-todo-app[data-theme] 配下）に置く。外側に置くとトースト/
+// ダイアログが .my-todo-app と兄弟要素になり [data-theme] スコープの CSS 変数を継承できない。
 const MyTodoRoutes = () => (
-  <ToolLayout toolId="my-todo" appClassName="mytodo-app" tabs>
+  <ToolLayout toolId="my-todo" appClassName="my-todo-app" tabs>
     <AlertProvider>
       <ConfirmProvider>
         <TodoProvider>

@@ -218,14 +218,14 @@ export const WordsPage = () => {
 
   const renderWordRow = (word: PromptWord) =>
     editingId === word.id ? (
-      <li key={word.id} className="pbuilder-word-row is-editing">
+      <li key={word.id} className="prompt-builder-word-row is-editing">
         <input
           type="text"
           aria-label="ワード"
           value={editText}
           onChange={(event) => setEditText(event.target.value)}
         />
-        <div className="pbuilder-word-form-row">
+        <div className="prompt-builder-word-form-row">
           <input
             type="text"
             aria-label="説明"
@@ -234,14 +234,14 @@ export const WordsPage = () => {
           />
           <select
             aria-label="タグ"
-            className="pbuilder-tag-select"
+            className="prompt-builder-tag-select"
             value={editTag}
             onChange={(event) => setEditTag(event.target.value as PromptTagId)}
           >
             <TagOptions />
           </select>
         </div>
-        <div className="pbuilder-word-row-actions">
+        <div className="prompt-builder-word-row-actions">
           <button type="button" disabled={!editText.trim()} onClick={() => commitEdit(word.id)}>
             保存
           </button>
@@ -251,17 +251,17 @@ export const WordsPage = () => {
         </div>
       </li>
     ) : (
-      <li key={word.id} className="pbuilder-word-row">
+      <li key={word.id} className="prompt-builder-word-row">
         <button
           type="button"
-          className="pbuilder-word-row-text pbuilder-word-row-button"
+          className="prompt-builder-word-row-text prompt-builder-word-row-button"
           aria-label={`${word.text}を出力に追加`}
           onClick={() => addToOutput(word)}
         >
-          <span className="pbuilder-word-text">{word.text}</span>
-          {word.description ? <span className="pbuilder-word-description">{word.description}</span> : null}
+          <span className="prompt-builder-word-text">{word.text}</span>
+          {word.description ? <span className="prompt-builder-word-description">{word.description}</span> : null}
         </button>
-        <div className="pbuilder-word-row-actions">
+        <div className="prompt-builder-word-row-actions">
           <RowMenu
             items={[
               { key: 'edit', label: '編集', onClick: () => startEdit(word) },
@@ -273,25 +273,25 @@ export const WordsPage = () => {
     )
 
   return (
-    <div className="pbuilder-page-stack">
-      <section className="pbuilder-panel">
-        <div className="pbuilder-panel-header">
+    <div className="prompt-builder-page-stack">
+      <section className="prompt-builder-panel">
+        <div className="prompt-builder-panel-header">
           <h1>ワード一覧</h1>
-          <div className="pbuilder-save-controls">
+          <div className="prompt-builder-save-controls">
             <button type="button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords()}>
               {saveStatus === 'saving' ? '保存中…' : '保存'}
             </button>
-            {dirty && saveStatus !== 'saving' ? <span className="pbuilder-dirty-badge">未保存の変更あり</span> : null}
+            {dirty && saveStatus !== 'saving' ? <span className="prompt-builder-dirty-badge">未保存の変更あり</span> : null}
           </div>
         </div>
 
         {saveStatus === 'error' ? (
-          <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
+          <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
             {saveError}
           </p>
         ) : null}
 
-        <form className="pbuilder-word-form" onSubmit={handleAddWord}>
+        <form className="prompt-builder-word-form" onSubmit={handleAddWord}>
           <input
             type="text"
             placeholder="ワード"
@@ -300,7 +300,7 @@ export const WordsPage = () => {
             disabled={loadStatus !== 'ready'}
             onChange={(event) => setNewText(event.target.value)}
           />
-          <div className="pbuilder-word-form-row">
+          <div className="prompt-builder-word-form-row">
             <input
               type="text"
               placeholder="説明（任意）"
@@ -311,7 +311,7 @@ export const WordsPage = () => {
             />
             <select
               aria-label="タグ"
-              className="pbuilder-tag-select"
+              className="prompt-builder-tag-select"
               value={newTag}
               disabled={loadStatus !== 'ready'}
               onChange={(event) => setNewTag(event.target.value as PromptTagId | '')}
@@ -329,7 +329,7 @@ export const WordsPage = () => {
 
         {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
         {loadStatus === 'error' ? (
-          <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
+          <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
             {loadError}
             <button type="button" onClick={loadWords}>
               再読み込み
@@ -339,10 +339,10 @@ export const WordsPage = () => {
 
         {loadStatus === 'ready' ? (
           <>
-            <div className="pbuilder-word-filter pbuilder-word-filter-search">
+            <div className="prompt-builder-word-filter prompt-builder-word-filter-search">
               <select
                 aria-label="タグで絞り込み"
-                className="pbuilder-tag-filter-select"
+                className="prompt-builder-tag-filter-select"
                 value={filterTag}
                 onChange={(event) => setFilterTag(event.target.value as TagFilter)}
               >
@@ -351,7 +351,7 @@ export const WordsPage = () => {
               </select>
               <input
                 type="text"
-                className="pbuilder-word-search"
+                className="prompt-builder-word-search"
                 aria-label="名前・説明で検索"
                 placeholder="名前・説明で検索"
                 value={searchQuery}
@@ -361,26 +361,26 @@ export const WordsPage = () => {
 
             {filterTag === 'ALL' ? (
               groupedWords.length === 0 ? (
-                <p className="pbuilder-word-empty">
+                <p className="prompt-builder-word-empty">
                   {words.length === 0 ? 'ワードが登録されていません。' : '該当するワードがありません。'}
                 </p>
               ) : (
-                <div className="pbuilder-tag-groups">
+                <div className="prompt-builder-tag-groups">
                   {groupedWords.map((group) => (
-                    <div key={group.id} className="pbuilder-tag-group">
-                      <div className="pbuilder-tag-group-header">
+                    <div key={group.id} className="prompt-builder-tag-group">
+                      <div className="prompt-builder-tag-group-header">
                         <h3>{formatLabel(PROMPT_TAG_LABELS[group.id])}</h3>
                       </div>
-                      <ul className="pbuilder-word-list">{group.items.map((word) => renderWordRow(word))}</ul>
+                      <ul className="prompt-builder-word-list">{group.items.map((word) => renderWordRow(word))}</ul>
                     </div>
                   ))}
                 </div>
               )
             ) : (
-              <ul className="pbuilder-word-list">
+              <ul className="prompt-builder-word-list">
                 {visibleWords.map((word) => renderWordRow(word))}
                 {visibleWords.length === 0 ? (
-                  <li className="pbuilder-word-empty">該当するワードがありません。</li>
+                  <li className="prompt-builder-word-empty">該当するワードがありません。</li>
                 ) : null}
               </ul>
             )}

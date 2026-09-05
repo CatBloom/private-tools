@@ -3,8 +3,8 @@ import { bodyLimit } from 'hono/body-limit'
 import { isPromptTargetId } from '../../tools/prompt-builder/shared/targets.js'
 import { isPromptTagId } from '../../tools/prompt-builder/shared/tags.js'
 import type { HistoryEntry, OutputItem, PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import { selectPromptHistoryStorage, selectPromptStorage } from '../prompt-storage/index.js'
-import type { PromptHistoryStorage, PromptWordStorage } from '../prompt-storage/index.js'
+import { selectPromptHistoryStorage, selectPromptWordStorage } from '../storage/prompt-builder/index.js'
+import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
 
 const MAX_WORDS = 2000
 const MAX_WORD_TEXT_LENGTH = 500
@@ -60,8 +60,8 @@ const isHistoryEntry = (value: unknown): value is HistoryEntry =>
 const isHistoryEntryArray = (value: unknown): value is HistoryEntry[] =>
   Array.isArray(value) && value.length <= MAX_HISTORY_ENTRIES && value.every(isHistoryEntry)
 
-export const createPromptWordRoutes = (
-  storage: PromptWordStorage = selectPromptStorage(),
+export const createPromptBuilderRoutes = (
+  storage: PromptWordStorage = selectPromptWordStorage(),
   historyStorage: PromptHistoryStorage = selectPromptHistoryStorage(),
 ) => {
   const app = new Hono()

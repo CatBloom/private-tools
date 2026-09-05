@@ -3,15 +3,15 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LocalHistoryStorage } from './local-history-storage'
+import { LocalPromptHistoryStorage } from './local-history-storage'
 
-describe('LocalHistoryStorage', () => {
+describe('LocalPromptHistoryStorage', () => {
   let dir: string
-  let storage: LocalHistoryStorage
+  let storage: LocalPromptHistoryStorage
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'private-tools-history-storage-'))
-    storage = new LocalHistoryStorage(dir)
+    dir = await mkdtemp(join(tmpdir(), 'private-tools-prompt-builder-'))
+    storage = new LocalPromptHistoryStorage(dir)
   })
 
   afterEach(async () => {
@@ -34,7 +34,7 @@ describe('LocalHistoryStorage', () => {
   })
 
   it('creates the storage directory on demand', async () => {
-    const nestedStorage = new LocalHistoryStorage(join(dir, 'nested', 'deep'))
+    const nestedStorage = new LocalPromptHistoryStorage(join(dir, 'nested', 'deep'))
     await nestedStorage.putHistory([
       { id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' },
     ])

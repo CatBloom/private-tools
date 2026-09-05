@@ -6,7 +6,7 @@ type ViewModeToggleProps = {
 }
 
 export const ViewModeToggle = ({ viewMode, onViewModeChange }: ViewModeToggleProps) => (
-  <div className="ccsv-segmented">
+  <div className="credit-csv-segmented">
     <button className={viewMode === 'detail' ? 'active' : ''} type="button" onClick={() => onViewModeChange('detail')}>
       明細
     </button>

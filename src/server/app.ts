@@ -8,21 +8,21 @@ import { renderToString } from 'react-dom/server'
 import { TopPage } from '../ui/TopPage.js'
 import { TOOLS } from '../tools/registry.js'
 import { createCreditCsvRoutes } from './routes/credit-csv.js'
-import { createPromptWordRoutes } from './routes/prompt-builder.js'
+import { createPromptBuilderRoutes } from './routes/prompt-builder.js'
 import { createMyTodoRoutes } from './routes/my-todo.js'
-import type { Storage } from './storage/index.js'
-import type { PromptHistoryStorage, PromptWordStorage } from './prompt-storage/index.js'
-import type { TodoStorage } from './todo-storage/index.js'
+import type { CreditCsvStorage } from './storage/credit-csv/index.js'
+import type { PromptHistoryStorage, PromptWordStorage } from './storage/prompt-builder/index.js'
+import type { MyTodoStorage } from './storage/my-todo/index.js'
 
 type AppOptions = {
   clientScript?: string
   themeScript?: string
   stylesAsset?: string | null
   assetOverrides?: Record<string, string | null>
-  creditCsvStorage?: Storage
+  creditCsvStorage?: CreditCsvStorage
   promptWordStorage?: PromptWordStorage
   promptHistoryStorage?: PromptHistoryStorage
-  todoStorage?: TodoStorage
+  myTodoStorage?: MyTodoStorage
 }
 
 const CREDIT_CSV_PREFIX = '/tools/credit-csv'
@@ -120,9 +120,9 @@ export const createApp = (options: AppOptions = {}) => {
   app.route(`${CREDIT_CSV_PREFIX}/api`, createCreditCsvRoutes(options.creditCsvStorage))
   app.route(
     `${PROMPT_BUILDER_PREFIX}/api`,
-    createPromptWordRoutes(options.promptWordStorage, options.promptHistoryStorage),
+    createPromptBuilderRoutes(options.promptWordStorage, options.promptHistoryStorage),
   )
-  app.route(`${MY_TODO_PREFIX}/api`, createMyTodoRoutes(options.todoStorage))
+  app.route(`${MY_TODO_PREFIX}/api`, createMyTodoRoutes(options.myTodoStorage))
 
   if (process.env.NODE_ENV === 'production') {
     app.get('/favicon.ico', (c) => {

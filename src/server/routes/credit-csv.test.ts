@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LocalStorage } from '../storage/local-storage.js'
+import { LocalCreditCsvStorage } from '../storage/credit-csv/local-storage.js'
 import { createCreditCsvRoutes } from './credit-csv.js'
 
 describe('credit CSV routes', () => {
@@ -14,7 +14,7 @@ describe('credit CSV routes', () => {
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'private-tools-credit-csv-'))
     app = new Hono()
-    app.route('/', createCreditCsvRoutes(new LocalStorage(dir)))
+    app.route('/', createCreditCsvRoutes(new LocalCreditCsvStorage(dir)))
   })
 
   afterEach(async () => {

@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { TodoItem, TodoState } from '../../tools/my-todo/shared/types.js'
-import { selectTodoStorage } from '../todo-storage/index.js'
-import type { TodoStorage } from '../todo-storage/index.js'
+import { selectMyTodoStorage } from '../storage/my-todo/index.js'
+import type { MyTodoStorage } from '../storage/my-todo/index.js'
 
 const MAX_ITEM_TEXT_LENGTH = 1000
 // 構造的な上限のみ。UI 側の「Today は5件まで」はサーバーでは強制しない。
@@ -40,7 +40,7 @@ const isOversizedTodoState = (value: unknown): boolean =>
   Array.isArray((value as TodoState).someday) &&
   (value as TodoState).today.length + (value as TodoState).someday.length > MAX_TOTAL_ITEMS
 
-export const createMyTodoRoutes = (storage: TodoStorage = selectTodoStorage()) => {
+export const createMyTodoRoutes = (storage: MyTodoStorage = selectMyTodoStorage()) => {
   const app = new Hono()
 
   app.get('/todos', async (c) => {

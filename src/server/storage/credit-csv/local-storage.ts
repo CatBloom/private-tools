@@ -1,16 +1,16 @@
 import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { assertValidFileName, isValidFileName } from './storage.js'
-import type { Storage, StoredFileMeta } from './storage.js'
+import { assertValidFileName, isValidFileName } from './types.js'
+import type { CreditCsvStorage, StoredFileMeta } from './types.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const defaultDir = join(repoRoot, '.data', 'credit-csv')
 
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-export class LocalStorage implements Storage {
+export class LocalCreditCsvStorage implements CreditCsvStorage {
   private readonly dir: string
 
   constructor(dir: string = defaultDir) {

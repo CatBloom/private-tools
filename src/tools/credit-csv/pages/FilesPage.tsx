@@ -74,44 +74,44 @@ export const FilesPage = () => {
   }
 
   return (
-    <div className="ccsv-page-stack">
-      <section className="ccsv-panel">
-        <div className="ccsv-panel-header">
+    <div className="credit-csv-page-stack">
+      <section className="credit-csv-panel">
+        <div className="credit-csv-panel-header">
           <h1>ファイル管理</h1>
         </div>
-        <div className="ccsv-upload-form">
-          <div className="ccsv-file-field">
+        <div className="credit-csv-upload-form">
+          <div className="credit-csv-file-field">
             <input
               ref={inputRef}
-              id="ccsv-csv-input"
-              className="ccsv-file-input"
+              id="credit-csv-csv-input"
+              className="credit-csv-file-input"
               type="file"
               accept=".csv"
               aria-label="CSVファイル"
               disabled={isUploading}
               onChange={handleFileChange}
             />
-            <label htmlFor="ccsv-csv-input" className="ccsv-file-button" aria-disabled={isUploading}>
+            <label htmlFor="credit-csv-csv-input" className="credit-csv-file-button" aria-disabled={isUploading}>
               ファイルを選択
             </label>
-            <span className="ccsv-file-name">
+            <span className="credit-csv-file-name">
               {isUploading ? 'アップロード中…' : 'ファイルを選択すると自動でアップロードされます'}
             </span>
           </div>
         </div>
       </section>
 
-      <section className="ccsv-panel">
-        <div className="ccsv-panel-header">
+      <section className="credit-csv-panel">
+        <div className="credit-csv-panel-header">
           <h2>アップロード済みファイル</h2>
         </div>
-        <div className="ccsv-table-wrap">
-          <table className="ccsv-files-table">
+        <div className="credit-csv-table-wrap">
+          <table className="credit-csv-files-table">
             <colgroup>
-              <col className="ccsv-fcol-date" />
-              <col className="ccsv-fcol-name" />
-              <col className="ccsv-fcol-size" />
-              <col className="ccsv-fcol-actions" />
+              <col className="credit-csv-fcol-date" />
+              <col className="credit-csv-fcol-name" />
+              <col className="credit-csv-fcol-size" />
+              <col className="credit-csv-fcol-actions" />
             </colgroup>
             <thead>
               <tr>
@@ -130,7 +130,7 @@ export const FilesPage = () => {
                   <td>
                     <button
                       type="button"
-                      className="ccsv-icon-button"
+                      className="credit-csv-icon-button"
                       aria-label="削除"
                       title="削除"
                       disabled={pendingDelete === file.name}

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudflareKvPromptStorage } from './kv-prompt-storage'
+import { CloudflareKvPromptHistoryStorage } from './kv-history-storage'
 
 const config = { accountId: 'acc123', namespaceId: 'ns456', apiToken: 'secret-token' }
 const baseUrl = 'https://api.cloudflare.com/client/v4/accounts/acc123/storage/kv/namespaces/ns456'
 
-describe('CloudflareKvPromptStorage', () => {
+describe('CloudflareKvPromptHistoryStorage', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -16,34 +16,34 @@ describe('CloudflareKvPromptStorage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('gets words with the expected URL, method, and auth header', async () => {
-    const words = [{ id: '1', text: 'foo', description: '' }]
-    fetchMock.mockResolvedValue(new Response(JSON.stringify(words), { status: 200 }))
-    const storage = new CloudflareKvPromptStorage(config)
+  it('gets history with the expected URL, method, and auth header', async () => {
+    const entries = [{ id: '1', name: 'snapshot', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' }]
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(entries), { status: 200 }))
+    const storage = new CloudflareKvPromptHistoryStorage(config)
 
-    const result = await storage.getWords()
+    const result = await storage.getHistory()
 
-    expect(result).toEqual(words)
+    expect(result).toEqual(entries)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/words`)
+    expect(url).toBe(`${baseUrl}/values/history`)
     expect(init.method).toBe('GET')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
   })
 
   it('returns an empty array on a 404 get', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
-    const storage = new CloudflareKvPromptStorage(config)
-    expect(await storage.getWords()).toEqual([])
+    const storage = new CloudflareKvPromptHistoryStorage(config)
+    expect(await storage.getHistory()).toEqual([])
   })
 
   it('throws a clear error on a non-2xx get response without leaking the token', async () => {
     fetchMock.mockResolvedValue(new Response('server error', { status: 500 }))
-    const storage = new CloudflareKvPromptStorage(config)
+    const storage = new CloudflareKvPromptHistoryStorage(config)
 
     let caught: unknown
     try {
-      await storage.getWords()
+      await storage.getHistory()
     } catch (error) {
       caught = error
     }
@@ -53,24 +53,24 @@ describe('CloudflareKvPromptStorage', () => {
     expect((caught as Error).message).not.toContain('secret-token')
   })
 
-  it('puts words with the expected URL, method, and body', async () => {
+  it('puts history with the expected URL, method, and body', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
-    const storage = new CloudflareKvPromptStorage(config)
-    const words = [{ id: '1', text: 'foo', description: 'bar', tag: 'others' as const }]
+    const storage = new CloudflareKvPromptHistoryStorage(config)
+    const entries = [{ id: '1', name: '', createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'negative' as const }]
 
-    const result = await storage.putWords(words)
+    const result = await storage.putHistory(entries)
 
-    expect(result).toEqual(words)
+    expect(result).toEqual(entries)
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${baseUrl}/values/words`)
+    expect(url).toBe(`${baseUrl}/values/history`)
     expect(init.method).toBe('PUT')
     expect(init.headers.Authorization).toBe('Bearer secret-token')
-    expect(init.body).toBe(JSON.stringify(words))
+    expect(init.body).toBe(JSON.stringify(entries))
   })
 
   it('throws when a put response is not ok', async () => {
     fetchMock.mockResolvedValue(new Response('bad request', { status: 400 }))
-    const storage = new CloudflareKvPromptStorage(config)
-    await expect(storage.putWords([])).rejects.toThrow(/400/)
+    const storage = new CloudflareKvPromptHistoryStorage(config)
+    await expect(storage.putHistory([])).rejects.toThrow(/400/)
   })
 })

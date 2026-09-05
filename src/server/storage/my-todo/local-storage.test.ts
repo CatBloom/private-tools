@@ -3,15 +3,15 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LocalTodoStorage } from './local-todo-storage'
+import { LocalMyTodoStorage } from './local-storage'
 
-describe('LocalTodoStorage', () => {
+describe('LocalMyTodoStorage', () => {
   let dir: string
-  let storage: LocalTodoStorage
+  let storage: LocalMyTodoStorage
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'private-tools-todo-storage-'))
-    storage = new LocalTodoStorage(dir)
+    dir = await mkdtemp(join(tmpdir(), 'private-tools-my-todo-'))
+    storage = new LocalMyTodoStorage(dir)
   })
 
   afterEach(async () => {
@@ -35,7 +35,7 @@ describe('LocalTodoStorage', () => {
   })
 
   it('creates the storage directory on demand', async () => {
-    const nestedStorage = new LocalTodoStorage(join(dir, 'nested', 'deep'))
+    const nestedStorage = new LocalMyTodoStorage(join(dir, 'nested', 'deep'))
     const state = { today: [], someday: [], lastRolloverDate: null }
     await nestedStorage.putTodos(state)
     expect(await nestedStorage.getTodos()).toEqual(state)

@@ -19,10 +19,10 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
   }
 
   return (
-    <li ref={setNodeRef} style={style} className={`pbuilder-output-item${isDragging ? ' is-dragging' : ''}`}>
+    <li ref={setNodeRef} style={style} className={`prompt-builder-output-item${isDragging ? ' is-dragging' : ''}`}>
       <button
         type="button"
-        className="pbuilder-drag-handle"
+        className="prompt-builder-drag-handle"
         aria-label="並べ替え"
         {...attributes}
         {...listeners}
@@ -30,13 +30,13 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
         ⠿
       </button>
 
-      <span className="pbuilder-output-item-preview">{applyNotation(item.text, item.weight)}</span>
+      <span className="prompt-builder-output-item-preview">{applyNotation(item.text, item.weight)}</span>
 
-      <div className="pbuilder-weight-controls">
+      <div className="prompt-builder-weight-controls">
         <button type="button" aria-label="弱める" onClick={() => onWeightChange(item.id, -1)}>
           −
         </button>
-        <span className="pbuilder-weight-value">{item.weight}</span>
+        <span className="prompt-builder-weight-value">{item.weight}</span>
         <button type="button" aria-label="強める" onClick={() => onWeightChange(item.id, 1)}>
           +
         </button>
@@ -44,7 +44,7 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
 
       <button
         type="button"
-        className="pbuilder-icon-button"
+        className="prompt-builder-icon-button"
         aria-label="出力から削除"
         title="削除"
         onClick={() => onRemove(item.id)}

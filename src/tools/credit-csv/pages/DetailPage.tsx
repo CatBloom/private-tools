@@ -37,7 +37,7 @@ const DetailView = ({ data }: { data: AppData }) => {
   const monthlySummaryRows = useMemo(() => summarizeMerchants(rows), [rows])
 
   return (
-    <div className="ccsv-page-stack">
+    <div className="credit-csv-page-stack">
       <FilterBar
         years={data.years}
         months={months}

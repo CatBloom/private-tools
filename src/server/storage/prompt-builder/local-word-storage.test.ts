@@ -3,15 +3,15 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LocalPromptStorage } from './local-prompt-storage'
+import { LocalPromptWordStorage } from './local-word-storage'
 
-describe('LocalPromptStorage', () => {
+describe('LocalPromptWordStorage', () => {
   let dir: string
-  let storage: LocalPromptStorage
+  let storage: LocalPromptWordStorage
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'private-tools-prompt-storage-'))
-    storage = new LocalPromptStorage(dir)
+    dir = await mkdtemp(join(tmpdir(), 'private-tools-prompt-builder-'))
+    storage = new LocalPromptWordStorage(dir)
   })
 
   afterEach(async () => {
@@ -32,7 +32,7 @@ describe('LocalPromptStorage', () => {
   })
 
   it('creates the storage directory on demand', async () => {
-    const nestedStorage = new LocalPromptStorage(join(dir, 'nested', 'deep'))
+    const nestedStorage = new LocalPromptWordStorage(join(dir, 'nested', 'deep'))
     await nestedStorage.putWords([{ id: '1', text: 'x', description: '', tag: 'others' }])
     expect(await nestedStorage.getWords()).toHaveLength(1)
   })

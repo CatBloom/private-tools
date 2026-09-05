@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudflareKvStorage } from './kv-storage'
+import { CloudflareKvCreditCsvStorage } from './kv-storage'
 
 const config = { accountId: 'acc123', namespaceId: 'ns456', apiToken: 'secret-token' }
 const baseUrl = 'https://api.cloudflare.com/client/v4/accounts/acc123/storage/kv/namespaces/ns456'
 
-describe('CloudflareKvStorage', () => {
+describe('CloudflareKvCreditCsvStorage', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe('CloudflareKvStorage', () => {
 
   it('gets a value with the expected URL, method, and auth header', async () => {
     fetchMock.mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
 
     const bytes = await storage.get('202601.csv')
 
@@ -32,13 +32,13 @@ describe('CloudflareKvStorage', () => {
 
   it('returns null on a 404 get', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
     expect(await storage.get('202601.csv')).toBeNull()
   })
 
   it('throws a clear error on a non-2xx response without leaking the token', async () => {
     fetchMock.mockResolvedValue(new Response('server error', { status: 500 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
 
     let caught: unknown
     try {
@@ -54,7 +54,7 @@ describe('CloudflareKvStorage', () => {
 
   it('puts a value with metadata and returns the resulting meta', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
     const bytes = new Uint8Array([1, 2, 3])
 
     const meta = await storage.put('202601.csv', bytes)
@@ -71,13 +71,13 @@ describe('CloudflareKvStorage', () => {
 
   it('throws when a put response is not ok', async () => {
     fetchMock.mockResolvedValue(new Response('bad request', { status: 400 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
     await expect(storage.put('202601.csv', new Uint8Array())).rejects.toThrow(/400/)
   })
 
   it('deletes a value', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
 
     await storage.delete('202601.csv')
 
@@ -88,7 +88,7 @@ describe('CloudflareKvStorage', () => {
 
   it('treats a 404 delete as already-absent, not an error', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
     await expect(storage.delete('202601.csv')).resolves.toBeUndefined()
   })
 
@@ -102,7 +102,7 @@ describe('CloudflareKvStorage', () => {
       result_info: { list_complete: true },
     }
     fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
 
     const listed = await storage.list()
 
@@ -124,7 +124,7 @@ describe('CloudflareKvStorage', () => {
     fetchMock
       .mockResolvedValueOnce(new Response(JSON.stringify(page1), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(page2), { status: 200 }))
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
 
     const listed = await storage.list()
 
@@ -134,7 +134,7 @@ describe('CloudflareKvStorage', () => {
   })
 
   it('rejects invalid file names before making a request', async () => {
-    const storage = new CloudflareKvStorage(config)
+    const storage = new CloudflareKvCreditCsvStorage(config)
     await expect(storage.get('not-valid')).rejects.toThrow()
     expect(fetchMock).not.toHaveBeenCalled()
   })

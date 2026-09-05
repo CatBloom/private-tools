@@ -241,8 +241,8 @@ export const OutputPage = () => {
 
   const renderHistoryRow = (entry: HistoryEntry) =>
     editingHistoryId === entry.id ? (
-      <li key={entry.id} className="pbuilder-history-row is-editing">
-        <div className="pbuilder-word-form-row">
+      <li key={entry.id} className="prompt-builder-history-row is-editing">
+        <div className="prompt-builder-word-form-row">
           <input
             type="text"
             aria-label="履歴名"
@@ -251,14 +251,14 @@ export const OutputPage = () => {
           />
           <select
             aria-label="保存先"
-            className="pbuilder-tag-select"
+            className="prompt-builder-tag-select"
             value={editHistoryTarget}
             onChange={(event) => setEditHistoryTarget(event.target.value as PromptTargetId)}
           >
             <TargetOptions />
           </select>
         </div>
-        <div className="pbuilder-history-row-actions">
+        <div className="prompt-builder-history-row-actions">
           <button type="button" disabled={historySaveStatus === 'saving'} onClick={() => commitHistoryEdit(entry.id)}>
             保存
           </button>
@@ -268,12 +268,12 @@ export const OutputPage = () => {
         </div>
       </li>
     ) : (
-      <li key={entry.id} className="pbuilder-history-row">
-        <div className="pbuilder-history-label">
-          <span className="pbuilder-history-date">{formatHistoryDate(entry.createdAt)}</span>
-          {entry.name ? <span className="pbuilder-history-name">{entry.name}</span> : null}
+      <li key={entry.id} className="prompt-builder-history-row">
+        <div className="prompt-builder-history-label">
+          <span className="prompt-builder-history-date">{formatHistoryDate(entry.createdAt)}</span>
+          {entry.name ? <span className="prompt-builder-history-name">{entry.name}</span> : null}
         </div>
-        <div className="pbuilder-history-row-actions">
+        <div className="prompt-builder-history-row-actions">
           <button type="button" onClick={() => restoreHistoryEntry(entry)}>
             復元
           </button>
@@ -282,7 +282,7 @@ export const OutputPage = () => {
           </button>
           <button
             type="button"
-            className="pbuilder-danger-button"
+            className="prompt-builder-danger-button"
             disabled={historySaveStatus === 'saving'}
             onClick={() => deleteHistoryEntry(entry.id)}
           >
@@ -312,30 +312,30 @@ export const OutputPage = () => {
   }
 
   return (
-    <div className="pbuilder-page-stack">
-      <section className="pbuilder-panel">
-        <div className="pbuilder-panel-header">
+    <div className="prompt-builder-page-stack">
+      <section className="prompt-builder-panel">
+        <div className="prompt-builder-panel-header">
           <h2>出力欄</h2>
           <button type="button" disabled={outputItems.length === 0} onClick={clearOutput}>
             クリア
           </button>
         </div>
 
-        <div className="pbuilder-output-preview">
-          <p className="pbuilder-output-text" ref={outputTextRef}>
+        <div className="prompt-builder-output-preview">
+          <p className="prompt-builder-output-text" ref={outputTextRef}>
             {outputText || '（出力はまだありません）'}
           </p>
-          <div className="pbuilder-output-preview-actions">
+          <div className="prompt-builder-output-preview-actions">
             <button
               type="button"
-              className="pbuilder-copy-button"
+              className="prompt-builder-copy-button"
               disabled={outputItems.length === 0}
               onClick={handleCopy}
             >
               コピー
             </button>
             {copyStatus === 'error' ? (
-              <span className="pbuilder-copy-feedback pbuilder-copy-feedback-error" role="alert">
+              <span className="prompt-builder-copy-feedback prompt-builder-copy-feedback-error" role="alert">
                 コピーできませんでした。選択済みのテキストを手動でコピーしてください。
               </span>
             ) : null}
@@ -343,11 +343,11 @@ export const OutputPage = () => {
         </div>
 
         {outputItems.length === 0 ? (
-          <p className="pbuilder-empty">ワード一覧から選ぶとここに追加されます。</p>
+          <p className="prompt-builder-empty">ワード一覧から選ぶとここに追加されます。</p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={outputItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <ul className="pbuilder-output-list">
+              <ul className="prompt-builder-output-list">
                 {outputItems.map((item) => (
                   <SortableOutputItem key={item.id} item={item} onRemove={removeOutputItem} onWeightChange={changeWeight} />
                 ))}
@@ -356,11 +356,11 @@ export const OutputPage = () => {
           </DndContext>
         )}
 
-        <div className="pbuilder-history">
+        <div className="prompt-builder-history">
           <h3>保存履歴</h3>
 
-          <form className="pbuilder-history-form" onSubmit={handleSaveHistory}>
-            <div className="pbuilder-word-form-row">
+          <form className="prompt-builder-history-form" onSubmit={handleSaveHistory}>
+            <div className="prompt-builder-word-form-row">
               <input
                 type="text"
                 placeholder="名前（任意）"
@@ -370,7 +370,7 @@ export const OutputPage = () => {
               />
               <select
                 aria-label="保存先"
-                className="pbuilder-tag-select"
+                className="prompt-builder-tag-select"
                 value={historyTarget}
                 onChange={(event) => setHistoryTarget(event.target.value as PromptTargetId | '')}
               >
@@ -394,14 +394,14 @@ export const OutputPage = () => {
           </form>
 
           {historySaveStatus === 'error' ? (
-            <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
+            <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
               {historySaveError}
             </p>
           ) : null}
 
           {historyLoadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
           {historyLoadStatus === 'error' ? (
-            <p className="pbuilder-status-message pbuilder-status-message-error" role="alert">
+            <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
               {historyLoadError}
               <button type="button" onClick={loadHistory}>
                 再読み込み
@@ -411,10 +411,10 @@ export const OutputPage = () => {
 
           {historyLoadStatus === 'ready' ? (
             <>
-              <div className="pbuilder-word-filter">
+              <div className="prompt-builder-word-filter">
                 <select
                   aria-label="保存先で絞り込み"
-                  className="pbuilder-tag-filter-select"
+                  className="prompt-builder-tag-filter-select"
                   value={historyFilterTarget}
                   onChange={(event) => setHistoryFilterTarget(event.target.value as TargetFilter)}
                 >
@@ -425,24 +425,24 @@ export const OutputPage = () => {
 
               {historyFilterTarget === 'ALL' ? (
                 groupedHistoryEntries.length === 0 ? (
-                  <p className="pbuilder-word-empty">保存履歴はありません。</p>
+                  <p className="prompt-builder-word-empty">保存履歴はありません。</p>
                 ) : (
-                  <div className="pbuilder-tag-groups">
+                  <div className="prompt-builder-tag-groups">
                     {groupedHistoryEntries.map((group) => (
-                      <div key={group.id} className="pbuilder-tag-group">
-                        <div className="pbuilder-tag-group-header">
+                      <div key={group.id} className="prompt-builder-tag-group">
+                        <div className="prompt-builder-tag-group-header">
                           <h3>{formatLabel(PROMPT_TARGET_LABELS[group.id])}</h3>
                         </div>
-                        <ul className="pbuilder-history-list">{group.items.map((entry) => renderHistoryRow(entry))}</ul>
+                        <ul className="prompt-builder-history-list">{group.items.map((entry) => renderHistoryRow(entry))}</ul>
                       </div>
                     ))}
                   </div>
                 )
               ) : (
-                <ul className="pbuilder-history-list">
+                <ul className="prompt-builder-history-list">
                   {visibleHistoryEntries.map((entry) => renderHistoryRow(entry))}
                   {visibleHistoryEntries.length === 0 ? (
-                    <li className="pbuilder-word-empty">該当する履歴がありません。</li>
+                    <li className="prompt-builder-word-empty">該当する履歴がありません。</li>
                   ) : null}
                 </ul>
               )}

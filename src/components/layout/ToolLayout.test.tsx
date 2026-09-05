@@ -14,7 +14,7 @@ afterEach(() => {
 const renderLayout = () =>
   render(
     <MemoryRouter initialEntries={['/words']}>
-      <ToolLayout toolId="prompt-builder" appClassName="pbuilder-app">
+      <ToolLayout toolId="prompt-builder" appClassName="prompt-builder-app">
         <p>本文</p>
       </ToolLayout>
     </MemoryRouter>
@@ -98,7 +98,7 @@ describe('ToolLayout', () => {
   it('renders page tabs alongside the drawer nav when tabs is true', () => {
     render(
       <MemoryRouter initialEntries={['/words']}>
-        <ToolLayout toolId="prompt-builder" appClassName="pbuilder-app" tabs>
+        <ToolLayout toolId="prompt-builder" appClassName="prompt-builder-app" tabs>
           <p>本文</p>
         </ToolLayout>
       </MemoryRouter>

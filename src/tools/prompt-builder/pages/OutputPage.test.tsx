@@ -70,16 +70,16 @@ describe('OutputPage', () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
 
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
     fireEvent.click(screen.getByRole('button', { name: '強める' }))
 
-    expect(await screen.findByText('{cat girl}', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('{cat girl}', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('clears the output after confirmation and shows a success toast', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'クリア' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
@@ -91,12 +91,12 @@ describe('OutputPage', () => {
   it('does not clear the output when the confirmation is cancelled', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'クリア' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    expect(screen.getByText('cat girl', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('shows a success toast and no manual-copy notice when copyText succeeds', async () => {
@@ -104,7 +104,7 @@ describe('OutputPage', () => {
 
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
 
@@ -118,7 +118,7 @@ describe('OutputPage', () => {
 
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
 
@@ -129,7 +129,7 @@ describe('OutputPage', () => {
   it('saves the current output as a named history entry with a selected target via putHistory', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
     fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'character' } })
@@ -152,7 +152,7 @@ describe('OutputPage', () => {
   it('disables saving history until a save target is selected', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
 
@@ -170,10 +170,10 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('base set', { exact: false })
 
-    const baseGroup = screen.getByRole('heading', { name: 'Base' }).closest('.pbuilder-tag-group')!
+    const baseGroup = screen.getByRole('heading', { name: 'Base' }).closest('.prompt-builder-tag-group')!
     expect(within(baseGroup as HTMLElement).getByText('base set', { exact: false })).toBeInTheDocument()
 
-    const characterGroup = screen.getByRole('heading', { name: 'Character' }).closest('.pbuilder-tag-group')!
+    const characterGroup = screen.getByRole('heading', { name: 'Character' }).closest('.prompt-builder-tag-group')!
     expect(within(characterGroup as HTMLElement).getByText('char set', { exact: false })).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('保存先で絞り込み'), { target: { value: 'character' } })
@@ -198,7 +198,7 @@ describe('OutputPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '復元' }))
 
-    expect(await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('shows a success toast when restoring a history entry', async () => {

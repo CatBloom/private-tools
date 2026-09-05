@@ -42,14 +42,14 @@ export const SortableTodoItem = ({
 
   if (isEditing) {
     return (
-      <li ref={setNodeRef} style={style} className="mytodo-item is-editing">
+      <li ref={setNodeRef} style={style} className="my-todo-item is-editing">
         <input
           type="text"
           aria-label="タスク"
           value={editText}
           onChange={(event) => onEditTextChange(event.target.value)}
         />
-        <div className="mytodo-item-actions">
+        <div className="my-todo-item-actions">
           <button type="button" disabled={!editText.trim()} onClick={onCommitEdit}>
             保存
           </button>
@@ -65,24 +65,24 @@ export const SortableTodoItem = ({
     <li
       ref={setNodeRef}
       style={style}
-      className={`mytodo-item${isDragging ? ' is-dragging' : ''}${item.completed ? ' is-completed' : ''}`}
+      className={`my-todo-item${isDragging ? ' is-dragging' : ''}${item.completed ? ' is-completed' : ''}`}
     >
-      <button type="button" className="mytodo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
+      <button type="button" className="my-todo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
         ⠿
       </button>
 
-      <label className="mytodo-item-checkbox-label">
+      <label className="my-todo-item-checkbox-label">
         <input
           type="checkbox"
-          className="mytodo-item-checkbox-input"
+          className="my-todo-item-checkbox-input"
           aria-label="完了"
           checked={item.completed}
           onChange={onToggleCompleted}
         />
-        <span className="mytodo-item-text">{item.text}</span>
+        <span className="my-todo-item-text">{item.text}</span>
       </label>
 
-      <div className="mytodo-item-actions">
+      <div className="my-todo-item-actions">
         <RowMenu
           items={[
             {

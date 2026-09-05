@@ -1,16 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import type { PromptWordStorage } from './prompt-storage.js'
+import type { PromptWord } from '../../../tools/prompt-builder/shared/types.js'
+import type { PromptWordStorage } from './word-storage.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const defaultDir = join(repoRoot, '.data', 'prompt-builder')
 
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-export class LocalPromptStorage implements PromptWordStorage {
+export class LocalPromptWordStorage implements PromptWordStorage {
   private readonly dir: string
 
   constructor(dir: string = defaultDir) {

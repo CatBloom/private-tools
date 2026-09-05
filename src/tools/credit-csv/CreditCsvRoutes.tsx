@@ -11,11 +11,11 @@ const DetailPage = lazy(() => import('./pages/DetailPage').then((m) => ({ defaul
 const MerchantPage = lazy(() => import('./pages/MerchantPage').then((m) => ({ default: m.MerchantPage })))
 const YearlyPage = lazy(() => import('./pages/YearlyPage').then((m) => ({ default: m.YearlyPage })))
 
-// Alert/Confirm Provider は ToolLayout の内側（.ccsv-app[data-theme] の配下）に置く。外側に置くと
-// トースト/ダイアログが .ccsv-app と兄弟要素になり、テーマ切替の [data-theme] スコープ変数を継承できない。
+// Alert/Confirm Provider は ToolLayout の内側（.credit-csv-app[data-theme] の配下）に置く。外側に置くと
+// トースト/ダイアログが .credit-csv-app と兄弟要素になり、テーマ切替の [data-theme] スコープ変数を継承できない。
 export const CreditCsvRoutes = () => (
   <AppDataProvider>
-    <ToolLayout toolId="credit-csv" appClassName="ccsv-app" tabs>
+    <ToolLayout toolId="credit-csv" appClassName="credit-csv-app" tabs>
       <AlertProvider>
         <ConfirmProvider>
           <Suspense fallback={<Spinner label="読み込み中" />}>

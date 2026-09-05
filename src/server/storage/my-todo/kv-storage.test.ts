@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudflareKvTodoStorage } from './kv-todo-storage'
+import { CloudflareKvMyTodoStorage } from './kv-storage'
 
 const config = { accountId: 'acc123', namespaceId: 'ns456', apiToken: 'secret-token' }
 const baseUrl = 'https://api.cloudflare.com/client/v4/accounts/acc123/storage/kv/namespaces/ns456'
 
-describe('CloudflareKvTodoStorage', () => {
+describe('CloudflareKvMyTodoStorage', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('CloudflareKvTodoStorage', () => {
   it('gets todos with the expected URL, method, and auth header', async () => {
     const state = { today: [], someday: [], lastRolloverDate: null }
     fetchMock.mockResolvedValue(new Response(JSON.stringify(state), { status: 200 }))
-    const storage = new CloudflareKvTodoStorage(config)
+    const storage = new CloudflareKvMyTodoStorage(config)
 
     const result = await storage.getTodos()
 
@@ -33,13 +33,13 @@ describe('CloudflareKvTodoStorage', () => {
 
   it('returns null on a 404 get', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
-    const storage = new CloudflareKvTodoStorage(config)
+    const storage = new CloudflareKvMyTodoStorage(config)
     expect(await storage.getTodos()).toBeNull()
   })
 
   it('throws a clear error on a non-2xx get response without leaking the token', async () => {
     fetchMock.mockResolvedValue(new Response('server error', { status: 500 }))
-    const storage = new CloudflareKvTodoStorage(config)
+    const storage = new CloudflareKvMyTodoStorage(config)
 
     let caught: unknown
     try {
@@ -55,7 +55,7 @@ describe('CloudflareKvTodoStorage', () => {
 
   it('puts todos with the expected URL, method, and body', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
-    const storage = new CloudflareKvTodoStorage(config)
+    const storage = new CloudflareKvMyTodoStorage(config)
     const state = { today: [], someday: [], lastRolloverDate: null }
 
     await storage.putTodos(state)
@@ -69,7 +69,7 @@ describe('CloudflareKvTodoStorage', () => {
 
   it('throws when a put response is not ok', async () => {
     fetchMock.mockResolvedValue(new Response('bad request', { status: 400 }))
-    const storage = new CloudflareKvTodoStorage(config)
+    const storage = new CloudflareKvMyTodoStorage(config)
     await expect(storage.putTodos({ today: [], someday: [], lastRolloverDate: null })).rejects.toThrow(/400/)
   })
 })

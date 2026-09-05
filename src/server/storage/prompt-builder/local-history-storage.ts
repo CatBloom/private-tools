@@ -1,16 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { HistoryEntry } from '../../tools/prompt-builder/shared/types.js'
+import type { HistoryEntry } from '../../../tools/prompt-builder/shared/types.js'
 import type { PromptHistoryStorage } from './history-storage.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const defaultDir = join(repoRoot, '.data', 'prompt-builder')
 
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-export class LocalHistoryStorage implements PromptHistoryStorage {
+export class LocalPromptHistoryStorage implements PromptHistoryStorage {
   private readonly dir: string
 
   constructor(dir: string = defaultDir) {

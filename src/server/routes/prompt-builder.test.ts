@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { HistoryEntry, PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import type { PromptHistoryStorage, PromptWordStorage } from '../prompt-storage/index.js'
-import { createPromptWordRoutes } from './prompt-builder.js'
+import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
+import { createPromptBuilderRoutes } from './prompt-builder.js'
 
 class InMemoryPromptStorage implements PromptWordStorage {
   private words: PromptWord[] = []
@@ -34,7 +34,7 @@ describe('prompt word routes', () => {
   let app: Hono
 
   beforeEach(() => {
-    app = createPromptWordRoutes(new InMemoryPromptStorage(), new InMemoryHistoryStorage())
+    app = createPromptBuilderRoutes(new InMemoryPromptStorage(), new InMemoryHistoryStorage())
   })
 
   const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)

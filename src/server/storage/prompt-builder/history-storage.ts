@@ -1,4 +1,4 @@
-import type { HistoryEntry } from '../../tools/prompt-builder/shared/types.js'
+import type { HistoryEntry } from '../../../tools/prompt-builder/shared/types.js'
 
 export interface PromptHistoryStorage {
   getHistory(): Promise<HistoryEntry[]>

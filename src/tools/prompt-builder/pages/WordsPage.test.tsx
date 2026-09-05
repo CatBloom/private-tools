@@ -110,10 +110,10 @@ describe('WordsPage', () => {
       'Quality',
     ])
 
-    const illustratorGroup = screen.getByRole('heading', { name: 'Illustrator' }).closest('.pbuilder-tag-group')!
+    const illustratorGroup = screen.getByRole('heading', { name: 'Illustrator' }).closest('.prompt-builder-tag-group')!
     expect(within(illustratorGroup as HTMLElement).getByText('cat girl')).toBeInTheDocument()
 
-    const qualityGroup = screen.getByRole('heading', { name: 'Quality' }).closest('.pbuilder-tag-group')!
+    const qualityGroup = screen.getByRole('heading', { name: 'Quality' }).closest('.prompt-builder-tag-group')!
     expect(within(qualityGroup as HTMLElement).getByText('blue sky')).toBeInTheDocument()
   })
 

@@ -1,4 +1,4 @@
-.pbuilder-app {
+.prompt-builder-app {
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -9,24 +9,24 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.pbuilder-app * {
+.prompt-builder-app * {
   box-sizing: border-box;
 }
 
-.pbuilder-app button,
-.pbuilder-app input,
-.pbuilder-app select {
+.prompt-builder-app button,
+.prompt-builder-app input,
+.prompt-builder-app select {
   font: inherit;
   color: inherit;
 }
 
-.pbuilder-page-stack {
+.prompt-builder-page-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.pbuilder-panel-header {
+.prompt-builder-panel-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -35,19 +35,19 @@
   margin-bottom: 0.75rem;
 }
 
-.pbuilder-panel-header h1,
-.pbuilder-panel-header h2 {
+.prompt-builder-panel-header h1,
+.prompt-builder-panel-header h2 {
   margin: 0;
   font-size: 1.05rem;
 }
 
-.pbuilder-save-controls {
+.prompt-builder-save-controls {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 
-.pbuilder-status-message {
+.prompt-builder-status-message {
   margin: 0.85rem 0;
   padding: 0.85rem 1rem;
   background: var(--pt-bg);
@@ -55,46 +55,46 @@
   border-radius: 0.75rem;
 }
 
-.pbuilder-status-message-error {
+.prompt-builder-status-message-error {
   color: var(--pt-danger);
   border-color: var(--pt-danger);
 }
 
 
-.pbuilder-status-message-error button {
+.prompt-builder-status-message-error button {
   margin-left: 0.6rem;
 }
 
-.pbuilder-word-form {
+.prompt-builder-word-form {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   margin: 0.85rem 0;
 }
 
-.pbuilder-word-form input {
+.prompt-builder-word-form input {
   flex: 1;
 }
 
 /* 説明とタグを横並びにする（説明:タグ ≒ 3:1）。登録フォーム・インライン編集の両方で使う。 */
-.pbuilder-word-form-row {
+.prompt-builder-word-form-row {
   display: flex;
   gap: 0.6rem;
 }
 
-.pbuilder-word-form-row input {
+.prompt-builder-word-form-row input {
   flex: 3;
   min-width: 0; /* 既定の auto だと縮まず select を画面外へ押し出す */
 }
 
-.pbuilder-word-form-row .pbuilder-tag-select {
+.prompt-builder-word-form-row .prompt-builder-tag-select {
   flex: 1;
   min-width: 0;
 }
 
-.pbuilder-app select.pbuilder-tag-select,
-.pbuilder-app select.pbuilder-tag-filter-select,
-.pbuilder-app input.pbuilder-word-search {
+.prompt-builder-app select.prompt-builder-tag-select,
+.prompt-builder-app select.prompt-builder-tag-filter-select,
+.prompt-builder-app input.prompt-builder-word-search {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
   color: var(--pt-text);
@@ -104,46 +104,46 @@
   font-size: 16px;
 }
 
-.pbuilder-app select.pbuilder-tag-select {
+.prompt-builder-app select.prompt-builder-tag-select {
   min-width: 6rem;
   max-width: 12rem;
 }
 
-.pbuilder-app select option {
+.prompt-builder-app select option {
   color: var(--pt-text);
   background: var(--pt-surface);
 }
 
-.pbuilder-word-filter {
+.prompt-builder-word-filter {
   margin: 0.85rem 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.pbuilder-word-filter > * {
+.prompt-builder-word-filter > * {
   flex: 1;
   min-width: 10rem;
 }
 
-.pbuilder-app select.pbuilder-tag-filter-select {
+.prompt-builder-app select.prompt-builder-tag-filter-select {
   width: 100%;
 }
 
-.pbuilder-word-filter-search input.pbuilder-word-search {
+.prompt-builder-word-filter-search input.prompt-builder-word-search {
   flex: 3;
   min-width: 0;
 }
 
-.pbuilder-app .pbuilder-word-filter-search select.pbuilder-tag-filter-select {
+.prompt-builder-app .prompt-builder-word-filter-search select.prompt-builder-tag-filter-select {
   flex: 1;
   width: auto;
   min-width: 6rem;
   max-width: 12rem;
 }
 
-.pbuilder-word-list,
-.pbuilder-output-list {
+.prompt-builder-word-list,
+.prompt-builder-output-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -152,13 +152,13 @@
   list-style: none;
 }
 
-.pbuilder-word-empty,
-.pbuilder-empty {
+.prompt-builder-word-empty,
+.prompt-builder-empty {
   color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
-.pbuilder-word-row {
+.prompt-builder-word-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -169,14 +169,14 @@
   border-radius: 0.75rem;
 }
 
-.pbuilder-word-row.is-editing {
+.prompt-builder-word-row.is-editing {
   flex-direction: column;
   align-items: stretch;
   gap: 0.5rem;
   min-height: 0;
 }
 
-.pbuilder-word-row-text {
+.prompt-builder-word-row-text {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
@@ -185,7 +185,7 @@
   overflow-wrap: break-word;
 }
 
-.pbuilder-app .pbuilder-word-row-button {
+.prompt-builder-app .prompt-builder-word-row-button {
   padding: 0;
   background: transparent;
   border: none;
@@ -193,16 +193,16 @@
   cursor: pointer;
 }
 
-.pbuilder-word-text {
+.prompt-builder-word-text {
   font-weight: 700;
 }
 
-.pbuilder-word-description {
+.prompt-builder-word-description {
   color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
-.pbuilder-word-row-actions {
+.prompt-builder-word-row-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -210,34 +210,34 @@
   flex-shrink: 0;
 }
 
-.pbuilder-word-row.is-editing .pbuilder-word-row-actions {
+.prompt-builder-word-row.is-editing .prompt-builder-word-row-actions {
   justify-content: flex-end;
 }
 
-.pbuilder-tag-groups {
+.prompt-builder-tag-groups {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.pbuilder-tag-group {
+.prompt-builder-tag-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.pbuilder-tag-group-header {
+.prompt-builder-tag-group-header {
   padding-bottom: 0.35rem;
   border-bottom: 1px solid var(--pt-border);
 }
 
-.pbuilder-tag-group-header h3 {
+.prompt-builder-tag-group-header h3 {
   margin: 0;
   color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
-.pbuilder-output-item {
+.prompt-builder-output-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -248,58 +248,58 @@
   touch-action: none;
 }
 
-.pbuilder-output-item.is-dragging {
+.prompt-builder-output-item.is-dragging {
   z-index: 1;
   box-shadow: var(--pt-shadow);
 }
 
-.pbuilder-drag-handle {
+.prompt-builder-drag-handle {
   padding: 0.3rem 0.5rem;
   cursor: grab;
   touch-action: none;
 }
 
-.pbuilder-output-item-preview {
+.prompt-builder-output-item-preview {
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.pbuilder-weight-controls {
+.prompt-builder-weight-controls {
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-.pbuilder-weight-controls button {
+.prompt-builder-weight-controls button {
   padding: 0.3rem 0.6rem;
 }
 
-.pbuilder-weight-value {
+.prompt-builder-weight-value {
   min-width: 1.5rem;
   text-align: center;
   font-weight: 700;
 }
 
-.pbuilder-app .pbuilder-icon-button {
+.prompt-builder-app .prompt-builder-icon-button {
   padding: 0.3rem 0.55rem;
   color: var(--pt-danger);
   background: transparent;
   border: 1px solid var(--pt-border);
 }
 
-.pbuilder-app .pbuilder-icon-button:hover {
+.prompt-builder-app .prompt-builder-icon-button:hover {
   border-color: var(--pt-danger);
 }
 
-.pbuilder-output-preview {
+.prompt-builder-output-preview {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   margin-bottom: 1.25rem;
 }
 
-.pbuilder-output-text {
+.prompt-builder-output-text {
   margin: 0;
   padding: 0.75rem;
   background: var(--pt-bg);
@@ -309,14 +309,14 @@
   user-select: text;
 }
 
-.pbuilder-output-preview-actions {
+.prompt-builder-output-preview-actions {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.4rem;
 }
 
-.pbuilder-app .pbuilder-copy-button {
+.prompt-builder-app .prompt-builder-copy-button {
   width: 100%;
   color: #fff;
   background: var(--pt-secondary);
@@ -324,17 +324,17 @@
   font-weight: 700;
 }
 
-.pbuilder-copy-feedback {
+.prompt-builder-copy-feedback {
   color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
 
-.pbuilder-copy-feedback-error {
+.prompt-builder-copy-feedback-error {
   color: var(--pt-danger);
 }
 
-.pbuilder-history {
+.prompt-builder-history {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -343,18 +343,18 @@
   border-top: 1px solid var(--pt-border);
 }
 
-.pbuilder-history h3 {
+.prompt-builder-history h3 {
   margin: 0;
   font-size: 0.95rem;
 }
 
-.pbuilder-history-form {
+.prompt-builder-history-form {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.pbuilder-history-list {
+.prompt-builder-history-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -363,7 +363,7 @@
   list-style: none;
 }
 
-.pbuilder-history-row {
+.prompt-builder-history-row {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -373,7 +373,7 @@
   border-radius: 0.75rem;
 }
 
-.pbuilder-history-label {
+.prompt-builder-history-label {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
@@ -382,21 +382,21 @@
   overflow-wrap: break-word;
 }
 
-.pbuilder-app .pbuilder-history-form button {
+.prompt-builder-app .prompt-builder-history-form button {
   color: var(--pt-secondary);
   border-color: var(--pt-secondary);
 }
 
-.pbuilder-history-date {
+.prompt-builder-history-date {
   color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
-.pbuilder-history-name {
+.prompt-builder-history-name {
   font-weight: 700;
 }
 
-.pbuilder-history-row-actions {
+.prompt-builder-history-row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -409,17 +409,17 @@
     font-size: 130%;
   }
 
-  .pbuilder-history-row:not(.is-editing) {
+  .prompt-builder-history-row:not(.is-editing) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
 
-  .pbuilder-history-form {
+  .prompt-builder-history-form {
     flex-direction: row;
   }
 
-  .pbuilder-history-form .pbuilder-word-form-row {
+  .prompt-builder-history-form .prompt-builder-word-form-row {
     flex: 1;
   }
 }

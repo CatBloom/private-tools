@@ -4,7 +4,7 @@ export type StoredFileMeta = {
   uploadedAt: string
 }
 
-export interface Storage {
+export interface CreditCsvStorage {
   list(): Promise<StoredFileMeta[]>
   get(name: string): Promise<Uint8Array | null>
   put(name: string, bytes: Uint8Array): Promise<StoredFileMeta>

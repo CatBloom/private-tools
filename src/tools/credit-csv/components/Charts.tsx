@@ -29,11 +29,11 @@ export const TrendChartCard = ({
   title: string
   data: Array<{ label: string; amount: number }>
 }) => (
-  <section className="ccsv-panel ccsv-chart-panel">
-    <div className="ccsv-panel-header">
+  <section className="credit-csv-panel credit-csv-chart-panel">
+    <div className="credit-csv-panel-header">
       <h2>{title}</h2>
     </div>
-    <div className="ccsv-chart-wrap">
+    <div className="credit-csv-chart-wrap">
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
           <XAxis
@@ -74,12 +74,12 @@ export const CompositionChartCard = ({
   }, [data, isMobile])
 
   return (
-  <section className="ccsv-panel ccsv-chart-panel">
-    <div className="ccsv-panel-header">
+  <section className="credit-csv-panel credit-csv-chart-panel">
+    <div className="credit-csv-panel-header">
       <h2>{title}</h2>
     </div>
-    <div className="ccsv-chart-wrap ccsv-chart-wrap-pie">
-      <div className="ccsv-pie-canvas">
+    <div className="credit-csv-chart-wrap credit-csv-chart-wrap-pie">
+      <div className="credit-csv-pie-canvas">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={displayData} dataKey="value" nameKey="name" outerRadius={122} innerRadius={66} paddingAngle={2}>
@@ -91,9 +91,9 @@ export const CompositionChartCard = ({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="ccsv-legend-list">
+      <div className="credit-csv-legend-list">
         {displayData.map((entry) => (
-          <div key={entry.name} className="ccsv-legend-row">
+          <div key={entry.name} className="credit-csv-legend-row">
             {entry.merchantKey ? (
               <Link to={`/merchant/${encodeURIComponent(entry.merchantKey)}`} title={entry.name}>
                 {entry.name}

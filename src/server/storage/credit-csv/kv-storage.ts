@@ -1,7 +1,7 @@
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
-import { assertValidFileName, isValidFileName } from './storage.js'
-import type { Storage, StoredFileMeta } from './storage.js'
+import { assertValidFileName, isValidFileName } from './types.js'
+import type { CreditCsvStorage, StoredFileMeta } from './types.js'
 
 export type { CloudflareKvConfig } from '../shared/kv-client.js'
 
@@ -17,7 +17,7 @@ type KvListResponse = {
 
 // value と一緒に metadata を書き込み、list はそれを inline で返す。1ファイル1KVキーで済み
 // 別途 meta キーの同期が不要（list は O(n) スキャンだが数百件程度なので許容）。
-export class CloudflareKvStorage implements Storage {
+export class CloudflareKvCreditCsvStorage implements CreditCsvStorage {
   private readonly client: CloudflareKvClient
 
   constructor(config: CloudflareKvConfig) {

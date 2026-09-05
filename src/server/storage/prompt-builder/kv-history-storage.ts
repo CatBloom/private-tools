@@ -1,11 +1,11 @@
-import type { HistoryEntry } from '../../tools/prompt-builder/shared/types.js'
+import type { HistoryEntry } from '../../../tools/prompt-builder/shared/types.js'
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
 import type { PromptHistoryStorage } from './history-storage.js'
 
 const KV_KEY = 'history'
 
-export class CloudflareKvHistoryStorage implements PromptHistoryStorage {
+export class CloudflareKvPromptHistoryStorage implements PromptHistoryStorage {
   private readonly client: CloudflareKvClient
 
   constructor(config: CloudflareKvConfig) {

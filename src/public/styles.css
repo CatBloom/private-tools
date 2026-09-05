@@ -548,10 +548,10 @@ button, input { font: inherit; }
 /* 基本部品の共通クラス（ボタン・入力欄・カード・バッジ・タブ・テーブル）。ツール固有の
    レイアウト・配置・状態色は各ツール CSS に残す。 */
 .pt-button,
-.pbuilder-app button,
-.mytodo-app button,
-.ccsv-pagination-controls button,
-.ccsv-segmented button {
+.prompt-builder-app button,
+.my-todo-app button,
+.credit-csv-pagination-controls button,
+.credit-csv-segmented button {
   padding: 0.5rem 0.9rem;
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
@@ -560,23 +560,23 @@ button, input { font: inherit; }
 }
 
 .pt-button:disabled,
-.pbuilder-app button:disabled,
-.mytodo-app button:disabled,
-.ccsv-pagination-controls button:disabled {
+.prompt-builder-app button:disabled,
+.my-todo-app button:disabled,
+.credit-csv-pagination-controls button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
 .pt-button-danger,
-.pbuilder-app .pbuilder-danger-button {
+.prompt-builder-app .prompt-builder-danger-button {
   color: var(--pt-danger);
   border-color: var(--pt-danger);
   background: transparent;
 }
 
 .pt-button-accent,
-.pbuilder-app .pbuilder-word-form button[type="submit"],
-.mytodo-app .mytodo-add-form button {
+.prompt-builder-app .prompt-builder-word-form button[type="submit"],
+.my-todo-app .my-todo-add-form button {
   color: var(--pt-accent);
   border-color: var(--pt-accent);
   background: transparent;
@@ -584,10 +584,10 @@ button, input { font: inherit; }
 
 /* font-size 16px は iOS Safari のフォーカス時自動ズームを防ぐため。 */
 .pt-input,
-.ccsv-app input[type="text"],
-.ccsv-filters input,
-.pbuilder-app input[type="text"],
-.mytodo-app input[type="text"] {
+.credit-csv-app input[type="text"],
+.credit-csv-filters input,
+.prompt-builder-app input[type="text"],
+.my-todo-app input[type="text"] {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
   background: var(--pt-bg);
@@ -597,20 +597,20 @@ button, input { font: inherit; }
 }
 
 .pt-input:focus-visible,
-.ccsv-app input[type="text"]:focus-visible,
-.ccsv-filters input:focus-visible,
-.pbuilder-app input[type="text"]:focus-visible,
-.mytodo-app input[type="text"]:focus-visible {
+.credit-csv-app input[type="text"]:focus-visible,
+.credit-csv-filters input:focus-visible,
+.prompt-builder-app input[type="text"]:focus-visible,
+.my-todo-app input[type="text"]:focus-visible {
   outline: 2px solid var(--pt-accent);
   outline-offset: 1px;
   border-color: var(--pt-accent);
 }
 
 .pt-card,
-.ccsv-panel,
-.ccsv-summary-card,
-.pbuilder-panel,
-.mytodo-panel {
+.credit-csv-panel,
+.credit-csv-summary-card,
+.prompt-builder-panel,
+.my-todo-panel {
   padding: var(--pt-space-4);
   background: var(--pt-surface);
   border: 1px solid var(--pt-border);
@@ -619,9 +619,9 @@ button, input { font: inherit; }
 }
 
 .pt-badge,
-.pbuilder-dirty-badge,
-.mytodo-count-badge,
-.mytodo-save-indicator {
+.prompt-builder-dirty-badge,
+.my-todo-count-badge,
+.my-todo-save-indicator {
   color: var(--pt-muted);
   font-size: var(--pt-text-sm);
   font-weight: 700;
@@ -650,7 +650,7 @@ button, input { font: inherit; }
 }
 
 .pt-table,
-.ccsv-app table {
+.credit-csv-app table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--pt-text-sm);
@@ -658,8 +658,8 @@ button, input { font: inherit; }
 
 .pt-table th,
 .pt-table td,
-.ccsv-app th,
-.ccsv-app td {
+.credit-csv-app th,
+.credit-csv-app td {
   padding: 0.55rem 0.5rem;
   text-align: left;
   white-space: nowrap;

@@ -1,11 +1,11 @@
-import type { PromptWord } from '../../tools/prompt-builder/shared/types.js'
+import type { PromptWord } from '../../../tools/prompt-builder/shared/types.js'
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
-import type { PromptWordStorage } from './prompt-storage.js'
+import type { PromptWordStorage } from './word-storage.js'
 
 const KV_KEY = 'words'
 
-export class CloudflareKvPromptStorage implements PromptWordStorage {
+export class CloudflareKvPromptWordStorage implements PromptWordStorage {
   private readonly client: CloudflareKvClient
 
   constructor(config: CloudflareKvConfig) {

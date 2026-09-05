@@ -3,15 +3,15 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LocalStorage } from './local-storage'
+import { LocalCreditCsvStorage } from './local-storage'
 
-describe('LocalStorage', () => {
+describe('LocalCreditCsvStorage', () => {
   let dir: string
-  let storage: LocalStorage
+  let storage: LocalCreditCsvStorage
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'private-tools-storage-'))
-    storage = new LocalStorage(dir)
+    dir = await mkdtemp(join(tmpdir(), 'private-tools-credit-csv-'))
+    storage = new LocalCreditCsvStorage(dir)
   })
 
   afterEach(async () => {
@@ -43,7 +43,7 @@ describe('LocalStorage', () => {
   })
 
   it('creates the storage directory on demand', async () => {
-    const nestedStorage = new LocalStorage(join(dir, 'nested', 'deep'))
+    const nestedStorage = new LocalCreditCsvStorage(join(dir, 'nested', 'deep'))
     await nestedStorage.put('202601.csv', new Uint8Array([1, 2, 3]))
     expect(await nestedStorage.list()).toHaveLength(1)
   })
