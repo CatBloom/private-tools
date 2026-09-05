@@ -7,10 +7,6 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.credit-csv-app * {
-  box-sizing: border-box;
-}
-
 .credit-csv-hero-copy {
   margin: 0.35rem 0 0;
   color: var(--pt-muted);
@@ -56,7 +52,7 @@
   grid-column: 1 / -1;
 }
 
-.credit-csv-app select {
+.credit-csv-app .tool-layout-main select {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
   background: var(--pt-bg);
@@ -73,11 +69,11 @@
   cursor: pointer;
 }
 
-.credit-csv-app select:hover {
+.credit-csv-app .tool-layout-main select:hover {
   border-color: var(--pt-accent);
 }
 
-.credit-csv-app select:focus-visible {
+.credit-csv-app .tool-layout-main select:focus-visible {
   outline: 2px solid var(--pt-accent);
   outline-offset: 1px;
   border-color: var(--pt-accent);
@@ -176,11 +172,11 @@
   color: var(--pt-accent);
 }
 
-.credit-csv-app td a {
+.credit-csv-app .pt-table td a {
   text-decoration: none;
 }
 
-.credit-csv-app td a:hover {
+.credit-csv-app .pt-table td a:hover {
   text-decoration: underline;
 }
 

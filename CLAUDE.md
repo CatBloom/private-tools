@@ -178,7 +178,7 @@ MyTodo 専用。`MyTodoStorage`（`getTodos/putTodos`、`TodoState` を丸ごと
 
 ### テスト
 
-vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts・@dnd-kit は jsdom で完全描画/ドラッグ再現できないため UI テストではモックし、並べ替えロジックは `lib/reorder.ts`／`lib/notation.ts` の `reorder` など純粋関数を単体で検証する。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。
+vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts・@dnd-kit は jsdom で完全描画/ドラッグ再現できないため UI テストではモックし、並べ替えロジックは `lib/reorder.ts`／`lib/notation.ts` の `reorder` など純粋関数を単体で検証する。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。`src/tools/css-scope.test.ts` は各ツール CSS を走査し、`.xxx-app a` のような「ラッパー＋素の要素セレクタ」だけのルールを失敗させる（共有 UI はラッパー内に描画されるためカスケードで漏れる）。ツール CSS で要素を指定するときはツール固有クラスか `.tool-layout-main` 配下に限定する。
 
 ## この構成で守ること
 
