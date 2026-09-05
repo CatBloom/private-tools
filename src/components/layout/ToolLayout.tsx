@@ -6,7 +6,7 @@ import { ToolMenu } from './ToolMenu'
 import { ToolTabs } from './ToolTabs'
 
 // 全ツール共通のヘッダー＋左ドロワーメニュー＋本文レイアウト。機能ナビ・他ツールへの導線・
-// 「← ツール一覧」・テーマ切替はすべてドロワー（ToolMenu）側に集約する。
+// 「ツール一覧」・テーマ切替はすべてドロワー（ToolMenu）側に集約する。
 type ToolLayoutProps = {
   toolId: ToolId
   appClassName: string

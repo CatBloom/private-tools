@@ -303,6 +303,8 @@ button, input { font: inherit; }
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
+  border-bottom: 1px solid var(--pt-border);
+  margin-bottom: var(--pt-space-3);
 }
 
 .tool-layout-menu-button {

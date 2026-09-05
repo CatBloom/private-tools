@@ -80,16 +80,26 @@ describe('OutputPage', () => {
     expect(await screen.findByText('{cat girl}', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
-  it('removes an output item via its ⋯ menu with no confirmation', async () => {
+  it('removes an output item after confirming a row click', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
     await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
-    const itemRow = screen.getByText('cat girl', { selector: '.prompt-builder-output-item-preview' }).closest('li')!
-    openRowMenu(itemRow)
-    fireEvent.click(within(itemRow).getByRole('menuitem', { name: '削除' }))
+    fireEvent.click(screen.getByRole('button', { name: 'cat girlを出力から削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: '削除' }))
 
     await waitFor(() => expect(screen.getByText('（出力はまだありません）')).toBeInTheDocument())
+  })
+
+  it('keeps the output item when the removal confirmation is cancelled', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'cat girlを出力から削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
+
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('clears the output after confirmation and shows a success toast', async () => {

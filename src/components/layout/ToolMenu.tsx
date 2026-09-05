@@ -43,7 +43,7 @@ export const ToolMenu = ({ toolId, open, theme, onToggleTheme, onNavigate }: Too
 
       <div className="tool-layout-menu-actions">
         <a className="tool-layout-back-link pt-button" href="/">
-          ← ツール一覧
+          ツール一覧
         </a>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
