@@ -385,6 +385,7 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .tool-layout-nav a {
+  position: relative;
   padding: 0.6rem 0.9rem;
   color: var(--pt-muted);
   font-weight: 700;
@@ -394,7 +395,18 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .tool-layout-nav a.active {
-  color: var(--pt-on-accent);
+  color: var(--pt-accent);
+}
+
+/* 選択中は左に短い棒（項目の高さの 60%、上下中央）。 */
+.tool-layout-nav a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 2px;
   background: var(--pt-accent);
 }
 
