@@ -79,7 +79,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 `Storage` インターフェース（`list/get/put/delete`、`StoredFileMeta = {name,size,uploadedAt}`）と2実装:
 - `LocalStorage` — gitignore した `.data/` にファイル保存（開発フォールバック）。
-- `CloudflareKvStorage` — Cloudflare Workers KV REST。環境変数 `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_KV_NAMESPACE_ID` / `CLOUDFLARE_KV_API_TOKEN`（**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**）。
+- `CloudflareKvStorage` — Cloudflare Workers KV REST。環境変数 `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_KV_CREDIT_NAMESPACE_ID` / `CLOUDFLARE_KV_API_TOKEN`（**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**）。Namespace 変数は prompt-builder（`CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`）・my-todo（`CLOUDFLARE_KV_TODO_NAMESPACE_ID`）と揃えて `CLOUDFLARE_KV_<TOOL>_NAMESPACE_ID` 形式。
 - `selectStorage()` は3つの env が揃えば KV、なければ Local を返す。ファイル名は必ず `^\d{6}\.csv$`（`assertValidFileName`）で検証してからパス/キーに使う（パストラバーサル対策）。
 - **注意**: 本番の実運用には Cloudflare KV の別途設定が必要（未設定のうちは Local フォールバックのみ）。Vercel Serverless のボディ上限（約4.5MB）のため、アップロードは **4MiB 上限**。
 

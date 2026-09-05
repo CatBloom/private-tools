@@ -20,6 +20,12 @@ Thumbs.db
 # Local task tracking
 task/
 
+# Claude Code agent worktrees（並列サブエージェントの一時作業ツリー）
+.claude/worktrees/
+
+# Dev server logs（ローカル起動時の一時ログ）
+task-dev*.log
+
 # Local storage fallback (CSV persistence, dev only)
 .data/
 .vercel

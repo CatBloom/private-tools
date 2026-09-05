@@ -4,6 +4,8 @@ import { createApp } from './app'
 import type { Storage, StoredFileMeta } from './storage/index'
 import type { PromptHistoryStorage, PromptWordStorage } from './prompt-storage/index'
 import type { HistoryEntry, PromptWord } from '../tools/prompt-builder/shared/types'
+import type { TodoStorage } from './todo-storage/index'
+import type { TodoState } from '../tools/my-todo/shared/types'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
 
@@ -66,6 +68,18 @@ class InMemoryHistoryStorage implements PromptHistoryStorage {
   }
 }
 
+class InMemoryTodoStorage implements TodoStorage {
+  private state: TodoState | null = null
+
+  async getTodos(): Promise<TodoState | null> {
+    return this.state
+  }
+
+  async putTodos(state: TodoState): Promise<void> {
+    this.state = state
+  }
+}
+
 describe('server application', () => {
   it('serves the top hub page with links to each tool and the theme toggle script', async () => {
     const response = await request('/')
@@ -75,6 +89,7 @@ describe('server application', () => {
     expect(html).toContain('<title>Private Tools</title>')
     expect(html).toContain('href="/tools/credit-csv"')
     expect(html).toContain('href="/tools/prompt-builder"')
+    expect(html).toContain('href="/tools/my-todo"')
     expect(html).toContain('data-theme-toggle')
     expect(html).toContain('<script type="module" src="/src/ui/theme.ts"></script>')
     const csp = response.headers.get('content-security-policy')
@@ -182,6 +197,49 @@ describe('server application', () => {
       expect(html).toContain('src="/assets/client-prompt.js"')
       expect(html).toContain('href="/assets/client-prompt.css"')
     })
+  })
+
+  it('serves the my-todo SSR shell for the tool root, relaxing style-src', async () => {
+    const response = await request('/tools/my-todo')
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(html).toContain('<title>MyTodo</title>')
+    expect(html).toContain('id="root"')
+    expect(html).toContain('src="/src/client-todo.tsx"')
+    expect(html).not.toContain('/assets/client-todo.css')
+    const csp = response.headers.get('content-security-policy')
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'")
+    expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
+  })
+
+  it('links the built my-todo assets only in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp().request('http://localhost/tools/my-todo')
+      const html = await response.text()
+
+      expect(html).toContain('src="/assets/client-todo.js"')
+      expect(html).toContain('href="/assets/client-todo.css"')
+    })
+  })
+
+  it('mounts the my-todo API under /tools/my-todo/api', async () => {
+    const testApp = createApp({ todoStorage: new InMemoryTodoStorage() })
+    const response = await testApp.request('http://localhost/tools/my-todo/api/todos')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      data: { state: { today: [], someday: [], lastRolloverDate: null } },
+    })
+  })
+
+  it('returns a JSON 404 for unknown routes under the my-todo API', async () => {
+    const testApp = createApp({ todoStorage: new InMemoryTodoStorage() })
+    const response = await testApp.request('http://localhost/tools/my-todo/api/missing')
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Not found.' } })
   })
 
   it('does not relax style-src for the top page or other routes', async () => {
@@ -301,7 +359,7 @@ describe('server application', () => {
   })
 
   it('links the favicon from the top page and tool shells', async () => {
-    for (const path of ['/', '/tools/credit-csv', '/tools/prompt-builder']) {
+    for (const path of ['/', '/tools/credit-csv', '/tools/prompt-builder', '/tools/my-todo']) {
       const response = await request(path)
       const html = await response.text()
       expect(html).toContain('<link rel="icon" href="/favicon.ico"')

@@ -57,7 +57,12 @@ export default defineConfig({
     outDir: 'src/public',
     emptyOutDir: false,
     rollupOptions: {
-      input: { client: 'src/client.tsx', 'client-prompt': 'src/client-prompt.tsx', theme: 'src/ui/theme.ts' },
+      input: {
+        client: 'src/client.tsx',
+        'client-prompt': 'src/client-prompt.tsx',
+        'client-todo': 'src/client-todo.tsx',
+        theme: 'src/ui/theme.ts',
+      },
       output: {
         entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',

@@ -8,8 +8,10 @@ import { renderToString } from 'react-dom/server'
 import { TopPage } from '../ui/TopPage.js'
 import { createCreditCsvRoutes } from './routes/credit-csv.js'
 import { createPromptWordRoutes } from './routes/prompt-builder.js'
+import { createMyTodoRoutes } from './routes/my-todo.js'
 import type { Storage } from './storage/index.js'
 import type { PromptHistoryStorage, PromptWordStorage } from './prompt-storage/index.js'
+import type { TodoStorage } from './todo-storage/index.js'
 
 type AppOptions = {
   clientScript?: string
@@ -19,13 +21,16 @@ type AppOptions = {
   creditCsvStorage?: Storage
   promptWordStorage?: PromptWordStorage
   promptHistoryStorage?: PromptHistoryStorage
+  todoStorage?: TodoStorage
 }
 
 const CREDIT_CSV_PREFIX = '/tools/credit-csv'
 const PROMPT_BUILDER_PREFIX = '/tools/prompt-builder'
+const MY_TODO_PREFIX = '/tools/my-todo'
 
 const isCreditCsvPath = (path: string) => path === CREDIT_CSV_PREFIX || path.startsWith(`${CREDIT_CSV_PREFIX}/`)
 const isPromptBuilderPath = (path: string) => path === PROMPT_BUILDER_PREFIX || path.startsWith(`${PROMPT_BUILDER_PREFIX}/`)
+const isMyTodoPath = (path: string) => path === MY_TODO_PREFIX || path.startsWith(`${MY_TODO_PREFIX}/`)
 
 const staticAssetRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
 const assetsDir = join(staticAssetRoot, 'assets')
@@ -99,19 +104,23 @@ export const createApp = (options: AppOptions = {}) => {
     (process.env.NODE_ENV === 'production' ? '/assets/client.js' : '/src/client.tsx')
   const promptBuilderClientScript =
     process.env.NODE_ENV === 'production' ? '/assets/client-prompt.js' : '/src/client-prompt.tsx'
+  const myTodoClientScript =
+    process.env.NODE_ENV === 'production' ? '/assets/client-todo.js' : '/src/client-todo.tsx'
   const themeScript =
     options.themeScript ??
     (process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts')
 
   const defaultSecureHeaders = buildSecureHeaders(["'self'"])
-  // recharts（credit-csv）と @dnd-kit（prompt-builder）は共にインライン style
+  // recharts（credit-csv）、@dnd-kit（prompt-builder / my-todo）は共にインライン style
   // を使うため、同じ緩和ヘッダーを使い回す。
   const inlineStyleSecureHeaders = buildSecureHeaders(["'self'", "'unsafe-inline'"])
 
   app.use('*', (c, next) => {
     const path = c.req.path
     const middleware =
-      isCreditCsvPath(path) || isPromptBuilderPath(path) ? inlineStyleSecureHeaders : defaultSecureHeaders
+      isCreditCsvPath(path) || isPromptBuilderPath(path) || isMyTodoPath(path)
+        ? inlineStyleSecureHeaders
+        : defaultSecureHeaders
     return middleware(c, next)
   })
 
@@ -120,6 +129,7 @@ export const createApp = (options: AppOptions = {}) => {
     `${PROMPT_BUILDER_PREFIX}/api`,
     createPromptWordRoutes(options.promptWordStorage, options.promptHistoryStorage),
   )
+  app.route(`${MY_TODO_PREFIX}/api`, createMyTodoRoutes(options.todoStorage))
 
   if (process.env.NODE_ENV === 'production') {
     // In development the Vite dev server serves /favicon.ico (see vite.config.ts);
@@ -164,6 +174,8 @@ export const createApp = (options: AppOptions = {}) => {
     toolShellHtml('Credit CSV Viewer', clientScript, isProduction ? '/assets/client.css' : null)
   const promptBuilderShell = () =>
     toolShellHtml('Prompt Builder', promptBuilderClientScript, isProduction ? '/assets/client-prompt.css' : null)
+  const myTodoShell = () =>
+    toolShellHtml('MyTodo', myTodoClientScript, isProduction ? '/assets/client-todo.css' : null)
 
   app.get(CREDIT_CSV_PREFIX, (c) => c.html(creditCsvShell()))
   app.get(`${CREDIT_CSV_PREFIX}/*`, (c) => {
@@ -184,6 +196,14 @@ export const createApp = (options: AppOptions = {}) => {
     return c.html(promptBuilderShell())
   })
 
+  app.get(MY_TODO_PREFIX, (c) => c.html(myTodoShell()))
+  app.get(`${MY_TODO_PREFIX}/*`, (c) => {
+    if (c.req.path.startsWith(`${MY_TODO_PREFIX}/api`)) {
+      return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
+    }
+    return c.html(myTodoShell())
+  })
+
   app.notFound((c) => {
     if (c.req.path.startsWith('/api/')) {
       return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
@@ -199,7 +219,8 @@ export const createApp = (options: AppOptions = {}) => {
     if (
       path.startsWith('/api/') ||
       path.startsWith(`${CREDIT_CSV_PREFIX}/api`) ||
-      path.startsWith(`${PROMPT_BUILDER_PREFIX}/api`)
+      path.startsWith(`${PROMPT_BUILDER_PREFIX}/api`) ||
+      path.startsWith(`${MY_TODO_PREFIX}/api`)
     ) {
       return c.json({ ok: false, error: { message } }, 500)
     }

@@ -10,7 +10,7 @@ export { LocalStorage } from './local-storage.js'
 // until then every environment falls back to the local filesystem.
 export const selectStorage = (): Storage => {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
-  const namespaceId = process.env.CLOUDFLARE_KV_NAMESPACE_ID
+  const namespaceId = process.env.CLOUDFLARE_KV_CREDIT_NAMESPACE_ID
   const apiToken = process.env.CLOUDFLARE_KV_API_TOKEN
 
   if (accountId && namespaceId && apiToken) {
