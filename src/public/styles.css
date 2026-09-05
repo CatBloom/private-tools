@@ -374,3 +374,38 @@ button, input { font: inherit; }
     padding: 1.5rem 2rem 0;
   }
 }
+
+/* ============================================================
+   テーマ切替ボタン（3ツール共通、src/components/ThemeToggle.tsx）。
+   tool-header と同じ理由で、常時 link される styles.css に自己完結の
+   トークンを持たせる。配置ごとの位置調整（credit-csv のサイドバー内など）は
+   各ツールの CSS 側で `.theme-toggle` にスコープしたセレクタを足す。
+   ============================================================ */
+.theme-toggle {
+  --theme-toggle-bg: #f4f7fb;
+  --theme-toggle-border: #d9e2ec;
+
+  flex-shrink: 0;
+  padding: 0.5rem 0.9rem;
+  background: var(--theme-toggle-bg);
+  border: 1px solid var(--theme-toggle-border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-toggle {
+    --theme-toggle-bg: #101820;
+    --theme-toggle-border: #2b3947;
+  }
+}
+
+[data-theme="dark"] .theme-toggle {
+  --theme-toggle-bg: #101820;
+  --theme-toggle-border: #2b3947;
+}
+
+[data-theme="light"] .theme-toggle {
+  --theme-toggle-bg: #f4f7fb;
+  --theme-toggle-border: #d9e2ec;
+}

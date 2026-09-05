@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { readJson, writeJson } from '../../../lib/storage'
+import { readJson, writeJson } from '../lib/storage'
 
 export const usePersistedState = <T,>(key: string, initialValue: T) => {
   const [value, setValue] = useState<T>(() => readJson(key, initialValue))

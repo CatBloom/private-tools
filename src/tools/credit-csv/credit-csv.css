@@ -129,15 +129,11 @@
   font-size: 0.85rem;
 }
 
-.ccsv-theme-toggle {
+/* テーマ切替ボタン本体のスタイルは共通 .theme-toggle（src/public/styles.css）。
+   サイドバー内での配置（下寄せ）だけをここでスコープして足す。 */
+.ccsv-sidebar .theme-toggle {
   align-self: flex-start;
   margin-top: auto;
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--ccsv-bg);
-  border: 1px solid var(--ccsv-border);
-  border-radius: 0.65rem;
-  cursor: pointer;
 }
 
 .ccsv-nav-tabs {

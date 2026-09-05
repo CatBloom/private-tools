@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ToolHeader } from '../../../components/layout/ToolHeader'
-import { useTheme } from '../hooks/useTheme'
-import { ThemeToggle } from './ThemeToggle'
+import { useTheme } from '../../../hooks/useTheme'
+import { ThemeToggle } from '../../../components/ThemeToggle'
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   const { theme, toggle } = useTheme()

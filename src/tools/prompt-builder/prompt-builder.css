@@ -51,15 +51,6 @@
   flex-direction: column;
 }
 
-.pbuilder-theme-toggle {
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.65rem;
-  cursor: pointer;
-}
-
 .pbuilder-main {
   flex: 1;
   padding: 0 1rem 2rem;

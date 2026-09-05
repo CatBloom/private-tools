@@ -49,15 +49,6 @@
   flex-direction: column;
 }
 
-.mytodo-theme-toggle {
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.65rem;
-  cursor: pointer;
-}
-
 .mytodo-main {
   flex: 1;
   padding: 1rem 1rem 2rem;

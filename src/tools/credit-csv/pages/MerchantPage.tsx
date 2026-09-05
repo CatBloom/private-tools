@@ -4,7 +4,7 @@ import { TrendChartCard } from '../components/Charts'
 import { MerchantMonthlyTable } from '../components/MerchantMonthlyTable'
 import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
-import { usePersistedState } from '../hooks/usePersistedState'
+import { usePersistedState } from '../../../hooks/usePersistedState'
 import {
   buildMerchantTrendAll,
   buildMerchantTrendYear,

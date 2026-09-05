@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { THEME_STORAGE_KEY } from '../../../lib/storage'
+import { THEME_STORAGE_KEY } from '../lib/storage'
 import { usePersistedState } from './usePersistedState'
 
 export type Theme = 'light' | 'dark'
