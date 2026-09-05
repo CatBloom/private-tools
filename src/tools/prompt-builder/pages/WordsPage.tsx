@@ -218,7 +218,7 @@ export const WordsPage = () => {
 
   const renderWordRow = (word: PromptWord) =>
     editingId === word.id ? (
-      <li key={word.id} className="prompt-builder-word-row is-editing">
+      <li key={word.id} className="prompt-builder-row prompt-builder-word-row is-editing">
         <input
           type="text"
           aria-label="ワード"
@@ -251,7 +251,7 @@ export const WordsPage = () => {
         </div>
       </li>
     ) : (
-      <li key={word.id} className="prompt-builder-word-row">
+      <li key={word.id} className="prompt-builder-row prompt-builder-word-row">
         <button
           type="button"
           className="prompt-builder-word-row-text prompt-builder-word-row-button"

@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
+import { RowMenu } from '../../../components/RowMenu'
 import { copyText } from '../../../lib/copyText'
 import { getHistory, putHistory } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
@@ -59,6 +60,7 @@ export const OutputPage = () => {
   const [outputItems, setOutputItems] = useState<OutputItem[]>(() => readOutputItems())
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle')
   const outputTextRef = useRef<HTMLParagraphElement>(null)
+  const outputSectionRef = useRef<HTMLDivElement>(null)
 
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
   const [historyLoadStatus, setHistoryLoadStatus] = useState<LoadStatus>('loading')
@@ -156,9 +158,16 @@ export const OutputPage = () => {
     }
   }
 
-  const restoreHistoryEntry = (entry: HistoryEntry) => {
+  const restoreHistoryEntry = async (entry: HistoryEntry) => {
+    const confirmed = await confirm('この履歴を復元しますか？ 現在の出力は置き換わります', {
+      title: '復元',
+      confirmLabel: '復元',
+    })
+    if (!confirmed) return
+
     setOutputItems(entry.items)
     showAlert('success', '復元しました')
+    outputSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
   }
 
   const deleteHistoryEntry = async (id: string) => {
@@ -241,7 +250,7 @@ export const OutputPage = () => {
 
   const renderHistoryRow = (entry: HistoryEntry) =>
     editingHistoryId === entry.id ? (
-      <li key={entry.id} className="prompt-builder-history-row is-editing">
+      <li key={entry.id} className="prompt-builder-row prompt-builder-history-row is-editing">
         <div className="prompt-builder-word-form-row">
           <input
             type="text"
@@ -258,7 +267,7 @@ export const OutputPage = () => {
             <TargetOptions />
           </select>
         </div>
-        <div className="prompt-builder-history-row-actions">
+        <div className="prompt-builder-word-row-actions">
           <button type="button" disabled={historySaveStatus === 'saving'} onClick={() => commitHistoryEdit(entry.id)}>
             保存
           </button>
@@ -268,26 +277,32 @@ export const OutputPage = () => {
         </div>
       </li>
     ) : (
-      <li key={entry.id} className="prompt-builder-history-row">
-        <div className="prompt-builder-history-label">
-          <span className="prompt-builder-history-date">{formatHistoryDate(entry.createdAt)}</span>
-          {entry.name ? <span className="prompt-builder-history-name">{entry.name}</span> : null}
-        </div>
-        <div className="prompt-builder-history-row-actions">
-          <button type="button" onClick={() => restoreHistoryEntry(entry)}>
-            復元
-          </button>
-          <button type="button" disabled={historySaveStatus === 'saving'} onClick={() => startEditHistory(entry)}>
-            編集
-          </button>
-          <button
-            type="button"
-            className="prompt-builder-danger-button"
-            disabled={historySaveStatus === 'saving'}
-            onClick={() => deleteHistoryEntry(entry.id)}
-          >
-            削除
-          </button>
+      <li key={entry.id} className="prompt-builder-row prompt-builder-history-row">
+        <button
+          type="button"
+          className="prompt-builder-word-row-text prompt-builder-word-row-button"
+          aria-label={`${entry.name || formatHistoryDate(entry.createdAt)}を復元`}
+          onClick={() => restoreHistoryEntry(entry)}
+        >
+          <span className="prompt-builder-word-text">{entry.name || formatHistoryDate(entry.createdAt)}</span>
+          <span className="prompt-builder-word-description">
+            {entry.name ? `${formatHistoryDate(entry.createdAt)} ` : ''}
+            <span className="pt-badge">{formatLabel(PROMPT_TARGET_LABELS[entry.target])}</span>
+          </span>
+        </button>
+        <div className="prompt-builder-word-row-actions">
+          <RowMenu
+            items={[
+              { key: 'edit', label: '編集', onClick: () => startEditHistory(entry), disabled: historySaveStatus === 'saving' },
+              {
+                key: 'delete',
+                label: '削除',
+                onClick: () => deleteHistoryEntry(entry.id),
+                danger: true,
+                disabled: historySaveStatus === 'saving',
+              },
+            ]}
+          />
         </div>
       </li>
     )
@@ -321,7 +336,7 @@ export const OutputPage = () => {
           </button>
         </div>
 
-        <div className="prompt-builder-output-preview">
+        <div className="prompt-builder-output-preview" ref={outputSectionRef}>
           <p className="prompt-builder-output-text" ref={outputTextRef}>
             {outputText || '（出力はまだありません）'}
           </p>

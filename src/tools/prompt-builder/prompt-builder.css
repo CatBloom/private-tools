@@ -158,7 +158,8 @@
   font-size: 0.9rem;
 }
 
-.prompt-builder-word-row {
+/* ワード行・履歴行・出力アイテムの共通の箱（高さ・余白・角丸・背景）。 */
+.prompt-builder-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -169,7 +170,7 @@
   border-radius: 0.75rem;
 }
 
-.prompt-builder-word-row.is-editing {
+.prompt-builder-row.is-editing {
   flex-direction: column;
   align-items: stretch;
   gap: 0.5rem;
@@ -210,7 +211,7 @@
   flex-shrink: 0;
 }
 
-.prompt-builder-word-row.is-editing .prompt-builder-word-row-actions {
+.prompt-builder-row.is-editing .prompt-builder-word-row-actions {
   justify-content: flex-end;
 }
 
@@ -238,13 +239,6 @@
 }
 
 .prompt-builder-output-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.75rem;
-  background: var(--pt-bg);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.75rem;
   touch-action: none;
 }
 
@@ -279,17 +273,6 @@
   min-width: 1.5rem;
   text-align: center;
   font-weight: 700;
-}
-
-.prompt-builder-app .prompt-builder-icon-button {
-  padding: 0.3rem 0.55rem;
-  color: var(--pt-danger);
-  background: transparent;
-  border: 1px solid var(--pt-border);
-}
-
-.prompt-builder-app .prompt-builder-icon-button:hover {
-  border-color: var(--pt-danger);
 }
 
 .prompt-builder-output-preview {
@@ -363,56 +346,14 @@
   list-style: none;
 }
 
-.prompt-builder-history-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.75rem;
-  background: var(--pt-bg);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.75rem;
-}
-
-.prompt-builder-history-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-
 .prompt-builder-app .prompt-builder-history-form button {
   color: var(--pt-secondary);
   border-color: var(--pt-secondary);
 }
 
-.prompt-builder-history-date {
-  color: var(--pt-muted);
-  font-size: 0.85rem;
-}
-
-.prompt-builder-history-name {
-  font-weight: 700;
-}
-
-.prompt-builder-history-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  flex-shrink: 0;
-  justify-content: flex-end;
-}
-
 @media (min-width: 48rem) {
   :root {
     font-size: 130%;
-  }
-
-  .prompt-builder-history-row:not(.is-editing) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
   }
 
   .prompt-builder-history-form {

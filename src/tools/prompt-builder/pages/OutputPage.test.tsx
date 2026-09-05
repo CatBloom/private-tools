@@ -24,6 +24,8 @@ const renderPage = () =>
 
 const seedOutput = (items: OutputItem[]) => writeOutputItems(items)
 
+const openRowMenu = (row: HTMLElement) => fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
+
 vi.mock('../api', () => ({
   getHistory: vi.fn(),
   putHistory: vi.fn(),
@@ -59,6 +61,8 @@ describe('OutputPage', () => {
     localStorage.clear()
     vi.mocked(getHistory).mockResolvedValue([])
     vi.mocked(putHistory).mockImplementation(async (entries) => entries)
+    // jsdom は scrollIntoView を実装しないため、復元後のスクロールをモックで検証する。
+    Element.prototype.scrollIntoView = vi.fn()
   })
 
   afterEach(() => {
@@ -74,6 +78,18 @@ describe('OutputPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '強める' }))
 
     expect(await screen.findByText('{cat girl}', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+  })
+
+  it('removes an output item via its ⋯ menu with no confirmation', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    const itemRow = screen.getByText('cat girl', { selector: '.prompt-builder-output-item-preview' }).closest('li')!
+    openRowMenu(itemRow)
+    fireEvent.click(within(itemRow).getByRole('menuitem', { name: '削除' }))
+
+    await waitFor(() => expect(screen.getByText('（出力はまだありません）')).toBeInTheDocument())
   })
 
   it('clears the output after confirmation and shows a success toast', async () => {
@@ -183,7 +199,7 @@ describe('OutputPage', () => {
     expect(screen.getByText('char set', { exact: false })).toBeInTheDocument()
   })
 
-  it('restores a history entry into the current output', async () => {
+  it('restores a history entry into the current output after confirming, shows a toast, and scrolls to the output section', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -196,12 +212,15 @@ describe('OutputPage', () => {
     renderPage()
     expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '復元' }))
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
+    fireEvent.click(await screen.findByRole('button', { name: '復元' }))
 
     expect(await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
   })
 
-  it('shows a success toast when restoring a history entry', async () => {
+  it('does not restore the history entry when the confirmation is cancelled', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -214,12 +233,14 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('saved set', { exact: false })
 
-    fireEvent.click(screen.getByRole('button', { name: '復元' }))
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(screen.getByText('（出力はまだありません）')).toBeInTheDocument()
+    expect(screen.queryByText('復元しました')).not.toBeInTheDocument()
   })
 
-  it('disables history delete buttons while a delete is in flight (prevents lost updates)', async () => {
+  it('disables the ⋯ menu edit/delete items while a delete is in flight (prevents lost updates)', async () => {
     const entries: HistoryEntry[] = [
       { id: 'h1', name: 'set one', createdAt: '2024-01-01T00:00:00.000Z', items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }], target: 'base' },
       { id: 'h2', name: 'set two', createdAt: '2024-01-02T00:00:00.000Z', items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }], target: 'negative' },
@@ -231,20 +252,28 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('set one', { exact: false })
 
-    const firstDelete = screen.getAllByRole('button', { name: '削除' })[0]
-    fireEvent.click(firstDelete)
+    const firstRow = screen.getByText('set one', { exact: false }).closest('li')!
+    const secondRow = screen.getByText('set two', { exact: false }).closest('li')!
+    // 2行目の⋯メニューは開いたままにしておき、in-flight 中に項目が反応で disabled になることを見る。
+    openRowMenu(secondRow)
+    openRowMenu(firstRow)
+    fireEvent.click(within(firstRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => {
-      screen.getAllByRole('button', { name: '削除' }).forEach((button) => expect(button).toBeDisabled())
-      screen.getAllByRole('button', { name: '編集' }).forEach((button) => expect(button).toBeDisabled())
+      expect(within(secondRow).getByRole('menuitem', { name: '編集' })).toBeDisabled()
+      expect(within(secondRow).getByRole('menuitem', { name: '削除' })).toBeDisabled()
     })
+
+    openRowMenu(firstRow)
+    expect(within(firstRow).getByRole('menuitem', { name: '編集' })).toBeDisabled()
+    expect(within(firstRow).getByRole('menuitem', { name: '削除' })).toBeDisabled()
 
     resolvePut(entries.filter((entry) => entry.id !== 'h1'))
     await waitFor(() => expect(screen.queryByText('set one', { exact: false })).not.toBeInTheDocument())
   })
 
-  it('deletes a history entry via putHistory with it excluded', async () => {
+  it('deletes a history entry via its ⋯ menu, calling putHistory with it excluded', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -255,9 +284,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(putHistory).toHaveBeenCalledWith([]))
@@ -275,9 +305,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(putHistory).not.toHaveBeenCalled()
@@ -295,9 +326,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
     fireEvent.change(nameInput, { target: { value: 'renamed set' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
@@ -319,9 +351,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const targetSelect = screen
       .getAllByLabelText('保存先')
       .find((el) => (el as HTMLSelectElement).value === 'base')!
@@ -345,9 +378,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
     fireEvent.change(nameInput, { target: { value: 'renamed set' } })
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))

@@ -567,8 +567,7 @@ button, input { font: inherit; }
   opacity: 0.5;
 }
 
-.pt-button-danger,
-.prompt-builder-app .prompt-builder-danger-button {
+.pt-button-danger {
   color: var(--pt-danger);
   border-color: var(--pt-danger);
   background: transparent;

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
+import { RowMenu } from '../../../components/RowMenu'
 import { applyNotation } from '../lib/notation'
 import type { OutputItem } from '../shared/types'
 
@@ -19,7 +20,11 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
   }
 
   return (
-    <li ref={setNodeRef} style={style} className={`prompt-builder-output-item${isDragging ? ' is-dragging' : ''}`}>
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`prompt-builder-row prompt-builder-output-item${isDragging ? ' is-dragging' : ''}`}
+    >
       <button
         type="button"
         className="prompt-builder-drag-handle"
@@ -42,15 +47,9 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
         </button>
       </div>
 
-      <button
-        type="button"
-        className="prompt-builder-icon-button"
-        aria-label="出力から削除"
-        title="削除"
-        onClick={() => onRemove(item.id)}
-      >
-        ×
-      </button>
+      <div className="prompt-builder-word-row-actions">
+        <RowMenu items={[{ key: 'delete', label: '削除', onClick: () => onRemove(item.id), danger: true }]} />
+      </div>
     </li>
   )
 }
