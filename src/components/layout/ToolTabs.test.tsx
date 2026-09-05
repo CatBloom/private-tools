@@ -30,4 +30,29 @@ describe('ToolTabs', () => {
     expect(screen.getByRole('link', { name: 'ワード' })).toHaveClass('pt-tab')
     expect(screen.getByRole('link', { name: 'ワード' })).not.toHaveClass('is-active')
   })
+
+  it('renders both full and short label spans for a nav item with shortLabel', () => {
+    render(
+      <MemoryRouter initialEntries={['/files']}>
+        <ToolTabs toolId="credit-csv" />
+      </MemoryRouter>
+    )
+
+    const tab = screen.getByRole('link', { name: 'ファイル管理' })
+    expect(tab.querySelector('.tool-layout-tab-label-full')).toHaveTextContent('ファイル管理')
+    expect(tab.querySelector('.tool-layout-tab-label-short')).toHaveTextContent('管理')
+  })
+
+  it('renders only the label for a nav item without shortLabel', () => {
+    render(
+      <MemoryRouter initialEntries={['/files']}>
+        <ToolTabs toolId="credit-csv" />
+      </MemoryRouter>
+    )
+
+    const tab = screen.getByRole('link', { name: '明細' })
+    expect(tab.querySelector('.tool-layout-tab-label-full')).not.toBeInTheDocument()
+    expect(tab.querySelector('.tool-layout-tab-label-short')).not.toBeInTheDocument()
+    expect(tab).toHaveTextContent('明細')
+  })
 })

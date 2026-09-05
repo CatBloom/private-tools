@@ -17,8 +17,16 @@ export const ToolTabs = ({ toolId }: ToolTabsProps) => {
           to={item.to}
           end={item.to === '/'}
           className={({ isActive }) => `pt-tab${isActive ? ' is-active' : ''}`}
+          aria-label={item.label}
         >
-          {item.label}
+          {item.shortLabel ? (
+            <>
+              <span className="tool-layout-tab-label-full">{item.label}</span>
+              <span className="tool-layout-tab-label-short">{item.shortLabel}</span>
+            </>
+          ) : (
+            item.label
+          )}
         </NavLink>
       ))}
     </>

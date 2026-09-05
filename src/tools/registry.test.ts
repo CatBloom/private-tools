@@ -43,6 +43,15 @@ describe('tool registry', () => {
     }
   })
 
+  it('keeps shortLabel (when present) shorter than the full label', () => {
+    for (const tool of TOOLS) {
+      for (const item of tool.nav) {
+        if (item.shortLabel === undefined) continue
+        expect(item.shortLabel.length).toBeLessThan(item.label.length)
+      }
+    }
+  })
+
   it('keeps the TOP card description short (fits on one line at 375px width)', () => {
     for (const tool of TOOLS) {
       expect(tool.description.length).toBeGreaterThan(0)

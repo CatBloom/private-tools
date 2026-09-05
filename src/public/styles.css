@@ -490,7 +490,24 @@ button, input, select { font: inherit; color: inherit; }
   padding: 0 1rem 0.75rem;
 }
 
+/* shortLabel を持つタブのみ、スマホ幅で短縮ラベルに切り替える（狭幅での折り返し対策）。 */
+.tool-layout-tab-label-short {
+  display: inline;
+}
+
+.tool-layout-tab-label-full {
+  display: none;
+}
+
 @media (min-width: 48rem) {
+  .tool-layout-tab-label-short {
+    display: none;
+  }
+
+  .tool-layout-tab-label-full {
+    display: inline;
+  }
+
   .tool-layout-header {
     padding: 1.5rem 2rem 1rem;
   }

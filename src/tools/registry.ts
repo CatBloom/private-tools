@@ -4,6 +4,9 @@
 export type ToolNavItem = {
   label: string
   to: string
+  // 本文上タブ（ToolTabs）のみスマホ幅（48rem 未満）で label の代わりに表示する短縮ラベル。
+  // ドロワー（ToolMenu）は常に label を使うため、未指定なら ToolTabs も label のまま。
+  shortLabel?: string
 }
 
 export type ToolId = 'my-todo' | 'credit-csv' | 'prompt-builder'
@@ -59,7 +62,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     nav: [
       { label: '明細', to: '/' },
       { label: '年間合計', to: '/yearly' },
-      { label: 'ファイル管理', to: '/files' },
+      { label: 'ファイル管理', to: '/files', shortLabel: '管理' },
     ],
     inlineStyle: true,
   },

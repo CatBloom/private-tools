@@ -310,7 +310,8 @@
 }
 
 .credit-csv-summary-table .credit-csv-col-amount,
-.credit-csv-totals-table .credit-csv-col-amount {
+.credit-csv-totals-table .credit-csv-col-amount,
+.credit-csv-monthly-table .credit-csv-col-amount {
   width: 7rem;
 }
 
@@ -318,7 +319,8 @@
   width: 6rem;
 }
 
-.credit-csv-cell-numeric {
+/* 共通の .pt-table th/td { text-align: left } に負けないよう .pt-table 配下で指定する。 */
+.pt-table .credit-csv-cell-numeric {
   text-align: right;
 }
 
