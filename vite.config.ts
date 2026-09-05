@@ -67,6 +67,36 @@ export default defineConfig({
         entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name][extname]',
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) return
+          // pnpm の仮想ストアは node_modules/.pnpm/<pkg>@<ver>/node_modules/<pkg>/... と
+          // 二重に node_modules を挟むため、最後の node_modules 以降の先頭セグメントで
+          // パッケージ名を判定する。
+          const afterNodeModules = id.split('node_modules/').at(-1)!
+          const pkg = afterNodeModules.startsWith('@')
+            ? afterNodeModules.split('/').slice(0, 2).join('/')
+            : afterNodeModules.split('/')[0]
+          if (pkg === 'react' || pkg === 'react-dom' || pkg === 'scheduler') return 'vendor-react'
+          if (pkg === 'react-router' || pkg === 'react-router-dom') return 'vendor-router'
+          if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
+          if (
+            pkg === 'recharts' ||
+            pkg === 'recharts-scale' ||
+            pkg === 'victory-vendor' ||
+            pkg === 'react-smooth' ||
+            pkg === 'react-transition-group' ||
+            pkg === 'dom-helpers' ||
+            pkg === 'decimal.js' ||
+            pkg === 'decimal.js-light' ||
+            pkg === 'eventemitter3' ||
+            pkg === 'fast-equals' ||
+            pkg === 'tiny-invariant' ||
+            pkg === 'react-is' ||
+            pkg.startsWith('d3-')
+          ) {
+            return 'vendor-recharts'
+          }
+        },
       },
     },
   },

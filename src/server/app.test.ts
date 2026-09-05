@@ -351,6 +351,18 @@ describe('server application', () => {
     })
   })
 
+  it('serves a manualChunks vendor chunk (hyphenated filename) in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp({
+        assetOverrides: { 'vendor-recharts.js': 'console.log("vendor-recharts")' },
+      }).request('http://localhost/assets/vendor-recharts.js')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('application/javascript')
+      await expect(response.text()).resolves.toBe('console.log("vendor-recharts")')
+    })
+  })
+
   it('does not serve static assets outside production', async () => {
     const response = await createApp({ assetOverrides: { 'client.js': 'console.log("bundle")' } }).request(
       'http://localhost/assets/client.js',

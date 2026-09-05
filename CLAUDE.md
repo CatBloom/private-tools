@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## コマンド
 
-Node.js 22 / pnpm。
+Node.js 24 / pnpm。
 
 ```sh
 pnpm install

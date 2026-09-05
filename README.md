@@ -21,7 +21,7 @@
 
 ## ローカル開発
 
-Node.js 22 / pnpm。
+Node.js 24 / pnpm。
 
 ```sh
 pnpm install
