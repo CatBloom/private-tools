@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AlertProvider, ConfirmProvider, Spinner } from '../../components/feedback'
-import { Layout } from './components/Layout'
+import { ToolLayout } from '../../components/layout/ToolLayout'
 import { FilesPage } from './pages/FilesPage'
 import { AppDataProvider } from './state/AppDataContext'
 
@@ -11,11 +11,11 @@ const DetailPage = lazy(() => import('./pages/DetailPage').then((m) => ({ defaul
 const MerchantPage = lazy(() => import('./pages/MerchantPage').then((m) => ({ default: m.MerchantPage })))
 const YearlyPage = lazy(() => import('./pages/YearlyPage').then((m) => ({ default: m.YearlyPage })))
 
-// Alert/Confirm Provider は Layout の内側（.ccsv-app[data-theme] の配下）に置く。外側に置くと
+// Alert/Confirm Provider は ToolLayout の内側（.ccsv-app[data-theme] の配下）に置く。外側に置くと
 // トースト/ダイアログが .ccsv-app と兄弟要素になり、テーマ切替の [data-theme] スコープ変数を継承できない。
 export const CreditCsvRoutes = () => (
   <AppDataProvider>
-    <Layout>
+    <ToolLayout toolId="credit-csv" appClassName="ccsv-app">
       <AlertProvider>
         <ConfirmProvider>
           <Suspense fallback={<Spinner label="読み込み中" />}>
@@ -29,6 +29,6 @@ export const CreditCsvRoutes = () => (
           </Suspense>
         </ConfirmProvider>
       </AlertProvider>
-    </Layout>
+    </ToolLayout>
   </AppDataProvider>
 )

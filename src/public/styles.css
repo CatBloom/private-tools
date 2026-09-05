@@ -316,55 +316,172 @@ button, input { font: inherit; }
 }
 
 /* ============================================================
-   ツールヘッダー（サイドバー無しツールの共通トップバー、src/components/layout/ToolHeader.tsx）。
-   feedback の .fbk-* と同じ理由で、常時 link される styles.css に置く（ツール別バンドルの
-   CSS はシェルが link しないため）。色は共通の --pt-* をそのまま参照する
-   （ToolHeader は各ツールの `.xxx-app[data-theme]` 配下に置かれるため継承される）。
+   ツール共通レイアウト（ヘッダー＋左ドロワーメニュー＋本文、issue #6 Phase 5b。
+   src/components/layout/ToolLayout.tsx・ToolMenu.tsx）。feedback の .fbk-* と同じ理由で、
+   常時 link される styles.css に置く（ツール別バンドルの CSS はシェルが link しないため）。
+   色は共通の --pt-* をそのまま参照する（ToolLayout は各ツールの `.xxx-app[data-theme]`
+   配下に置かれるため継承される）。ドロワーはすべての画面幅で同じ構造（デスクトップ固定
+   サイドバーは持たない）。
    ============================================================ */
-.tool-header {
+.tool-layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.tool-layout-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem;
 }
 
-.tool-header-titlebar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.tool-layout-menu-button {
+  padding: 0.4rem 0.7rem;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.65rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
-.tool-header-title {
-  font-size: 1.25rem;
+.tool-layout-title {
+  font-size: 1.1rem;
   font-weight: 800;
   color: var(--pt-text);
 }
 
-.tool-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.tool-layout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 45%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
-.tool-header-back-link {
+.tool-layout-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tool-layout-menu {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 16rem;
+  max-width: 80vw;
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--pt-surface);
+  border-right: 1px solid var(--pt-border);
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+}
+
+.tool-layout-menu.is-open {
+  transform: translateX(0);
+}
+
+.tool-layout-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tool-layout-nav a {
+  padding: 0.6rem 0.9rem;
+  color: var(--pt-muted);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 0.65rem;
+}
+
+.tool-layout-nav a.active {
+  color: #fff;
+  background: var(--pt-accent);
+}
+
+.tool-layout-divider {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--pt-border);
+}
+
+.tool-layout-others {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tool-layout-others-heading {
+  padding: 0 0.9rem;
+  color: var(--pt-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tool-layout-others a {
+  padding: 0.6rem 0.9rem;
+  color: var(--pt-text);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0.65rem;
+}
+
+.tool-layout-others a:hover {
+  background: var(--pt-bg);
+}
+
+.tool-layout-back-link {
+  padding: 0.6rem 0.9rem;
   color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
 }
 
+/* テーマ切替ボタン本体のスタイルは共通 .theme-toggle。ドロワー最下部への配置だけをここで足す。 */
+.tool-layout-menu .theme-toggle {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.tool-layout-main {
+  flex: 1;
+  padding: 0 1rem 2rem;
+}
+
 @media (min-width: 48rem) {
-  .tool-header {
-    padding: 1.5rem 2rem 0;
+  .tool-layout-header {
+    padding: 1.5rem 2rem 1rem;
+  }
+
+  .tool-layout-main {
+    padding: 0 2rem 2.5rem;
+  }
+
+  /* サイドバー廃止で本文が広がりすぎるため、PC ではヘッダーと本文をほどよい幅で中央寄せにする
+     （fixed 配置のオーバーレイ・ドロワーには当てない）。 */
+  .tool-layout-header,
+  .tool-layout-main {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
   }
 }
 
 /* ============================================================
    テーマ切替ボタン（3ツール共通、src/components/ThemeToggle.tsx）。
-   tool-header と同じ理由で、常時 link される styles.css に置く。色は共通の --pt-* を
-   そのまま参照する。配置ごとの位置調整（credit-csv のサイドバー内など）は
-   各ツールの CSS 側で `.theme-toggle` にスコープしたセレクタを足す。
+   ToolLayout と同じ理由で、常時 link される styles.css に置く。色は共通の --pt-* を
+   そのまま参照する。配置ごとの位置調整（ドロワー内など）は各ツールの CSS 側で
+   `.theme-toggle` にスコープしたセレクタを足す。
    ============================================================ */
 .theme-toggle {
   flex-shrink: 0;
@@ -474,8 +591,8 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
-/* ナビタブ（ヘッダー直下の横並びページ切替）。ccsv は既存のサイドバー内タブ（`.ccsv-nav-tabs`）
-   のままで対象外（構造ごと Phase 5b で見直す）。 */
+/* ナビタブ（ヘッダー直下の横並びページ切替。pbuilder/mytodo のみ）。credit-csv の機能ナビは
+   ドロワーメニュー内のみ（`.tool-layout-nav`）で、本文上のタブは持たない。 */
 .pt-tab,
 .pbuilder-tab-button,
 .mytodo-tab-button {

@@ -26,17 +26,6 @@
   color: inherit;
 }
 
-.mytodo-layout {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.mytodo-main {
-  flex: 1;
-  padding: 1rem 1rem 2rem;
-}
-
 .mytodo-page-stack {
   display: flex;
   flex-direction: column;
@@ -306,19 +295,8 @@
     font-size: 130%;
   }
 
-  .mytodo-main {
-    padding: 1.5rem 2rem 2.5rem;
-  }
-
   .mytodo-tabs {
     padding: 0 2rem 1rem;
-  }
-
-  /* サイドバー廃止で本文が広がりすぎるため、PCではほどよい幅で中央寄せにする。 */
-  .mytodo-layout > * {
-    width: 100%;
-    max-width: 1040px;
-    margin-inline: auto;
   }
 
   .mytodo-item:not(.is-editing) {

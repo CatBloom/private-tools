@@ -21,125 +21,10 @@
   color: inherit;
 }
 
-.ccsv-layout {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.ccsv-topbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-
-.ccsv-menu-button {
-  padding: 0.4rem 0.7rem;
-  background: var(--pt-surface);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.65rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.ccsv-topbar-brand {
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
-.ccsv-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgb(0 0 0 / 45%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.ccsv-overlay.is-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.ccsv-sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 16rem;
-  max-width: 80vw;
-  padding: 1rem;
-  overflow-y: auto;
-  background: var(--pt-surface);
-  border-right: 1px solid var(--pt-border);
-  transform: translateX(-100%);
-  transition: transform 0.2s ease;
-}
-
-.ccsv-sidebar.is-open {
-  transform: translateX(0);
-}
-
-.ccsv-back-link {
-  color: var(--pt-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.ccsv-brand {
-  color: var(--pt-text);
-  font-size: 1.25rem;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.ccsv-sidebar-brand {
-  display: flex;
-  flex-direction: column;
-}
-
 .ccsv-hero-copy {
   margin: 0.35rem 0 0;
   color: var(--pt-muted);
   font-size: 0.85rem;
-}
-
-/* テーマ切替ボタン本体のスタイルは共通 .theme-toggle（src/public/styles.css）。
-   サイドバー内での配置（下寄せ）だけをここでスコープして足す。 */
-.ccsv-sidebar .theme-toggle {
-  align-self: flex-start;
-  margin-top: auto;
-}
-
-.ccsv-nav-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.ccsv-nav-tabs a {
-  padding: 0.6rem 0.9rem;
-  color: var(--pt-muted);
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  border-radius: 0.65rem;
-}
-
-.ccsv-nav-tabs a.active {
-  color: #fff;
-  background: var(--pt-accent);
-}
-
-.ccsv-main {
-  flex: 1;
-  padding: 0 1rem 2rem;
 }
 
 .ccsv-page-stack {
@@ -560,30 +445,6 @@
 
   .ccsv-transactions-table .ccsv-col-date {
     width: 7rem;
-  }
-
-  .ccsv-layout {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .ccsv-topbar,
-  .ccsv-overlay {
-    display: none;
-  }
-
-  .ccsv-sidebar {
-    position: sticky;
-    top: 0;
-    flex-shrink: 0;
-    width: 16rem;
-    max-width: none;
-    height: 100vh;
-    transform: none;
-  }
-
-  .ccsv-main {
-    padding: 2rem 2rem 2.5rem;
   }
 
   .ccsv-filters {
