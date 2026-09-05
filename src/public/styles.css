@@ -317,11 +317,13 @@ button, input { font: inherit; }
   margin-bottom: var(--pt-space-3);
 }
 
-.tool-layout-menu-button {
-  padding: 0.4rem 0.7rem;
-  background: var(--pt-surface);
+/* ツール側の `.xxx-app button` に勝つよう複合セレクタにし、3ツールで同じ見た目にする。 */
+.tool-layout-header .tool-layout-menu-button {
+  padding: 0.5rem 0.9rem;
+  background: var(--pt-bg);
   border: 1px solid var(--pt-border);
-  border-radius: 0.65rem;
+  border-radius: var(--pt-radius-md);
+  color: var(--pt-text);
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
