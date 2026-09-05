@@ -1,172 +1,55 @@
-.mytodo-app {
-  --mytodo-bg: #f4f7fb;
-  --mytodo-surface: #ffffff;
-  --mytodo-border: #d9e2ec;
-  --mytodo-text: #17212b;
-  --mytodo-muted: #5b6b7c;
-  --mytodo-accent: #1769aa;
-  --mytodo-danger: #b3261e;
-  --mytodo-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
-
+.my-todo-app {
   display: flex;
   flex-direction: column;
-  /* 親（#root/body）に高さ指定が無く min-height:100% は auto に解決されコンテンツ高さで
-     止まる（ダーク時に地色が透ける）。ビューポート基準で全高を埋める。dvh はモバイルの
-     アドレスバー可変分。 */
+  /* 親に高さ指定が無く min-height:100% はコンテンツ高さで止まる（ダーク時に地色が透ける）ため vh/dvh を使う。 */
   min-height: 100vh;
   min-height: 100dvh;
-  /* iPhone (iOS Safari) の横ラバーバンドを防ぐ（prompt-builder の .pbuilder-app と同じ理由）。 */
-  overflow-x: clip;
-  background: var(--mytodo-bg);
-  color: var(--mytodo-text);
+  overflow-x: clip; /* iOS Safari の横ラバーバンド対策 */
+  background: var(--pt-bg);
+  color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.mytodo-app[data-theme="dark"] {
-  --mytodo-bg: #101820;
-  --mytodo-surface: #182432;
-  --mytodo-border: #2b3947;
-  --mytodo-text: #e7edf3;
-  --mytodo-muted: #94a3b3;
-  --mytodo-accent: #4ba3ff;
-  --mytodo-danger: #ff8a80;
-  --mytodo-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
-}
-
-.mytodo-app * {
+.my-todo-app * {
   box-sizing: border-box;
 }
 
-.mytodo-app button,
-.mytodo-app input {
+.my-todo-app button,
+.my-todo-app input {
   font: inherit;
   color: inherit;
 }
 
-.mytodo-layout {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.mytodo-theme-toggle {
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.65rem;
-  cursor: pointer;
-}
-
-.mytodo-main {
-  flex: 1;
-  padding: 1rem 1rem 2rem;
-}
-
-.mytodo-page-stack {
+.my-todo-page-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-/* トップバー直下の「Today」「Someday」ページ切替ナビ（prompt-builder の .pbuilder-tabs と同じ構造）。 */
-.mytodo-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0 1rem 0.75rem;
-}
-
-.mytodo-tab-button {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.65rem 0.9rem;
-  /* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になり
-     テーマに追従しない。 */
-  color: var(--mytodo-text);
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.75rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.mytodo-tab-button.is-active {
-  color: #fff;
-  background: var(--mytodo-accent);
-  border-color: var(--mytodo-accent);
-}
-
-.mytodo-panel-header-status {
+.my-todo-panel-header-status {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 
-.mytodo-save-indicator {
-  color: var(--mytodo-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.mytodo-app button {
-  padding: 0.5rem 0.9rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
-.mytodo-app button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.mytodo-app input[type="text"] {
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.6rem;
-  font-size: 16px;
-}
-
-.mytodo-app input[type="text"]:focus-visible {
-  outline: 2px solid var(--mytodo-accent);
-  outline-offset: 1px;
-  border-color: var(--mytodo-accent);
-}
-
-.mytodo-status-message {
+.my-todo-status-message {
   margin: 0;
   padding: 0.85rem 1rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
-.mytodo-status-message-error {
-  color: var(--mytodo-danger);
-  border-color: var(--mytodo-danger);
+.my-todo-status-message-error {
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
 }
 
-.mytodo-status-message-error button {
+.my-todo-status-message-error button {
   margin-left: 0.6rem;
 }
 
-.mytodo-panel {
-  padding: 1rem;
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 1rem;
-  box-shadow: var(--mytodo-shadow);
-}
-
-.mytodo-panel-header {
+.my-todo-panel-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -175,105 +58,84 @@
   margin-bottom: 0.75rem;
 }
 
-.mytodo-panel-header h1 {
+.my-todo-panel-header h1 {
   margin: 0;
   font-size: 1.05rem;
 }
 
-.mytodo-count-badge {
-  color: var(--mytodo-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.mytodo-add-form {
+.my-todo-add-form {
   display: flex;
   gap: 0.6rem;
   margin: 0.85rem 0;
 }
 
-.mytodo-add-form input {
+.my-todo-add-form input {
   flex: 1;
   min-width: 0;
 }
 
-/* 登録（追加）ボタンはアクセント色の枠にする（`.mytodo-app` 前置で既定ボタン背景に勝たせる）。 */
-.mytodo-app .mytodo-add-form button {
-  color: var(--mytodo-accent);
-  border-color: var(--mytodo-accent);
-  background: transparent;
-}
-
-.mytodo-limit-reason {
+.my-todo-limit-reason {
   margin: 0 0 0.85rem;
-  color: var(--mytodo-muted);
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
-.mytodo-item-list {
+.my-todo-item-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  /* 空セクションへのドロップを受けられるよう、0件でも高さを確保する。 */
-  min-height: 2.5rem;
+  min-height: 2.5rem; /* 空セクションへのドロップを受けられるよう高さを確保 */
 }
 
-.mytodo-empty {
+.my-todo-empty {
   margin: 0;
   padding: 0.6rem 0;
-  color: var(--mytodo-muted);
+  color: var(--pt-muted);
   font-size: 0.9rem;
   list-style: none;
 }
 
-.mytodo-item {
+.my-todo-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  background: var(--mytodo-bg);
-  border: 1px solid var(--mytodo-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
-  /* ドラッグ開始は .mytodo-drag-handle の listeners のみ（行本体には付与しない）。
-     行に touch-action:none を付けると、テキスト・チェック・余白を起点にした縦スクロールが
-     モバイルで阻害されるため付けない（抑制はハンドル側だけに限定する）。 */
+  /* touch-action:none は .my-todo-drag-handle 側だけに付ける（行に付けるとモバイルの縦スクロールが阻害される）。 */
 }
 
-.mytodo-item.is-dragging {
+.my-todo-item.is-dragging {
   z-index: 1;
-  box-shadow: var(--mytodo-shadow);
+  box-shadow: var(--pt-shadow);
 }
 
-/* 完了時は行全体をディムして未完了と一目で見分けられるようにする。 */
-.mytodo-item.is-completed {
-  background: color-mix(in srgb, var(--mytodo-bg) 85%, var(--mytodo-text) 15%);
+.my-todo-item.is-completed {
+  background: color-mix(in srgb, var(--pt-bg) 85%, var(--pt-text) 15%);
   opacity: 0.75;
 }
 
-.mytodo-item.is-completed .mytodo-item-text {
-  color: var(--mytodo-muted);
+.my-todo-item.is-completed .my-todo-item-text {
+  color: var(--pt-muted);
   text-decoration: line-through;
 }
 
-.mytodo-item.is-editing {
+.my-todo-item.is-editing {
   flex-direction: column;
   align-items: stretch;
 }
 
-.mytodo-drag-handle {
+.my-todo-drag-handle {
   padding: 0.3rem 0.5rem;
   cursor: grab;
   touch-action: none;
 }
 
-/* チェックボックス＋タスクテキスト＋行の余白までを1つのクリック領域にする
-   （label-wraps-input の標準形。ドラッグハンドル・移動/編集/削除ボタンは label の外）。
-   完了表示は行のディム＋テキストの打ち消し線（下記 .mytodo-item.is-completed）で行うため、
-   見た目のチェック四角は持たない（冗長になるため廃止）。 */
-.mytodo-item-checkbox-label {
+.my-todo-item-checkbox-label {
   display: flex;
   flex: 1;
   align-items: center;
@@ -283,9 +145,8 @@
   cursor: pointer;
 }
 
-/* 実 input は視覚的に隠しつつ DOM・キーボード操作・aria は維持する（display:none は
-   フォーカスできなくなるため使わない）。 */
-.mytodo-item-checkbox-input {
+/* display:none だとフォーカスできなくなるため、視覚的に隠すだけにする。 */
+.my-todo-item-checkbox-input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -297,21 +158,20 @@
   border: 0;
 }
 
-/* 見た目のチェック四角が無いため、キーボードでのフォーカス可視化は隣接するタスクテキストに
-   outline を出す（Tab でフォーカス→Space でトグルが視覚的に分かるようにする）。 */
-.mytodo-item-checkbox-input:focus-visible ~ .mytodo-item-text {
-  outline: 2px solid var(--mytodo-accent);
+/* 見た目のチェック四角が無いため、キーボードフォーカスは隣接するテキストに outline を出す。 */
+.my-todo-item-checkbox-input:focus-visible ~ .my-todo-item-text {
+  outline: 2px solid var(--pt-accent);
   outline-offset: 2px;
   border-radius: 0.25rem;
 }
 
-.mytodo-item-text {
+.my-todo-item-text {
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.mytodo-item-actions {
+.my-todo-item-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -320,102 +180,12 @@
   flex-shrink: 0;
 }
 
-.mytodo-app .mytodo-danger-button {
-  color: var(--mytodo-danger);
-  border-color: var(--mytodo-danger);
-  background: transparent;
-}
-
-/* 行の操作（移動・編集・削除）を集約した「⋯」オーバーフローメニュー。 */
-.mytodo-row-menu-anchor {
-  position: relative;
-  display: inline-flex;
-}
-
-/* 「⋯」トリガーはアイコンのみのアイコンボタン（意味は aria-label で伝える）。 */
-.mytodo-app .mytodo-more-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  padding: 0;
-}
-
-.mytodo-app .mytodo-more-button:hover:not(:disabled) {
-  background: var(--mytodo-surface);
-  border-color: var(--mytodo-accent);
-}
-
-.mytodo-app .mytodo-more-button:focus-visible,
-.mytodo-app .mytodo-more-button[aria-expanded="true"] {
-  outline: 2px solid var(--mytodo-accent);
-  outline-offset: 1px;
-}
-
-/* トリガー基準で右寄せ・下方向に開くポップアップ（.mytodo-row-menu-anchor が position:relative
-   のアンカー）。.mytodo-item 側は overflow を持たないのでクリップされない。 */
-.mytodo-row-menu {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  /* 項目は「移動」「編集」「削除」の短い語のみ。内容幅にフィットさせ、箱が横に間延びしない
-     ようにする（軽い下限だけ設ける）。 */
-  width: max-content;
-  min-width: 6rem;
-  padding: 0.35rem;
-  background: var(--mytodo-surface);
-  border: 1px solid var(--mytodo-border);
-  border-radius: 0.75rem;
-  box-shadow: var(--mytodo-shadow);
-}
-
-.mytodo-app .mytodo-row-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.7rem;
-  background: transparent;
-  border: none;
-  border-radius: 0.5rem;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.mytodo-app .mytodo-row-menu-item:hover:not(:disabled) {
-  background: var(--mytodo-bg);
-}
-
-.mytodo-app .mytodo-row-menu-item:focus-visible {
-  outline: 2px solid var(--mytodo-accent);
-  outline-offset: -2px;
-}
-
 @media (min-width: 48rem) {
-  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、他ツールと揃える）。 */
   :root {
     font-size: 130%;
   }
 
-  .mytodo-main {
-    padding: 1.5rem 2rem 2.5rem;
-  }
-
-  .mytodo-tabs {
-    padding: 0 2rem 1rem;
-  }
-
-  /* サイドバー廃止で本文が広がりすぎるため、PCではほどよい幅で中央寄せにする。 */
-  .mytodo-layout > * {
-    width: 100%;
-    max-width: 1040px;
-    margin-inline: auto;
-  }
-
-  .mytodo-item:not(.is-editing) {
+  .my-todo-item:not(.is-editing) {
     flex-direction: row;
   }
 }

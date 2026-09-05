@@ -5,7 +5,7 @@ import { MerchantSummaryTable } from '../components/MerchantSummaryTable'
 import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
 import { TransactionsTable } from '../components/TransactionsTable'
-import { usePersistedState } from '../hooks/usePersistedState'
+import { usePersistedState } from '../../../hooks/usePersistedState'
 import { buildPieData, filterTransactions, summarizeMerchants, summarizePeriod } from '../lib/selectors'
 import type { AppData, ViewMode } from '../lib/types'
 import { useAppDataContext } from '../state/AppDataContext'
@@ -37,7 +37,7 @@ const DetailView = ({ data }: { data: AppData }) => {
   const monthlySummaryRows = useMemo(() => summarizeMerchants(rows), [rows])
 
   return (
-    <div className="ccsv-page-stack">
+    <div className="credit-csv-page-stack">
       <FilterBar
         years={data.years}
         months={months}

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { RowMenu } from './RowMenu'
+import { RowMenu } from '../../../components/RowMenu'
 import type { TodoItem } from '../shared/types'
 
 type SortableTodoItemProps = {
@@ -42,14 +42,14 @@ export const SortableTodoItem = ({
 
   if (isEditing) {
     return (
-      <li ref={setNodeRef} style={style} className="mytodo-item is-editing">
+      <li ref={setNodeRef} style={style} className="my-todo-item is-editing">
         <input
           type="text"
           aria-label="タスク"
           value={editText}
           onChange={(event) => onEditTextChange(event.target.value)}
         />
-        <div className="mytodo-item-actions">
+        <div className="my-todo-item-actions">
           <button type="button" disabled={!editText.trim()} onClick={onCommitEdit}>
             保存
           </button>
@@ -65,32 +65,24 @@ export const SortableTodoItem = ({
     <li
       ref={setNodeRef}
       style={style}
-      className={`mytodo-item${isDragging ? ' is-dragging' : ''}${item.completed ? ' is-completed' : ''}`}
+      className={`my-todo-item${isDragging ? ' is-dragging' : ''}${item.completed ? ' is-completed' : ''}`}
     >
-      <button type="button" className="mytodo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
+      <button type="button" className="my-todo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
         ⠿
       </button>
 
-      {/* 実 checkbox は視覚的に隠すだけでDOMには残し、キーボード操作・aria を維持する
-          （見た目のチェック四角は完了時の行ディム＋打ち消し線と冗長なため廃止済み。
-          キーボードでのフォーカス可視化は隣接テキストの :focus-visible ~ で行う）。
-          label にタスクテキストまで含めて flex:1 にすることで、テキストや行の余白をクリック
-          してもトグルできる標準的な label-wraps-input 構造にする（ドラッグハンドル・移動/編集/
-          削除ボタンは label の外＝トグル対象外）。 */}
-      <label className="mytodo-item-checkbox-label">
+      <label className="my-todo-item-checkbox-label">
         <input
           type="checkbox"
-          className="mytodo-item-checkbox-input"
+          className="my-todo-item-checkbox-input"
           aria-label="完了"
           checked={item.completed}
           onChange={onToggleCompleted}
         />
-        <span className="mytodo-item-text">{item.text}</span>
+        <span className="my-todo-item-text">{item.text}</span>
       </label>
 
-      {/* 行に個別ボタンを並べるとモバイルでタスクテキストの表示幅が狭くなるため、
-          移動・編集・削除は「⋯」オーバーフローメニューに集約する。 */}
-      <div className="mytodo-item-actions">
+      <div className="my-todo-item-actions">
         <RowMenu
           items={[
             {

@@ -3,24 +3,18 @@ import { bodyLimit } from 'hono/body-limit'
 import { isPromptTargetId } from '../../tools/prompt-builder/shared/targets.js'
 import { isPromptTagId } from '../../tools/prompt-builder/shared/tags.js'
 import type { HistoryEntry, OutputItem, PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import { selectPromptHistoryStorage, selectPromptStorage } from '../prompt-storage/index.js'
-import type { PromptHistoryStorage, PromptWordStorage } from '../prompt-storage/index.js'
+import { selectPromptHistoryStorage, selectPromptWordStorage } from '../storage/prompt-builder/index.js'
+import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
 
-// Generous ceiling on the shared word pool, just to keep a malformed or
-// abusive payload from growing a KV value without bound.
 const MAX_WORDS = 2000
 const MAX_WORD_TEXT_LENGTH = 500
 const MAX_WORD_DESCRIPTION_LENGTH = 2000
-// Same rationale as MAX_WORDS, applied to saved output snapshots.
 const MAX_HISTORY_ENTRIES = 200
 const MAX_HISTORY_NAME_LENGTH = 200
 const MAX_HISTORY_ITEMS_PER_ENTRY = 500
 const MAX_OUTPUT_ITEM_TEXT_LENGTH = 500
-// weight は復元時に applyNotation で String.repeat(|weight|) される。巨大な値だと RangeError や
-// 過大メモリ確保を招くため、有限整数かつ小さな絶対値に制限する（クライアントは ±5 にクランプ）。
+// weight は復元時に applyNotation で String.repeat(|weight|) されるため、RangeError を防ぐ小さな上限にする。
 const MAX_OUTPUT_ITEM_WEIGHT = 20
-// Reject an oversized body before parsing it (mirrors the credit-csv upload
-// guard; also stays under Vercel's ~4.5MB Serverless body ceiling).
 const MAX_BODY_BYTES = 4 * 1024 * 1024
 
 const apiError = (message: string, status: 400 | 404 | 413 | 415) =>
@@ -55,6 +49,7 @@ const isHistoryEntry = (value: unknown): value is HistoryEntry =>
   value !== null &&
   typeof (value as HistoryEntry).id === 'string' &&
   typeof (value as HistoryEntry).name === 'string' &&
+  (value as HistoryEntry).name.trim().length > 0 &&
   (value as HistoryEntry).name.length <= MAX_HISTORY_NAME_LENGTH &&
   typeof (value as HistoryEntry).createdAt === 'string' &&
   typeof (value as HistoryEntry).target === 'string' &&
@@ -66,8 +61,8 @@ const isHistoryEntry = (value: unknown): value is HistoryEntry =>
 const isHistoryEntryArray = (value: unknown): value is HistoryEntry[] =>
   Array.isArray(value) && value.length <= MAX_HISTORY_ENTRIES && value.every(isHistoryEntry)
 
-export const createPromptWordRoutes = (
-  storage: PromptWordStorage = selectPromptStorage(),
+export const createPromptBuilderRoutes = (
+  storage: PromptWordStorage = selectPromptWordStorage(),
   historyStorage: PromptHistoryStorage = selectPromptHistoryStorage(),
 ) => {
   const app = new Hono()

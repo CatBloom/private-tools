@@ -31,9 +31,6 @@ type SectionPageProps = {
   section: TodoSectionId
 }
 
-// Today/Someday はページ（ルート）が分かれ、それぞれ自セクションの追加フォームと
-// DnD リストだけを表示する。状態・保存は TodoContext に一本化されているため、
-// タブ切替（ページ遷移）をまたいでも他方のセクションの内容は保持される。
 export const SectionPage = ({ section }: SectionPageProps) => {
   const {
     todoState,
@@ -85,8 +82,6 @@ export const SectionPage = ({ section }: SectionPageProps) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // ページが自セクションのアイテムしか描画しないため、並べ替えは常に同一セクション内で完結する
-  // （セクション間移動は別ページ化に伴い専用の「Someday/Todayへ移動」ボタンで行う）。
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -121,16 +116,16 @@ export const SectionPage = ({ section }: SectionPageProps) => {
   }
 
   return (
-    <div className="mytodo-page-stack">
+    <div className="my-todo-page-stack">
       {saveStatus === 'error' ? (
-        <p className="mytodo-status-message mytodo-status-message-error" role="alert">
+        <p className="my-todo-status-message my-todo-status-message-error" role="alert">
           {saveError}
         </p>
       ) : null}
 
       {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
       {loadStatus === 'error' ? (
-        <p className="mytodo-status-message mytodo-status-message-error" role="alert">
+        <p className="my-todo-status-message my-todo-status-message-error" role="alert">
           {loadError}
           <button type="button" onClick={reloadTodos}>
             再読み込み
@@ -139,21 +134,20 @@ export const SectionPage = ({ section }: SectionPageProps) => {
       ) : null}
 
       {loadStatus === 'ready' ? (
-        <section className="mytodo-panel">
-          <div className="mytodo-panel-header">
+        <section className="my-todo-panel">
+          <div className="my-todo-panel-header">
             <h1>{SECTION_LABEL[section]}</h1>
-            <div className="mytodo-panel-header-status">
+            <div className="my-todo-panel-header-status">
               {section === 'today' ? (
-                <span className="mytodo-count-badge">
+                <span className="my-todo-count-badge">
                   {todayUnfinishedCount}/{TODAY_LIMIT}
                 </span>
               ) : null}
-              {saveStatus === 'saving' ? <span className="mytodo-save-indicator">保存中…</span> : null}
-              {saveStatus === 'saved' ? <span className="mytodo-save-indicator">保存済み</span> : null}
+              {saveStatus === 'saving' ? <span className="my-todo-save-indicator">保存中…</span> : null}
             </div>
           </div>
 
-          <form className="mytodo-add-form" onSubmit={handleAdd}>
+          <form className="my-todo-add-form" onSubmit={handleAdd}>
             <input
               type="text"
               placeholder="タスクを追加"
@@ -167,13 +161,13 @@ export const SectionPage = ({ section }: SectionPageProps) => {
             </button>
           </form>
           {section === 'today' && todayFull ? (
-            <p className="mytodo-limit-reason">Todayは未完了{TODAY_LIMIT}件までです。Somedayへ追加してください。</p>
+            <p className="my-todo-limit-reason">Todayは未完了{TODAY_LIMIT}件までです。Somedayへ追加してください。</p>
           ) : null}
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
               <TodoSection id={SECTION_DROPPABLE_ID[section]}>
-                {items.length === 0 ? <li className="mytodo-empty">タスクがありません。</li> : items.map(renderRow)}
+                {items.length === 0 ? <li className="my-todo-empty">タスクがありません。</li> : items.map(renderRow)}
               </TodoSection>
             </SortableContext>
           </DndContext>

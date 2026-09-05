@@ -4,7 +4,7 @@ import { TrendChartCard } from '../components/Charts'
 import { MerchantMonthlyTable } from '../components/MerchantMonthlyTable'
 import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
-import { usePersistedState } from '../hooks/usePersistedState'
+import { usePersistedState } from '../../../hooks/usePersistedState'
 import {
   buildMerchantTrendAll,
   buildMerchantTrendYear,
@@ -41,12 +41,12 @@ const MerchantView = ({ data, merchant }: { data: AppData; merchant: string }) =
       : buildMerchantTrendYear(data.transactions, merchant, selectedYear)
 
   return (
-    <div className="ccsv-page-stack">
-      <section className="ccsv-panel">
-        <div className="ccsv-panel-header">
+    <div className="credit-csv-page-stack">
+      <section className="credit-csv-panel">
+        <div className="credit-csv-panel-header">
           <h1>{displayName}</h1>
         </div>
-        <div className="ccsv-segmented">
+        <div className="credit-csv-segmented">
           <button className={mode === 'all' ? 'active' : ''} type="button" onClick={() => setMode('all')}>
             全期間
           </button>

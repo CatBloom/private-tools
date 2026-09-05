@@ -1,4 +1,5 @@
 import { readJson, THEME_STORAGE_KEY, writeJson } from '../lib/storage'
+import { themeToggleLabel } from '../lib/theme-labels'
 
 export const THEME_KEY = THEME_STORAGE_KEY
 
@@ -6,7 +7,7 @@ type Theme = 'light' | 'dark'
 
 const isTheme = (value: unknown): value is Theme => value === 'light' || value === 'dark'
 
-// credit-csv ツールの usePersistedState と同じ JSON 形式で読み書きし、テーマ状態を共有する
+// 共通フック src/hooks/usePersistedState.ts と同じ JSON 形式で読み書きし、テーマ状態を共有する
 const readStoredTheme = (): Theme | null => {
   const stored = readJson<unknown>(THEME_KEY, null)
   return isTheme(stored) ? stored : null
@@ -26,11 +27,11 @@ const applyTheme = (theme: Theme | null) => {
   if (theme) document.documentElement.dataset.theme = theme
 }
 
-const toggleLabel = (theme: Theme): string => (theme === 'dark' ? 'ライト' : 'ダーク')
-
 const updateToggleLabels = (theme: Theme) => {
+  const label = themeToggleLabel(theme)
   document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((button) => {
-    button.textContent = toggleLabel(theme)
+    button.setAttribute('aria-label', label)
+    button.title = label
   })
 }
 

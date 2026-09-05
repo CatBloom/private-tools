@@ -10,7 +10,6 @@ export const clampWeight = (weight: number): number => {
 }
 
 // weight>0 は `{}` を、weight<0 は `[]` を weight の絶対値の段数だけ重ねる。0 は素のテキスト。
-// 新しい強調記法を足す場合はここに分岐を足すだけで済む形にしておく。
 export const applyNotation = (text: string, weight: number): string => {
   const clamped = clampWeight(weight)
   if (clamped > 0) return `${'{'.repeat(clamped)}${text}${'}'.repeat(clamped)}`

@@ -117,7 +117,7 @@ export const parseCsvText = (
     const merchant = (columns[1] ?? "").trim();
     const amount = parseAmount(columns);
 
-    // Older CSV files contain a leading account-info row before transaction rows.
+    // 古い CSV は明細行の前に口座情報の行を含むことがある
     const isTransactionRow = sortableDate !== null;
 
     if (!isTransactionRow || !merchant || amount === null) {

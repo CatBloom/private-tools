@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import { selectStorage } from '../storage/index.js'
-import type { Storage } from '../storage/index.js'
-import { assertValidFileName } from '../storage/storage.js'
+import { selectCreditCsvStorage } from '../storage/credit-csv/index.js'
+import type { CreditCsvStorage } from '../storage/credit-csv/index.js'
+import { assertValidFileName } from '../storage/credit-csv/types.js'
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 
@@ -12,7 +12,7 @@ const isMultipartContentType = (contentType: string | undefined) =>
 const apiError = (message: string, status: 400 | 404 | 413 | 415) =>
   Response.json({ ok: false, error: { message } }, { status })
 
-export const createCreditCsvRoutes = (storage: Storage = selectStorage()) => {
+export const createCreditCsvRoutes = (storage: CreditCsvStorage = selectCreditCsvStorage()) => {
   const app = new Hono()
 
   app.get('/files', async (c) => {

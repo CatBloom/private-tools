@@ -201,7 +201,7 @@ describe("selectors", () => {
 
 describe("decodeShiftJis", () => {
   it("decodes shift-jis bytes into text", () => {
-    // 0x82 0xa0 is the Shift_JIS encoding of "あ".
+    // 0x82 0xa0 は「あ」の Shift_JIS エンコード
     expect(decodeShiftJis(new Uint8Array([0x82, 0xa0]))).toBe("あ");
   });
 });

@@ -1,117 +1,32 @@
-.pbuilder-app {
-  --pbuilder-bg: #f4f7fb;
-  --pbuilder-surface: #ffffff;
-  --pbuilder-border: #d9e2ec;
-  --pbuilder-text: #17212b;
-  --pbuilder-muted: #5b6b7c;
-  --pbuilder-accent: #1769aa;
-  --pbuilder-secondary: #0f766e;
-  --pbuilder-danger: #b3261e;
-  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(23 33 43 / 8%);
-
+.prompt-builder-app {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  /* iPhone (iOS Safari) で横方向にラバーバンド（左右に少し動く／ピンチ後に変な位置で固定
-     される）のを防ぐ。ページは横スクロールを持たない設計なので、実機のサブピクセルはみ出し
-     を clip して body が横スクロール可能になるのを断つ。clip は縦スクロール・固定トースト
-     （fixed 子孫）に影響しない（.pbuilder-app に transform 等の包含ブロック生成が無いため）。 */
+  /* iOS Safari の横ラバーバンドを防ぐ（縦スクロール・固定トーストには影響しない）。 */
   overflow-x: clip;
-  background: var(--pbuilder-bg);
-  color: var(--pbuilder-text);
+  background: var(--pt-bg);
+  color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.pbuilder-app[data-theme="dark"] {
-  --pbuilder-bg: #101820;
-  --pbuilder-surface: #182432;
-  --pbuilder-border: #2b3947;
-  --pbuilder-text: #e7edf3;
-  --pbuilder-muted: #94a3b3;
-  --pbuilder-accent: #4ba3ff;
-  --pbuilder-secondary: #2bb3a3;
-  --pbuilder-danger: #ff8a80;
-  --pbuilder-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
-}
-
-.pbuilder-app * {
+.prompt-builder-app * {
   box-sizing: border-box;
 }
 
-.pbuilder-app button,
-.pbuilder-app input,
-.pbuilder-app select {
+.prompt-builder-app button,
+.prompt-builder-app input,
+.prompt-builder-app select {
   font: inherit;
   color: inherit;
 }
 
-.pbuilder-layout {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.pbuilder-theme-toggle {
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.65rem;
-  cursor: pointer;
-}
-
-.pbuilder-main {
-  flex: 1;
-  padding: 0 1rem 2rem;
-}
-
-.pbuilder-page-stack {
+.prompt-builder-page-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-/* トップバー直下の「ワード」「出力」ページ切替ナビ。ヘッダーとくっつかないよう上に余白を取る。 */
-.pbuilder-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0 1rem 0.75rem;
-}
-
-.pbuilder-tab-button {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.65rem 0.9rem;
-  /* NavLink は <a> なので color を明示しないとブラウザ既定のリンク色（紫）になり
-     テーマに追従しない。 */
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-surface);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.75rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.pbuilder-tab-button.is-active {
-  color: #fff;
-  background: var(--pbuilder-accent);
-  border-color: var(--pbuilder-accent);
-}
-
-.pbuilder-panel {
-  padding: 1rem;
-  background: var(--pbuilder-surface);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 1rem;
-  box-shadow: var(--pbuilder-shadow);
-}
-
-.pbuilder-panel-header {
+.prompt-builder-panel-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -120,171 +35,115 @@
   margin-bottom: 0.75rem;
 }
 
-.pbuilder-panel-header h1,
-.pbuilder-panel-header h2 {
+.prompt-builder-panel-header h1,
+.prompt-builder-panel-header h2 {
   margin: 0;
   font-size: 1.05rem;
 }
 
-.pbuilder-save-controls {
+.prompt-builder-save-controls {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 
-.pbuilder-dirty-badge {
-  color: var(--pbuilder-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.pbuilder-app button {
-  padding: 0.5rem 0.9rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.6rem;
-  cursor: pointer;
-}
-
-.pbuilder-app button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.pbuilder-app input[type="text"] {
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.6rem;
-  font-size: 16px;
-}
-
-.pbuilder-app input[type="text"]:focus-visible {
-  outline: 2px solid var(--pbuilder-accent);
-  outline-offset: 1px;
-  border-color: var(--pbuilder-accent);
-}
-
-.pbuilder-status-message {
+.prompt-builder-status-message {
   margin: 0.85rem 0;
   padding: 0.85rem 1rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
-.pbuilder-status-message-error {
-  color: var(--pbuilder-danger);
-  border-color: var(--pbuilder-danger);
+.prompt-builder-status-message-error {
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
 }
 
 
-.pbuilder-status-message-error button {
+.prompt-builder-status-message-error button {
   margin-left: 0.6rem;
 }
 
-.pbuilder-word-form {
+.prompt-builder-word-form {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   margin: 0.85rem 0;
 }
 
-.pbuilder-word-form input {
+.prompt-builder-word-form input {
   flex: 1;
 }
 
 /* 説明とタグを横並びにする（説明:タグ ≒ 3:1）。登録フォーム・インライン編集の両方で使う。 */
-.pbuilder-word-form-row {
+.prompt-builder-word-form-row {
   display: flex;
   gap: 0.6rem;
 }
 
-.pbuilder-word-form-row input {
+.prompt-builder-word-form-row input {
   flex: 3;
-  /* min-width:auto のままだとテキスト入力の既定サイズを下回って縮まず、狭い画面で隣の
-     select を右へ押し出す（横スクロール／select が画面外にはみ出す）。0 で縮小を許可する。 */
-  min-width: 0;
+  min-width: 0; /* 既定の auto だと縮まず select を画面外へ押し出す */
 }
 
-.pbuilder-word-form-row .pbuilder-tag-select {
+.prompt-builder-word-form-row .prompt-builder-tag-select {
   flex: 1;
   min-width: 0;
 }
 
-.pbuilder-app select.pbuilder-tag-select,
-.pbuilder-app select.pbuilder-tag-filter-select,
-.pbuilder-app input.pbuilder-word-search {
+.prompt-builder-app select.prompt-builder-tag-select,
+.prompt-builder-app select.prompt-builder-tag-filter-select,
+.prompt-builder-app input.prompt-builder-word-search {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  color: var(--pt-text);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.6rem;
   font-size: 16px;
 }
 
-.pbuilder-app select.pbuilder-tag-select {
+.prompt-builder-app select.prompt-builder-tag-select {
   min-width: 6rem;
   max-width: 12rem;
 }
 
-/* <option> はブラウザ既定の配色になりがちなので、ライト/ダーク両テーマで読めるよう明示する。 */
-.pbuilder-app select option {
-  color: var(--pbuilder-text);
-  background: var(--pbuilder-surface);
+.prompt-builder-app select option {
+  color: var(--pt-text);
+  background: var(--pt-surface);
 }
 
-.pbuilder-word-filter {
+.prompt-builder-word-filter {
   margin: 0.85rem 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.pbuilder-word-filter > * {
+.prompt-builder-word-filter > * {
   flex: 1;
   min-width: 10rem;
 }
 
-.pbuilder-app select.pbuilder-tag-filter-select {
+.prompt-builder-app select.prompt-builder-tag-filter-select {
   width: 100%;
 }
 
-/* 検索付きフィルタ行（WordsPage）は登録フォームと同じ比率（説明:タグ = 3:1）に揃える。
-   タグ絞り込みに検索が連動するため、タグ選択を左・検索を右に置く。共有クラス
-   .pbuilder-word-filter を使う OutputPage の履歴絞り込み（select 単体）には影響させない。 */
-.pbuilder-word-filter-search input.pbuilder-word-search {
+.prompt-builder-word-filter-search input.prompt-builder-word-search {
   flex: 3;
   min-width: 0;
 }
 
-.pbuilder-app .pbuilder-word-filter-search select.pbuilder-tag-filter-select {
+.prompt-builder-app .prompt-builder-word-filter-search select.prompt-builder-tag-filter-select {
   flex: 1;
   width: auto;
   min-width: 6rem;
   max-width: 12rem;
 }
 
-/* `.pbuilder-app button`（詳細度 0,1,1）が border/background を持つため、単一クラスの
-   `.pbuilder-danger-button`（0,1,0）では負けて枠色が効かない。`.pbuilder-app` を前置して
-   詳細度を上げ、削除ボタンの danger 枠を確実に適用する。 */
-.pbuilder-app .pbuilder-danger-button {
-  color: var(--pbuilder-danger);
-  border-color: var(--pbuilder-danger);
-  background: transparent;
-}
-
-/* 登録（追加）ボタンはアクセント色の枠にする（同じ詳細度の理由で `.pbuilder-app` を前置）。 */
-.pbuilder-app .pbuilder-word-form button[type="submit"] {
-  color: var(--pbuilder-accent);
-  border-color: var(--pbuilder-accent);
-  background: transparent;
-}
-
-.pbuilder-word-list,
-.pbuilder-output-list {
+.prompt-builder-word-list,
+.prompt-builder-output-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -293,214 +152,192 @@
   list-style: none;
 }
 
-.pbuilder-word-empty,
-.pbuilder-empty {
-  color: var(--pbuilder-muted);
+.prompt-builder-word-empty,
+.prompt-builder-empty {
+  color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
-.pbuilder-word-row {
+/* ワード行・履歴行・出力アイテムの共通の箱（高さ・余白・角丸・背景）。 */
+.prompt-builder-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  min-height: 3.75rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
 }
 
-.pbuilder-word-row.is-editing {
+.prompt-builder-row.is-editing {
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.5rem;
+  min-height: 0;
 }
 
-.pbuilder-word-row-text {
+.prompt-builder-word-row-text {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  /* 説明が長くてもボタンを押し出さず、テキスト側で折り返す（min-width:0 が必須）。 */
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.pbuilder-word-text {
+.prompt-builder-app .prompt-builder-word-row-button {
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prompt-builder-word-text {
   font-weight: 700;
 }
 
-.pbuilder-word-description {
-  color: var(--pbuilder-muted);
+.prompt-builder-word-description {
+  color: var(--pt-muted);
   font-size: 0.85rem;
 }
 
-.pbuilder-word-row-actions {
+.prompt-builder-word-row-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  /* 長い説明でボタン群が縮まないように固定する（表示行）。 */
-  flex-shrink: 0;
-  /* スマホ（縦積み時）はボタン列が全幅になるので、出力に追加を左・編集/削除を右に分けて
-     バランスを取る。PC 側（行レイアウト）では内容幅なので space-between は実質無効。 */
-  justify-content: space-between;
-}
-
-.pbuilder-word-row-actions-secondary {
-  display: flex;
-  gap: 0.5rem;
   flex-shrink: 0;
 }
 
-/* 編集中（保存/キャンセルのみ）は表示行の space-between を使わず、履歴編集と同じく右寄せにする。 */
-.pbuilder-word-row.is-editing .pbuilder-word-row-actions {
+.prompt-builder-row.is-editing .prompt-builder-word-row-actions {
   justify-content: flex-end;
 }
 
-/* ALL 絞り込み時のタグ別グループ表示（並び替えなし・見出しのみ）。 */
-.pbuilder-tag-groups {
+.prompt-builder-tag-groups {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.pbuilder-tag-group {
+.prompt-builder-tag-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.pbuilder-tag-group-header {
+.prompt-builder-tag-group-header {
   padding-bottom: 0.35rem;
-  border-bottom: 1px solid var(--pbuilder-border);
+  border-bottom: 1px solid var(--pt-border);
 }
 
-.pbuilder-tag-group-header h3 {
+.prompt-builder-tag-group-header h3 {
   margin: 0;
-  color: var(--pbuilder-muted);
+  color: var(--pt-muted);
   font-size: 0.9rem;
 }
 
-.pbuilder-output-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.75rem;
+.prompt-builder-output-item {
   touch-action: none;
 }
 
-.pbuilder-output-item.is-dragging {
+.prompt-builder-output-item.is-dragging {
   z-index: 1;
-  box-shadow: var(--pbuilder-shadow);
+  box-shadow: var(--pt-shadow);
 }
 
-.pbuilder-drag-handle {
+.prompt-builder-drag-handle {
   padding: 0.3rem 0.5rem;
   cursor: grab;
   touch-action: none;
 }
 
-.pbuilder-output-item-preview {
+.prompt-builder-output-item-preview {
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.pbuilder-weight-controls {
+.prompt-builder-weight-controls {
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-.pbuilder-weight-controls button {
+.prompt-builder-weight-controls button {
   padding: 0.3rem 0.6rem;
 }
 
-.pbuilder-weight-value {
+.prompt-builder-weight-value {
   min-width: 1.5rem;
   text-align: center;
   font-weight: 700;
 }
 
-.pbuilder-app .pbuilder-icon-button {
-  padding: 0.3rem 0.55rem;
-  color: var(--pbuilder-danger);
-  background: transparent;
-  border: 1px solid var(--pbuilder-border);
-}
-
-.pbuilder-app .pbuilder-icon-button:hover {
-  border-color: var(--pbuilder-danger);
-}
-
-.pbuilder-output-preview {
+.prompt-builder-output-preview {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  /* 出力結果＋コピーを一番上に置くので、下の並べ替えリストとの間に余白を空ける。 */
   margin-bottom: 1.25rem;
 }
 
-.pbuilder-output-text {
+.prompt-builder-output-text {
   margin: 0;
   padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
   overflow-wrap: break-word;
   user-select: text;
 }
 
-.pbuilder-output-preview-actions {
+.prompt-builder-output-preview-actions {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.4rem;
 }
 
-/* コピーは主要アクションなので画面いっぱいで目立たせる。出力タブ（アクセント青）と色が
-   被らないようセカンダリー色（teal）を使う。`.pbuilder-app` 前置で `.pbuilder-app button`
-   の既定背景に勝たせる。 */
-.pbuilder-app .pbuilder-copy-button {
+.prompt-builder-app .prompt-builder-copy-button {
   width: 100%;
   color: #fff;
-  background: var(--pbuilder-secondary);
-  border-color: var(--pbuilder-secondary);
+  background: var(--pt-secondary);
+  border-color: var(--pt-secondary);
   font-weight: 700;
 }
 
-.pbuilder-copy-feedback {
-  color: var(--pbuilder-muted);
+.prompt-builder-copy-feedback {
+  color: var(--pt-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
 
-.pbuilder-copy-feedback-error {
-  color: var(--pbuilder-danger);
+.prompt-builder-copy-feedback-error {
+  color: var(--pt-danger);
 }
 
-.pbuilder-history {
+.prompt-builder-history {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--pbuilder-border);
+  border-top: 1px solid var(--pt-border);
 }
 
-.pbuilder-history h3 {
+.prompt-builder-history h3 {
   margin: 0;
   font-size: 0.95rem;
 }
 
-.pbuilder-history-form {
+.prompt-builder-history-form {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.pbuilder-history-list {
+.prompt-builder-history-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -509,94 +346,21 @@
   list-style: none;
 }
 
-.pbuilder-history-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.75rem;
-  background: var(--pbuilder-bg);
-  border: 1px solid var(--pbuilder-border);
-  border-radius: 0.75rem;
-}
-
-.pbuilder-history-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  /* 長い名前でもボタンを押し出さずラベル側で折り返す（min-width:0 が必須）。 */
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-
-/* 「履歴に保存」はコピー（塗り）と対のセカンダリー系アクションとして、枠線を
-   セカンダリー色にする（アウトライン）。`.pbuilder-app` 前置で既定ボタンに勝たせる。 */
-.pbuilder-app .pbuilder-history-form button {
-  color: var(--pbuilder-secondary);
-  border-color: var(--pbuilder-secondary);
-}
-
-.pbuilder-history-date {
-  color: var(--pbuilder-muted);
-  font-size: 0.85rem;
-}
-
-.pbuilder-history-name {
-  font-weight: 700;
-}
-
-.pbuilder-history-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  /* 長い名前でボタン群が縮まないように固定する。 */
-  flex-shrink: 0;
-  /* スマホ（縦積み時）はラベルの下で全幅になるので、復元/削除を右寄せにする。 */
-  justify-content: flex-end;
+.prompt-builder-app .prompt-builder-history-form button {
+  color: var(--pt-secondary);
+  border-color: var(--pt-secondary);
 }
 
 @media (min-width: 48rem) {
-  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、credit-csv と揃える） */
   :root {
     font-size: 130%;
   }
 
-  .pbuilder-tabs {
-    padding: 0 2rem 1rem;
-  }
-
-  .pbuilder-main {
-    padding: 0 2rem 2.5rem;
-  }
-
-  /* サイドバー廃止で本文が広がりすぎるため、PCではほどよい幅で中央寄せにする。
-     ヘッダーは背景（.pbuilder-app）が全幅のまま、内側の要素だけ本文と同じ幅に揃える。 */
-  /* .pbuilder-layout の直下はヘッダー（共有 ToolHeader）・ナビタブ・本文の3つ。共有コンポーネントの
-     クラス名（.tool-header）に依存しないよう、子セレクタでまとめて幅を制限する。
-     親が flex column のため、auto マージンだけだと stretch が効かなくなり中身幅に縮む。
-     width:100% で全幅→max-width で頭打ちにする。 */
-  .pbuilder-layout > * {
-    width: 100%;
-    max-width: 1040px;
-    margin-inline: auto;
-  }
-
-  /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない
-     （横並びにすると入力欄が潰れ、保存/キャンセルが折り返して崩れる）。登録フォームと
-     同じく縦積みのままにする。履歴の名前変更も同じ理由で is-editing を除外する。 */
-  .pbuilder-word-row:not(.is-editing),
-  .pbuilder-history-row:not(.is-editing) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .pbuilder-history-form {
+  .prompt-builder-history-form {
     flex-direction: row;
   }
 
-  /* 名前+保存先の行を、隣の「履歴に保存」ボタン分を除いた残り幅いっぱいに広げる。 */
-  .pbuilder-history-form .pbuilder-word-form-row {
+  .prompt-builder-history-form .prompt-builder-word-form-row {
     flex: 1;
   }
 }

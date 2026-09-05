@@ -1,18 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AlertProvider, ConfirmProvider } from '../../components/feedback'
-import { Layout } from './components/Layout'
+import { ToolLayout } from '../../components/layout/ToolLayout'
 import { SectionPage } from './pages/SectionPage'
 import { TodoProvider } from './state/TodoContext'
 import './my-todo.css'
 
-// Provider は Layout の内側（.mytodo-app[data-theme] の配下）に置く。BrowserRouter の外側に
-// 置くと、AlertProvider/ConfirmProvider が描画するトースト/ダイアログが .mytodo-app と
-// 兄弟要素になり、ライト/ダーク切替の CSS 変数（[data-theme] スコープ）を継承できないため
-// （prompt-builder の index.tsx と同じ理由）。TodoProvider は useAlert/useConfirm を使うため
-// AlertProvider/ConfirmProvider の内側・Routes の外側に置き、Today/Someday のページ遷移を
-// またいで状態（と保存直列化の状態）を保持する。
+// Provider は ToolLayout の内側（.my-todo-app[data-theme] 配下）に置く。外側に置くとトースト/
+// ダイアログが .my-todo-app と兄弟要素になり [data-theme] スコープの CSS 変数を継承できない。
 const MyTodoRoutes = () => (
-  <Layout>
+  <ToolLayout toolId="my-todo" appClassName="my-todo-app" tabs>
     <AlertProvider>
       <ConfirmProvider>
         <TodoProvider>
@@ -24,7 +20,7 @@ const MyTodoRoutes = () => (
         </TodoProvider>
       </ConfirmProvider>
     </AlertProvider>
-  </Layout>
+  </ToolLayout>
 )
 
 const MyTodoApp = () => (

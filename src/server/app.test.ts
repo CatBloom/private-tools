@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import app from '../index'
 import { createApp } from './app'
-import type { Storage, StoredFileMeta } from './storage/index'
-import type { PromptHistoryStorage, PromptWordStorage } from './prompt-storage/index'
+import type { CreditCsvStorage, StoredFileMeta } from './storage/credit-csv/index'
+import type { PromptHistoryStorage, PromptWordStorage } from './storage/prompt-builder/index'
 import type { HistoryEntry, PromptWord } from '../tools/prompt-builder/shared/types'
-import type { TodoStorage } from './todo-storage/index'
+import type { MyTodoStorage } from './storage/my-todo/index'
 import type { TodoState } from '../tools/my-todo/shared/types'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
@@ -21,7 +21,7 @@ const withNodeEnv = async (value: string | undefined, run: () => Promise<void>) 
   }
 }
 
-class InMemoryStorage implements Storage {
+class InMemoryStorage implements CreditCsvStorage {
   private files = new Map<string, Uint8Array>()
 
   async list(): Promise<StoredFileMeta[]> {
@@ -68,7 +68,7 @@ class InMemoryHistoryStorage implements PromptHistoryStorage {
   }
 }
 
-class InMemoryTodoStorage implements TodoStorage {
+class InMemoryTodoStorage implements MyTodoStorage {
   private state: TodoState | null = null
 
   async getTodos(): Promise<TodoState | null> {
@@ -123,9 +123,8 @@ describe('server application', () => {
 
       expect(response.status).toBe(200)
       expect(html).toContain('id="root"')
-      expect(html).toContain('src="/src/client.tsx"')
-      // 開発では抽出済み /assets/client.css は存在しないためリンクしない（404 を避ける）
-      expect(html).not.toContain('/assets/client.css')
+      expect(html).toContain('src="/src/client-credit-csv.tsx"')
+      expect(html).not.toContain('/assets/client-credit-csv.css')
       const csp = response.headers.get('content-security-policy')
       expect(csp).toContain("style-src 'self' 'unsafe-inline'")
       expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
@@ -137,8 +136,8 @@ describe('server application', () => {
       const response = await createApp().request('http://localhost/tools/credit-csv')
       const html = await response.text()
 
-      expect(html).toContain('src="/assets/client.js"')
-      expect(html).toContain('href="/assets/client.css"')
+      expect(html).toContain('src="/assets/client-credit-csv.js"')
+      expect(html).toContain('href="/assets/client-credit-csv.css"')
     })
   })
 
@@ -181,8 +180,8 @@ describe('server application', () => {
       expect(response.status).toBe(200)
       expect(html).toContain('<title>Prompt Builder</title>')
       expect(html).toContain('id="root"')
-      expect(html).toContain('src="/src/client-prompt.tsx"')
-      expect(html).not.toContain('/assets/client-prompt.css')
+      expect(html).toContain('src="/src/client-prompt-builder.tsx"')
+      expect(html).not.toContain('/assets/client-prompt-builder.css')
       const csp = response.headers.get('content-security-policy')
       expect(csp).toContain("style-src 'self' 'unsafe-inline'")
       expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
@@ -194,8 +193,8 @@ describe('server application', () => {
       const response = await createApp().request('http://localhost/tools/prompt-builder')
       const html = await response.text()
 
-      expect(html).toContain('src="/assets/client-prompt.js"')
-      expect(html).toContain('href="/assets/client-prompt.css"')
+      expect(html).toContain('src="/assets/client-prompt-builder.js"')
+      expect(html).toContain('href="/assets/client-prompt-builder.css"')
     })
   })
 
@@ -206,8 +205,8 @@ describe('server application', () => {
     expect(response.status).toBe(200)
     expect(html).toContain('<title>MyTodo</title>')
     expect(html).toContain('id="root"')
-    expect(html).toContain('src="/src/client-todo.tsx"')
-    expect(html).not.toContain('/assets/client-todo.css')
+    expect(html).toContain('src="/src/client-my-todo.tsx"')
+    expect(html).not.toContain('/assets/client-my-todo.css')
     const csp = response.headers.get('content-security-policy')
     expect(csp).toContain("style-src 'self' 'unsafe-inline'")
     expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/)
@@ -218,13 +217,13 @@ describe('server application', () => {
       const response = await createApp().request('http://localhost/tools/my-todo')
       const html = await response.text()
 
-      expect(html).toContain('src="/assets/client-todo.js"')
-      expect(html).toContain('href="/assets/client-todo.css"')
+      expect(html).toContain('src="/assets/client-my-todo.js"')
+      expect(html).toContain('href="/assets/client-my-todo.css"')
     })
   })
 
   it('mounts the my-todo API under /tools/my-todo/api', async () => {
-    const testApp = createApp({ todoStorage: new InMemoryTodoStorage() })
+    const testApp = createApp({ myTodoStorage: new InMemoryTodoStorage() })
     const response = await testApp.request('http://localhost/tools/my-todo/api/todos')
 
     expect(response.status).toBe(200)
@@ -235,7 +234,7 @@ describe('server application', () => {
   })
 
   it('returns a JSON 404 for unknown routes under the my-todo API', async () => {
-    const testApp = createApp({ todoStorage: new InMemoryTodoStorage() })
+    const testApp = createApp({ myTodoStorage: new InMemoryTodoStorage() })
     const response = await testApp.request('http://localhost/tools/my-todo/api/missing')
 
     expect(response.status).toBe(404)
@@ -251,7 +250,6 @@ describe('server application', () => {
   })
 
   it('mounts the prompt word API under /tools/prompt-builder/api', async () => {
-    // Inject in-memory storage so the test does not depend on the local .data/ filesystem.
     const testApp = createApp({
       promptWordStorage: new InMemoryPromptStorage(),
       promptHistoryStorage: new InMemoryHistoryStorage(),
@@ -286,8 +284,8 @@ describe('server application', () => {
 
   it('serves the bundled client asset in production', async () => {
     await withNodeEnv('production', async () => {
-      const response = await createApp({ assetOverrides: { 'client.js': 'console.log("bundle")' } }).request(
-        'http://localhost/assets/client.js',
+      const response = await createApp({ assetOverrides: { 'client-credit-csv.js': 'console.log("bundle")' } }).request(
+        'http://localhost/assets/client-credit-csv.js',
       )
 
       expect(response.status).toBe(200)
@@ -298,13 +296,13 @@ describe('server application', () => {
 
   it('serves the extracted tool stylesheet in production', async () => {
     await withNodeEnv('production', async () => {
-      const response = await createApp({ assetOverrides: { 'client.css': '.ccsv-app { color: red; }' } }).request(
-        'http://localhost/assets/client.css',
+      const response = await createApp({ assetOverrides: { 'client-credit-csv.css': '.credit-csv-app { color: red; }' } }).request(
+        'http://localhost/assets/client-credit-csv.css',
       )
 
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/css')
-      await expect(response.text()).resolves.toBe('.ccsv-app { color: red; }')
+      await expect(response.text()).resolves.toBe('.credit-csv-app { color: red; }')
     })
   })
 
@@ -346,14 +344,26 @@ describe('server application', () => {
 
   it('returns 404 when the bundled client asset is unavailable', async () => {
     await withNodeEnv('production', async () => {
-      const response = await createApp({ assetOverrides: { 'client.js': null } }).request('http://localhost/assets/client.js')
+      const response = await createApp({ assetOverrides: { 'client-credit-csv.js': null } }).request('http://localhost/assets/client-credit-csv.js')
       expect(response.status).toBe(404)
     })
   })
 
+  it('serves a manualChunks vendor chunk (hyphenated filename) in production', async () => {
+    await withNodeEnv('production', async () => {
+      const response = await createApp({
+        assetOverrides: { 'vendor-recharts.js': 'console.log("vendor-recharts")' },
+      }).request('http://localhost/assets/vendor-recharts.js')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('application/javascript')
+      await expect(response.text()).resolves.toBe('console.log("vendor-recharts")')
+    })
+  })
+
   it('does not serve static assets outside production', async () => {
-    const response = await createApp({ assetOverrides: { 'client.js': 'console.log("bundle")' } }).request(
-      'http://localhost/assets/client.js',
+    const response = await createApp({ assetOverrides: { 'client-credit-csv.js': 'console.log("bundle")' } }).request(
+      'http://localhost/assets/client-credit-csv.js',
     )
     expect(response.status).toBe(404)
   })
@@ -373,14 +383,13 @@ describe('server application', () => {
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('image/x-icon')
       const bytes = new Uint8Array(await response.arrayBuffer())
-      // .ico magic: reserved(0x0000) + type 1 (icon)
+      // .ico のマジックナンバー: reserved(0x0000) + type 1 (icon)
       expect([bytes[0], bytes[1], bytes[2], bytes[3]]).toEqual([0, 0, 1, 0])
     })
   })
 
   it('does not serve the favicon route outside production', async () => {
     const response = await createApp().request('http://localhost/favicon.ico')
-    // In dev the Vite middleware serves it; the Hono app itself returns HTML 404.
     expect(response.status).toBe(404)
     expect(response.headers.get('content-type')).toContain('text/html')
   })

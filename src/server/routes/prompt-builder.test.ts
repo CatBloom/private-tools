@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { HistoryEntry, PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import type { PromptHistoryStorage, PromptWordStorage } from '../prompt-storage/index.js'
-import { createPromptWordRoutes } from './prompt-builder.js'
+import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
+import { createPromptBuilderRoutes } from './prompt-builder.js'
 
 class InMemoryPromptStorage implements PromptWordStorage {
   private words: PromptWord[] = []
@@ -34,7 +34,7 @@ describe('prompt word routes', () => {
   let app: Hono
 
   beforeEach(() => {
-    app = createPromptWordRoutes(new InMemoryPromptStorage(), new InMemoryHistoryStorage())
+    app = createPromptBuilderRoutes(new InMemoryPromptStorage(), new InMemoryHistoryStorage())
   })
 
   const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
@@ -194,6 +194,25 @@ describe('prompt word routes', () => {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ entries: [{ id: '1', name: 'x' }] }),
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })
+  })
+
+  it('rejects a history entry with an empty name', async () => {
+    const entries = [
+      {
+        id: 'h1',
+        name: '  ',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [],
+        target: 'base',
+      },
+    ]
+    const response = await request('/history', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entries }),
     })
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Invalid history payload.' } })

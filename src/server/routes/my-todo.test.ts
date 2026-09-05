@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { TodoState } from '../../tools/my-todo/shared/types.js'
-import type { TodoStorage } from '../todo-storage/index.js'
+import type { MyTodoStorage } from '../storage/my-todo/index.js'
 import { createMyTodoRoutes } from './my-todo.js'
 
-class InMemoryTodoStorage implements TodoStorage {
+class InMemoryTodoStorage implements MyTodoStorage {
   private state: TodoState | null = null
 
   async getTodos(): Promise<TodoState | null> {

@@ -3,7 +3,7 @@ import { TrendChartCard } from '../components/Charts'
 import { MerchantTotalsTable } from '../components/MerchantTotalsTable'
 import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
-import { usePersistedState } from '../hooks/usePersistedState'
+import { usePersistedState } from '../../../hooks/usePersistedState'
 import { buildYearlyTrend, summarizeMerchants, summarizePeriod } from '../lib/selectors'
 import type { AppData } from '../lib/types'
 import { useAppDataContext } from '../state/AppDataContext'
@@ -21,9 +21,9 @@ const YearlyView = ({ data }: { data: AppData }) => {
   const merchantRows = useMemo(() => summarizeMerchants(yearlyRows), [yearlyRows])
 
   return (
-    <div className="ccsv-page-stack">
-      <section className="ccsv-panel">
-        <div className="ccsv-filters">
+    <div className="credit-csv-page-stack">
+      <section className="credit-csv-panel">
+        <div className="credit-csv-filters">
           <label>
             年
             <select value={selectedYear} onChange={(event) => setYear(event.target.value)}>

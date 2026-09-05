@@ -8,13 +8,11 @@ import { getHistory, putHistory } from '../api'
 import { writeOutputItems } from '../lib/outputStorage'
 import type { HistoryEntry, OutputItem } from '../shared/types'
 
-// execCommand/Clipboard API の分岐は src/lib/copyText.test.ts で網羅済み。ここでは
-// copyText の成否を受けた OutputPage 側の UI 分岐（トースト・手動選択フォールバック）だけを見る。
+// execCommand/Clipboard API の分岐は src/lib/copyText.test.ts で網羅済み。ここでは成否を受けた UI 分岐だけを見る。
 vi.mock('../../../lib/copyText', () => ({
   copyText: vi.fn(),
 }))
 
-// OutputPage は useAlert/useConfirm を使うため、常に Provider でラップして render する。
 const renderPage = () =>
   render(
     <AlertProvider>
@@ -26,14 +24,14 @@ const renderPage = () =>
 
 const seedOutput = (items: OutputItem[]) => writeOutputItems(items)
 
+const openRowMenu = (row: HTMLElement) => fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
+
 vi.mock('../api', () => ({
   getHistory: vi.fn(),
   putHistory: vi.fn(),
 }))
 
-// jsdom はドラッグ操作を再現できないため、@dnd-kit はレンダリングだけ通す最小モックにする
-// （並べ替えの結線は notation.test.ts の reorder で検証し、ここでは選択・強調・保存・
-//   コピーなど周辺ロジックの結線だけを見る）。
+// jsdom はドラッグを再現できないため @dnd-kit はレンダリングのみのモック（並べ替えは notation.test.ts で検証）。
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   closestCenter: vi.fn(),
@@ -63,6 +61,8 @@ describe('OutputPage', () => {
     localStorage.clear()
     vi.mocked(getHistory).mockResolvedValue([])
     vi.mocked(putHistory).mockImplementation(async (entries) => entries)
+    // jsdom は scrollIntoView を実装しないため、復元後のスクロールをモックで検証する。
+    Element.prototype.scrollIntoView = vi.fn()
   })
 
   afterEach(() => {
@@ -74,16 +74,38 @@ describe('OutputPage', () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
 
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
     fireEvent.click(screen.getByRole('button', { name: '強める' }))
 
-    expect(await screen.findByText('{cat girl}', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('{cat girl}', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+  })
+
+  it('removes an output item after confirming a row click', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'cat girlを出力から削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: '削除' }))
+
+    await waitFor(() => expect(screen.getByText('（出力はまだありません）')).toBeInTheDocument())
+  })
+
+  it('keeps the output item when the removal confirmation is cancelled', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'cat girlを出力から削除' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
+
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('clears the output after confirmation and shows a success toast', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'クリア' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
@@ -95,12 +117,12 @@ describe('OutputPage', () => {
   it('does not clear the output when the confirmation is cancelled', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'クリア' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    expect(screen.getByText('cat girl', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
   })
 
   it('shows a success toast and no manual-copy notice when copyText succeeds', async () => {
@@ -108,7 +130,7 @@ describe('OutputPage', () => {
 
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
 
@@ -122,7 +144,7 @@ describe('OutputPage', () => {
 
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.click(screen.getByRole('button', { name: 'コピー' }))
 
@@ -133,7 +155,7 @@ describe('OutputPage', () => {
   it('saves the current output as a named history entry with a selected target via putHistory', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
     fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
     fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'character' } })
@@ -156,12 +178,28 @@ describe('OutputPage', () => {
   it('disables saving history until a save target is selected', async () => {
     seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
     renderPage()
-    await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
 
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
     expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
 
     fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'negative' } })
     expect(screen.getByRole('button', { name: '履歴に保存' })).toBeEnabled()
+  })
+
+  it('disables saving history until a name is entered', async () => {
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+    renderPage()
+    await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })
+
+    fireEvent.change(screen.getByLabelText('保存先'), { target: { value: 'negative' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: 'お気に入り' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeEnabled()
+
+    fireEvent.change(screen.getByLabelText('履歴名'), { target: { value: '   ' } })
+    expect(screen.getByRole('button', { name: '履歴に保存' })).toBeDisabled()
   })
 
   it('groups history entries by target with headings when ALL is selected, then filters flat by a specific target', async () => {
@@ -174,21 +212,38 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('base set', { exact: false })
 
-    const baseGroup = screen.getByRole('heading', { name: 'Base' }).closest('.pbuilder-tag-group')!
+    const baseGroup = screen.getByRole('heading', { name: 'Base' }).closest('.prompt-builder-tag-group')!
     expect(within(baseGroup as HTMLElement).getByText('base set', { exact: false })).toBeInTheDocument()
 
-    const characterGroup = screen.getByRole('heading', { name: 'Character' }).closest('.pbuilder-tag-group')!
+    const characterGroup = screen.getByRole('heading', { name: 'Character' }).closest('.prompt-builder-tag-group')!
     expect(within(characterGroup as HTMLElement).getByText('char set', { exact: false })).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('保存先で絞り込み'), { target: { value: 'character' } })
 
-    // 特定 target 絞り込みではグループ見出しを出さず、フラット表示に戻る。
     expect(screen.queryByRole('heading', { name: 'Base' })).not.toBeInTheDocument()
     expect(screen.queryByText('base set', { exact: false })).not.toBeInTheDocument()
     expect(screen.getByText('char set', { exact: false })).toBeInTheDocument()
   })
 
-  it('restores a history entry into the current output', async () => {
+  it('shows only the name and date on a history row, with no target badge', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T12:00:00.000Z',
+      items: [],
+      target: 'base',
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+
+    renderPage()
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+
+    expect(within(row).getByText('saved set')).toBeInTheDocument()
+    expect(within(row).getByText('2024/01/01', { exact: false })).toBeInTheDocument()
+    expect(row.querySelector('.pt-badge')).not.toBeInTheDocument()
+  })
+
+  it('restores a history entry immediately without a confirmation dialog when the output is empty', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -201,30 +256,58 @@ describe('OutputPage', () => {
     renderPage()
     expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '復元' }))
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
 
-    expect(await screen.findByText('cat girl', { selector: '.pbuilder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(screen.queryByRole('button', { name: '復元' })).not.toBeInTheDocument()
   })
 
-  it('shows a success toast when restoring a history entry', async () => {
+  it('asks for confirmation before restoring a history entry when the output already has items', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
       createdAt: '2024-01-01T00:00:00.000Z',
-      items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+      items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }],
       target: 'base',
     }
     vi.mocked(getHistory).mockResolvedValue([entry])
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
+
+    renderPage()
+    expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
+    fireEvent.click(await screen.findByRole('button', { name: '復元' }))
+
+    expect(await screen.findByText('blue sky', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+  })
+
+  it('does not restore the history entry when the confirmation is cancelled', async () => {
+    const entry: HistoryEntry = {
+      id: 'h1',
+      name: 'saved set',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }],
+      target: 'base',
+    }
+    vi.mocked(getHistory).mockResolvedValue([entry])
+    seedOutput([{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }])
 
     renderPage()
     await screen.findByText('saved set', { exact: false })
 
-    fireEvent.click(screen.getByRole('button', { name: '復元' }))
+    fireEvent.click(screen.getByRole('button', { name: 'saved setを復元' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
-    expect(await screen.findByText('復元しました')).toBeInTheDocument()
+    expect(screen.getByText('cat girl', { selector: '.prompt-builder-output-text' })).toBeInTheDocument()
+    expect(screen.queryByText('復元しました')).not.toBeInTheDocument()
   })
 
-  it('disables history delete buttons while a delete is in flight (prevents lost updates)', async () => {
+  it('disables the ⋯ menu edit/delete items while a delete is in flight (prevents lost updates)', async () => {
     const entries: HistoryEntry[] = [
       { id: 'h1', name: 'set one', createdAt: '2024-01-01T00:00:00.000Z', items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }], target: 'base' },
       { id: 'h2', name: 'set two', createdAt: '2024-01-02T00:00:00.000Z', items: [{ id: 'i2', wordId: 'w2', text: 'blue sky', weight: 0 }], target: 'negative' },
@@ -236,22 +319,28 @@ describe('OutputPage', () => {
     renderPage()
     await screen.findByText('set one', { exact: false })
 
-    const firstDelete = screen.getAllByRole('button', { name: '削除' })[0]
-    fireEvent.click(firstDelete)
+    const firstRow = screen.getByText('set one', { exact: false }).closest('li')!
+    const secondRow = screen.getByText('set two', { exact: false }).closest('li')!
+    // 2行目の⋯メニューは開いたままにしておき、in-flight 中に項目が反応で disabled になることを見る。
+    openRowMenu(secondRow)
+    openRowMenu(firstRow)
+    fireEvent.click(within(firstRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
-    // While the PUT is pending, every delete/rename-start button is disabled so a second
-    // click cannot race on a stale history array.
     await waitFor(() => {
-      screen.getAllByRole('button', { name: '削除' }).forEach((button) => expect(button).toBeDisabled())
-      screen.getAllByRole('button', { name: '編集' }).forEach((button) => expect(button).toBeDisabled())
+      expect(within(secondRow).getByRole('menuitem', { name: '編集' })).toBeDisabled()
+      expect(within(secondRow).getByRole('menuitem', { name: '削除' })).toBeDisabled()
     })
+
+    openRowMenu(firstRow)
+    expect(within(firstRow).getByRole('menuitem', { name: '編集' })).toBeDisabled()
+    expect(within(firstRow).getByRole('menuitem', { name: '削除' })).toBeDisabled()
 
     resolvePut(entries.filter((entry) => entry.id !== 'h1'))
     await waitFor(() => expect(screen.queryByText('set one', { exact: false })).not.toBeInTheDocument())
   })
 
-  it('deletes a history entry via putHistory with it excluded', async () => {
+  it('deletes a history entry via its ⋯ menu, calling putHistory with it excluded', async () => {
     const entry: HistoryEntry = {
       id: 'h1',
       name: 'saved set',
@@ -262,9 +351,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(putHistory).toHaveBeenCalledWith([]))
@@ -282,9 +372,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '削除' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(putHistory).not.toHaveBeenCalled()
@@ -302,9 +393,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
     fireEvent.change(nameInput, { target: { value: 'renamed set' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
@@ -326,9 +418,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const targetSelect = screen
       .getAllByLabelText('保存先')
       .find((el) => (el as HTMLSelectElement).value === 'base')!
@@ -337,7 +430,6 @@ describe('OutputPage', () => {
 
     await waitFor(() => expect(putHistory).toHaveBeenCalledTimes(1))
     expect(putHistory).toHaveBeenCalledWith([{ ...entry, target: 'negative' }])
-    // ALL 絞り込みのままなので、target 変更後は "negative" グループに移って見出しが出る。
     expect(await screen.findByRole('heading', { name: 'Negative' })).toBeInTheDocument()
     expect(await screen.findByText('履歴を更新しました')).toBeInTheDocument()
   })
@@ -353,9 +445,10 @@ describe('OutputPage', () => {
     vi.mocked(getHistory).mockResolvedValue([entry])
 
     renderPage()
-    await screen.findByText('saved set', { exact: false })
+    const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }))
+    openRowMenu(row)
+    fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
     const nameInput = screen.getAllByLabelText('履歴名').find((el) => (el as HTMLInputElement).value === 'saved set')!
     fireEvent.change(nameInput, { target: { value: 'renamed set' } })
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
