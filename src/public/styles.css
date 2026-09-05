@@ -454,12 +454,14 @@ button, input { font: inherit; }
 .tool-layout-menu-actions .theme-toggle {
   width: 2.4rem;
   padding: 0;
+  background: var(--pt-surface);
 }
 
 .tool-layout-menu-actions .tool-layout-back-link {
   flex: 1;
   min-width: 0;
   padding-inline: 0.5rem;
+  background: var(--pt-surface);
   font-size: var(--pt-text-sm);
   white-space: nowrap;
 }
