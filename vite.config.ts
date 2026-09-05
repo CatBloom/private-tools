@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import devServer from '@hono/vite-dev-server'
+import { TOOLS } from './src/tools/registry'
 
 const publicStylesheet = resolve('src/public/styles.css')
 const publicFavicon = resolve('src/public/favicon.ico')
@@ -58,9 +59,7 @@ export default defineConfig({
     emptyOutDir: false,
     rollupOptions: {
       input: {
-        client: 'src/client.tsx',
-        'client-prompt': 'src/client-prompt.tsx',
-        'client-todo': 'src/client-todo.tsx',
+        ...Object.fromEntries(TOOLS.map((tool) => [tool.entry.name, tool.entry.src])),
         theme: 'src/ui/theme.ts',
       },
       output: {

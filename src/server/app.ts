@@ -6,6 +6,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { TopPage } from '../ui/TopPage.js'
+import { TOOLS } from '../tools/registry.js'
 import { createCreditCsvRoutes } from './routes/credit-csv.js'
 import { createPromptWordRoutes } from './routes/prompt-builder.js'
 import { createMyTodoRoutes } from './routes/my-todo.js'
@@ -28,9 +29,12 @@ const CREDIT_CSV_PREFIX = '/tools/credit-csv'
 const PROMPT_BUILDER_PREFIX = '/tools/prompt-builder'
 const MY_TODO_PREFIX = '/tools/my-todo'
 
-const isCreditCsvPath = (path: string) => path === CREDIT_CSV_PREFIX || path.startsWith(`${CREDIT_CSV_PREFIX}/`)
-const isPromptBuilderPath = (path: string) => path === PROMPT_BUILDER_PREFIX || path.startsWith(`${PROMPT_BUILDER_PREFIX}/`)
-const isMyTodoPath = (path: string) => path === MY_TODO_PREFIX || path.startsWith(`${MY_TODO_PREFIX}/`)
+// style-src の緩和が必要なツールの path プレフィックス（registry の inlineStyle: true）。
+const inlineStylePrefixes = TOOLS.filter((tool) => tool.inlineStyle).map((tool) => tool.path)
+const isInlineStylePath = (path: string) =>
+  inlineStylePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+// 各ツールの API プレフィックス（`<path>/api`）。エラーハンドラで JSON/HTML を振り分けるために使う。
+const toolApiPrefixes = TOOLS.map((tool) => `${tool.path}/api`)
 
 const staticAssetRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
 const assetsDir = join(staticAssetRoot, 'assets')
@@ -99,13 +103,11 @@ const toolShellHtml = (title: string, clientScript: string, builtCssHref: string
 export const createApp = (options: AppOptions = {}) => {
   const app = new Hono()
   const isProduction = process.env.NODE_ENV === 'production'
-  const clientScript =
-    options.clientScript ??
-    (process.env.NODE_ENV === 'production' ? '/assets/client.js' : '/src/client.tsx')
-  const promptBuilderClientScript =
-    process.env.NODE_ENV === 'production' ? '/assets/client-prompt.js' : '/src/client-prompt.tsx'
-  const myTodoClientScript =
-    process.env.NODE_ENV === 'production' ? '/assets/client-todo.js' : '/src/client-todo.tsx'
+  const clientScriptFor = (tool: (typeof TOOLS)[number]) =>
+    isProduction ? tool.clientScript.prod : tool.clientScript.dev
+  const clientScript = options.clientScript ?? clientScriptFor(TOOLS.find((tool) => tool.id === 'credit-csv')!)
+  const promptBuilderClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'prompt-builder')!)
+  const myTodoClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'my-todo')!)
   const themeScript =
     options.themeScript ??
     (process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts')
@@ -117,10 +119,7 @@ export const createApp = (options: AppOptions = {}) => {
 
   app.use('*', (c, next) => {
     const path = c.req.path
-    const middleware =
-      isCreditCsvPath(path) || isPromptBuilderPath(path) || isMyTodoPath(path)
-        ? inlineStyleSecureHeaders
-        : defaultSecureHeaders
+    const middleware = isInlineStylePath(path) ? inlineStyleSecureHeaders : defaultSecureHeaders
     return middleware(c, next)
   })
 
@@ -170,39 +169,26 @@ export const createApp = (options: AppOptions = {}) => {
     return c.html(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Private Tools</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="stylesheet" href="/styles.css"></head><body>${page}<script type="module" src="${themeScript}"></script></body></html>`)
   })
 
-  const creditCsvShell = () =>
-    toolShellHtml('Credit CSV Viewer', clientScript, isProduction ? '/assets/client.css' : null)
-  const promptBuilderShell = () =>
-    toolShellHtml('Prompt Builder', promptBuilderClientScript, isProduction ? '/assets/client-prompt.css' : null)
-  const myTodoShell = () =>
-    toolShellHtml('MyTodo', myTodoClientScript, isProduction ? '/assets/client-todo.css' : null)
+  const clientScriptById: Record<string, string> = {
+    'credit-csv': clientScript,
+    'prompt-builder': promptBuilderClientScript,
+    'my-todo': myTodoClientScript,
+  }
 
-  app.get(CREDIT_CSV_PREFIX, (c) => c.html(creditCsvShell()))
-  app.get(`${CREDIT_CSV_PREFIX}/*`, (c) => {
-    // app.route() flattens the API sub-app's routes into this router without
-    // carrying over its own notFound handler, so unmatched API paths would
-    // otherwise fall through to this wildcard shell instead of a JSON 404.
-    if (c.req.path.startsWith(`${CREDIT_CSV_PREFIX}/api`)) {
-      return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
-    }
-    return c.html(creditCsvShell())
-  })
+  for (const tool of TOOLS) {
+    const shell = () => toolShellHtml(tool.name, clientScriptById[tool.id], isProduction ? tool.css.prod : null)
 
-  app.get(PROMPT_BUILDER_PREFIX, (c) => c.html(promptBuilderShell()))
-  app.get(`${PROMPT_BUILDER_PREFIX}/*`, (c) => {
-    if (c.req.path.startsWith(`${PROMPT_BUILDER_PREFIX}/api`)) {
-      return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
-    }
-    return c.html(promptBuilderShell())
-  })
-
-  app.get(MY_TODO_PREFIX, (c) => c.html(myTodoShell()))
-  app.get(`${MY_TODO_PREFIX}/*`, (c) => {
-    if (c.req.path.startsWith(`${MY_TODO_PREFIX}/api`)) {
-      return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
-    }
-    return c.html(myTodoShell())
-  })
+    app.get(tool.path, (c) => c.html(shell()))
+    app.get(`${tool.path}/*`, (c) => {
+      // app.route() flattens the API sub-app's routes into this router without
+      // carrying over its own notFound handler, so unmatched API paths would
+      // otherwise fall through to this wildcard shell instead of a JSON 404.
+      if (c.req.path.startsWith(`${tool.path}/api`)) {
+        return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
+      }
+      return c.html(shell())
+    })
+  }
 
   app.notFound((c) => {
     if (c.req.path.startsWith('/api/')) {
@@ -216,12 +202,7 @@ export const createApp = (options: AppOptions = {}) => {
   app.onError((err, c) => {
     const message = err instanceof Error ? err.message : 'Internal server error.'
     const path = c.req.path
-    if (
-      path.startsWith('/api/') ||
-      path.startsWith(`${CREDIT_CSV_PREFIX}/api`) ||
-      path.startsWith(`${PROMPT_BUILDER_PREFIX}/api`) ||
-      path.startsWith(`${MY_TODO_PREFIX}/api`)
-    ) {
+    if (path.startsWith('/api/') || toolApiPrefixes.some((prefix) => path.startsWith(prefix))) {
       return c.json({ ok: false, error: { message } }, 500)
     }
     return c.html('<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Error</title></head><body><main><h1>Server error</h1></main></body></html>', 500)

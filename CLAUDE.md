@@ -32,7 +32,8 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 - `src/index.ts` — Vercel エントリ。`src/server/app.ts` の default export を再輸出するだけ。
 - `src/server/app.ts` — アプリ本体。`createApp(options)` ファクトリと default インスタンスを輸出。`options` でテスト用に `creditCsvStorage`／`promptWordStorage`／`promptHistoryStorage`（Storage 注入）や `assetOverrides` を差し込める。favicon（`/favicon.ico`）は TOP・ツールシェルの head に `<link rel="icon">` を出し、本番のみ Hono ルートで `src/public/favicon.ico` をバイナリ配信する（開発は `vite.config.ts` の `servePublicFavicon`）。
-- `src/ui/TopPage.ts` — TOP ハブ（`/`）の**純 SSR** コンポーネント。ツール一覧をカードで並べる。将来ツールが増えたらここに追加する。**SSR で使うコンポーネントは JSX ではなく `createElement` を使い拡張子 `.ts` にする**（Vercel のサーバービルドは import 指定子 `'../ui/TopPage.js'` を `.ts` には解決できるが `.tsx` には解決できず、実行時に `ERR_MODULE_NOT_FOUND` になるため）。JSX を使うクライアント専用コンポーネントは `.tsx` でよい（Vite がバンドルする）。
+- `src/tools/registry.ts` — ツール定義の一覧（`id`／`name`／`path`／`description`／`entry`／`clientScript`／`css`／`nav`／`inlineStyle`）。react 非依存・JSX なしの純データで、`TopPage.ts`・`app.ts`・`vite.config.ts`（node から実行）から import する。**ツールを追加するときはここに1件追加し、対応する `src/client-<id>.tsx` エントリを1ファイル追加すれば済む。**
+- `src/ui/TopPage.ts` — TOP ハブ（`/`）の**純 SSR** コンポーネント。`registry.ts` の一覧からカードを生成する。**SSR で使うコンポーネントは JSX ではなく `createElement` を使い拡張子 `.ts` にする**（Vercel のサーバービルドは import 指定子 `'../ui/TopPage.js'` を `.ts` には解決できるが `.tsx` には解決できず、実行時に `ERR_MODULE_NOT_FOUND` になるため）。JSX を使うクライアント専用コンポーネントは `.tsx` でよい（Vite がバンドルする）。
 - `src/client.tsx` — Credit CSV Viewer のクライアントエントリ。`createRoot(...).render(<CreditCsvApp/>)`（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。**ツールページでのみ読み込まれ、TOP には React バンドルを出さない**（TOP はテーマ切替の小さな `theme.js` のみ＝React バンドルなし）。
 - `src/client-prompt.tsx` — Prompt Builder のクライアントエントリ。**ツール別にエントリを分離**し、各ツールページは自分のバンドルだけを読む（credit-csv ページに prompt のコードを混ぜない）。
 - `src/tools/credit-csv/` — Credit CSV Viewer ツール（`/tools/credit-csv`）。
@@ -46,12 +47,12 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 ### ルーティングと画面構成（`src/server/app.ts`）
 
-登録順が重要（先に登録したものが優先）。各ツールは同じパターンで登録する:
-1. CSP middleware（`app.use('*', ...)`、パスで分岐。下記参照）
+登録順が重要（先に登録したものが優先）。CSP のパス分岐・SSR シェル（4以降）は `src/tools/registry.ts` の一覧から組み立てる。API のマウントはストレージ注入で形が違うため registry には持たせず、明示的に1行ずつ書く:
+1. CSP middleware（`app.use('*', ...)`、`registry.ts` の `inlineStyle: true` なツールの path 配下だけ緩和。下記参照）
 2. 各ツールの API を **catch-all より必ず前**にマウント: `app.route('/tools/credit-csv/api', createCreditCsvRoutes(...))`、`app.route('/tools/prompt-builder/api', createPromptWordRoutes(...))`
 3. （production のみ）`/styles.css`、`/assets/:filename`
 4. `/` — TOP ハブ SSR
-5. 各ツールの SSR シェル（`/tools/<tool>` と `/tools/<tool>/*`。空 `#root`＋そのツールのクライアントスクリプト＋ツール CSS の `<link>`）。深いパスの直リンクも同じシェルを返し、クライアント側の `react-router`（`BrowserRouter basename="/tools/<tool>"`）が処理する。シェル HTML は `toolShellHtml(title, clientScript, builtCssHref)` で共通生成する
+5. `registry.ts` の一覧をループして各ツールの SSR シェルを登録（`/tools/<tool>` と `/tools/<tool>/*`。空 `#root`＋そのツールのクライアントスクリプト＋ツール CSS の `<link>`）。深いパスの直リンクも同じシェルを返し、クライアント側の `react-router`（`BrowserRouter basename="/tools/<tool>"`）が処理する。シェル HTML は `toolShellHtml(title, clientScript, builtCssHref)` で共通生成する
 6. `app.notFound(...)` — `/api/*` 系は JSON、それ以外は HTML の 404
 
 ### Credit CSV Viewer（`src/tools/credit-csv/`）
@@ -117,7 +118,7 @@ Prompt Builder 専用。ワード用と履歴用の2系統。どちらも**同�
 - 切り替えは `process.env.NODE_ENV` のみ。Hono の静的アセットルートは **production のときだけ登録される**。
 - **`GET /assets/:filename`**: `src/public/assets/` からのみ読み、`^[A-Za-z0-9._-]+$` で検証（`/`・エンコード済み `../` を拒否＝パストラバーサル対策）、拡張子で Content-Type 判定、モジュールスコープでキャッシュ。存在しなければ 404。
 - 本番のファイル実体は `src/public/` から読み、`vercel.json` の `includeFiles` で Function に同梱する。Output Directory は設定しない。
-- `vite.config.ts`: `outDir:'src/public'`／`emptyOutDir:false`／`publicDir:false`（この2フラグは `src/public/styles.css` を消さないために必要）。出力名はハッシュなし安定名（`entryFileNames:'assets/[name].js'`、`assetFileNames:'assets/[name][extname]'`）でシェルの参照名を固定する。**ツールを増やすたびに `rollupOptions.input` にエントリを1つ追加する**（現状 `client`＝credit-csv／`client-prompt`＝prompt-builder／`theme`）。ツール別 CSS は各エントリの `index.tsx` が import し、本番では `client.css`／`client-prompt.css` として個別抽出される。
+- `vite.config.ts`: `outDir:'src/public'`／`emptyOutDir:false`／`publicDir:false`（この2フラグは `src/public/styles.css` を消さないために必要）。出力名はハッシュなし安定名（`entryFileNames:'assets/[name].js'`、`assetFileNames:'assets/[name][extname]'`）でシェルの参照名を固定する。`rollupOptions.input` は `src/tools/registry.ts` の一覧（各ツールの `entry.name`／`entry.src`）から生成し、`theme` だけ固定で追加する。**ツールを増やすときは registry に1件追加し、対応する `src/client-<id>.tsx` エントリを1ファイル追加すれば済む。**ツール別 CSS は各エントリの `index.tsx` が import し、本番では `client.css`／`client-prompt.css` として個別抽出される。
 
 ### セキュリティと API 規約
 

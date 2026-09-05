@@ -1,4 +1,5 @@
 import { createElement } from 'react'
+import { TOOLS } from '../tools/registry.js'
 
 // Vercel のサーバービルドは import 指定子 '../ui/TopPage.js' を .ts には解決できるが .tsx には
 // 解決できないため、SSR で使うこのコンポーネントは JSX を使わず createElement の .ts で実装する。
@@ -24,34 +25,16 @@ export const TopPage = () =>
     createElement(
       'ul',
       { className: 'top-tool-list' },
-      createElement(
-        'li',
-        null,
+      ...TOOLS.map((tool) =>
         createElement(
-          'a',
-          { className: 'top-tool-card', href: '/tools/my-todo' },
-          createElement('span', { className: 'top-tool-name' }, 'MyTodo'),
-          createElement('span', { className: 'top-tool-desc' }, '今日やることを管理するシンプルなToDoリスト'),
-        ),
-      ),
-      createElement(
-        'li',
-        null,
-        createElement(
-          'a',
-          { className: 'top-tool-card', href: '/tools/credit-csv' },
-          createElement('span', { className: 'top-tool-name' }, 'Credit CSV Viewer'),
-          createElement('span', { className: 'top-tool-desc' }, 'クレジットカード利用明細CSVを集計・閲覧する'),
-        ),
-      ),
-      createElement(
-        'li',
-        null,
-        createElement(
-          'a',
-          { className: 'top-tool-card', href: '/tools/prompt-builder' },
-          createElement('span', { className: 'top-tool-name' }, 'Prompt Builder'),
-          createElement('span', { className: 'top-tool-desc' }, '画像生成プロンプトのワードを管理して組み立てる'),
+          'li',
+          { key: tool.id },
+          createElement(
+            'a',
+            { className: 'top-tool-card', href: tool.path },
+            createElement('span', { className: 'top-tool-name' }, tool.name),
+            createElement('span', { className: 'top-tool-desc' }, tool.description),
+          ),
         ),
       ),
     ),
