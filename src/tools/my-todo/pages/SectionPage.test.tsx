@@ -208,4 +208,22 @@ describe('SectionPage', () => {
 
     vi.useRealTimers()
   })
+
+  it('edits an item via the row overflow menu (⋯ → 編集)', async () => {
+    vi.mocked(getTodos).mockResolvedValue({
+      today: [{ id: 't1', text: 'water the plants', completed: false, createdAt: '2026-09-01T00:00:00.000Z' }],
+      someday: [],
+      lastRolloverDate: toLocalDateString(new Date()),
+    })
+    vi.mocked(putTodos).mockImplementation(async (state) => state)
+    renderSection()
+
+    await screen.findByText('water the plants')
+    fireEvent.click(screen.getByRole('button', { name: '操作メニュー' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '編集' }))
+
+    // インライン編集に切り替わり、メニューは閉じている（"編集"の項目は無くなる）。
+    expect(screen.getByLabelText('タスク')).toHaveValue('water the plants')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
 })

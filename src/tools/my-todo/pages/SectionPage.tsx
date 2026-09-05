@@ -114,8 +114,6 @@ export const SectionPage = ({ section }: SectionPageProps) => {
         onToggleCompleted={() => toggleCompleted(section, item.id)}
         onDelete={() => deleteItem(section, item.id)}
         onMove={() => moveToSection(section, item.id)}
-        moveLabel={section === 'today' ? 'Somedayへ移動' : 'Todayへ移動'}
-        moveFlipped={targetSection === 'today'}
         moveDisabled={moveDisabled}
         moveDisabledReason={moveDisabled ? `Todayは未完了${TODAY_LIMIT}件までです` : undefined}
       />

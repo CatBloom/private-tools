@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { TabMoveIcon } from './icons'
+import { RowMenu } from './RowMenu'
 import type { TodoItem } from '../shared/types'
 
 type SortableTodoItemProps = {
@@ -14,9 +14,6 @@ type SortableTodoItemProps = {
   onToggleCompleted: () => void
   onDelete: () => void
   onMove: () => void
-  moveLabel: string
-  // true なら Someday→Today（左向き＝逆矢印）。アイコンの向きだけを左右させる。
-  moveFlipped: boolean
   moveDisabled: boolean
   moveDisabledReason?: string
 }
@@ -32,8 +29,6 @@ export const SortableTodoItem = ({
   onToggleCompleted,
   onDelete,
   onMove,
-  moveLabel,
-  moveFlipped,
   moveDisabled,
   moveDisabledReason,
 }: SortableTodoItemProps) => {
@@ -93,23 +88,22 @@ export const SortableTodoItem = ({
         <span className="mytodo-item-text">{item.text}</span>
       </label>
 
+      {/* 行に個別ボタンを並べるとモバイルでタスクテキストの表示幅が狭くなるため、
+          移動・編集・削除は「⋯」オーバーフローメニューに集約する。 */}
       <div className="mytodo-item-actions">
-        <button
-          type="button"
-          className="mytodo-move-button"
-          disabled={moveDisabled}
-          title={moveDisabled ? moveDisabledReason : moveLabel}
-          aria-label={moveLabel}
-          onClick={onMove}
-        >
-          <TabMoveIcon flipped={moveFlipped} />
-        </button>
-        <button type="button" onClick={onStartEdit}>
-          編集
-        </button>
-        <button type="button" className="mytodo-danger-button" onClick={onDelete}>
-          削除
-        </button>
+        <RowMenu
+          items={[
+            {
+              key: 'move',
+              label: '移動',
+              onClick: onMove,
+              disabled: moveDisabled,
+              title: moveDisabled ? moveDisabledReason : undefined,
+            },
+            { key: 'edit', label: '編集', onClick: onStartEdit },
+            { key: 'delete', label: '削除', onClick: onDelete, danger: true },
+          ]}
+        />
       </div>
     </li>
   )

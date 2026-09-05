@@ -348,8 +348,14 @@
   background: transparent;
 }
 
-/* 「Someday/Todayへ移動」ボタンはアイコンのみのアイコンボタン（意味は title/aria-label で伝える）。 */
-.mytodo-app .mytodo-move-button {
+/* 行の操作（移動・編集・削除）を集約した「⋯」オーバーフローメニュー。 */
+.mytodo-row-menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* 「⋯」トリガーはアイコンのみのアイコンボタン（意味は aria-label で伝える）。 */
+.mytodo-app .mytodo-more-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -358,22 +364,56 @@
   padding: 0;
 }
 
-.mytodo-app .mytodo-move-button:hover:not(:disabled) {
+.mytodo-app .mytodo-more-button:hover:not(:disabled) {
   background: var(--mytodo-surface);
   border-color: var(--mytodo-accent);
 }
 
-.mytodo-app .mytodo-move-button:focus-visible {
+.mytodo-app .mytodo-more-button:focus-visible,
+.mytodo-app .mytodo-more-button[aria-expanded="true"] {
   outline: 2px solid var(--mytodo-accent);
   outline-offset: 1px;
 }
 
-.mytodo-move-icon {
-  display: block;
+/* トリガー基準で右寄せ・下方向に開くポップアップ（.mytodo-row-menu-anchor が position:relative
+   のアンカー）。.mytodo-item 側は overflow を持たないのでクリップされない。 */
+.mytodo-row-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  /* 項目は「移動」「編集」「削除」の短い語のみ。内容幅にフィットさせ、箱が横に間延びしない
+     ようにする（軽い下限だけ設ける）。 */
+  width: max-content;
+  min-width: 6rem;
+  padding: 0.35rem;
+  background: var(--mytodo-surface);
+  border: 1px solid var(--mytodo-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--mytodo-shadow);
 }
 
-.mytodo-move-icon.is-flipped {
-  transform: scaleX(-1);
+.mytodo-app .mytodo-row-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mytodo-app .mytodo-row-menu-item:hover:not(:disabled) {
+  background: var(--mytodo-bg);
+}
+
+.mytodo-app .mytodo-row-menu-item:focus-visible {
+  outline: 2px solid var(--mytodo-accent);
+  outline-offset: -2px;
 }
 
 @media (min-width: 48rem) {
