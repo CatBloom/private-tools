@@ -116,7 +116,7 @@ describe('SectionPage', () => {
     expect(vi.mocked(putTodos).mock.calls[1][0].today.map((item) => item.text)).toEqual(['first', 'second', 'third'])
 
     resolvers[1](vi.mocked(putTodos).mock.calls[1][0])
-    await waitFor(() => expect(screen.getByText('保存済み')).toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByText('保存中…')).not.toBeInTheDocument())
   }, 10_000)
 
   it('spaces a burst of writes to respect the minimum write interval (single edits stay immediate)', async () => {
@@ -154,7 +154,7 @@ describe('SectionPage', () => {
 
     resolvers[1](vi.mocked(putTodos).mock.calls[1][0])
     await vi.advanceTimersByTimeAsync(0)
-    expect(screen.getByText('保存済み')).toBeInTheDocument()
+    expect(screen.queryByText('保存中…')).not.toBeInTheDocument()
 
     vi.useRealTimers()
   })

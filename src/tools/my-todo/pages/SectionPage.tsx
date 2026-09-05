@@ -144,7 +144,6 @@ export const SectionPage = ({ section }: SectionPageProps) => {
                 </span>
               ) : null}
               {saveStatus === 'saving' ? <span className="my-todo-save-indicator">保存中…</span> : null}
-              {saveStatus === 'saved' ? <span className="my-todo-save-indicator">保存済み</span> : null}
             </div>
           </div>
 
