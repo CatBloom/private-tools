@@ -1,34 +1,7 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { HistoryEntry, PromptWord } from '../../tools/prompt-builder/shared/types.js'
-import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
+import { InMemoryHistoryStorage, InMemoryPromptStorage } from '../../test/in-memory-storage.js'
 import { createPromptBuilderRoutes } from './prompt-builder.js'
-
-class InMemoryPromptStorage implements PromptWordStorage {
-  private words: PromptWord[] = []
-
-  async getWords(): Promise<PromptWord[]> {
-    return this.words
-  }
-
-  async putWords(words: PromptWord[]): Promise<PromptWord[]> {
-    this.words = words
-    return words
-  }
-}
-
-class InMemoryHistoryStorage implements PromptHistoryStorage {
-  private entries: HistoryEntry[] = []
-
-  async getHistory(): Promise<HistoryEntry[]> {
-    return this.entries
-  }
-
-  async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
-    this.entries = entries
-    return entries
-  }
-}
 
 describe('prompt word routes', () => {
   let app: Hono

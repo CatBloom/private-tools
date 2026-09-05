@@ -21,7 +21,7 @@ export const FilterBar = ({
   onMonthChange,
   onMerchantChange
 }: FilterBarProps) => (
-  <section className="credit-csv-panel">
+  <section className="pt-card credit-csv-panel">
     <div className="credit-csv-filters">
       <label>
         年
@@ -48,6 +48,7 @@ export const FilterBar = ({
       <label className="credit-csv-filter-wide">
         店名
         <input
+          className="pt-input"
           value={merchantFilter}
           onChange={(event) => onMerchantChange(event.target.value)}
           placeholder="部分一致で絞り込み"

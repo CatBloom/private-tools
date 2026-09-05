@@ -13,12 +13,12 @@ export const MerchantMonthlyTable = ({
   const displayedRows = paginated ? pagination.pageRows : rows
 
   return (
-    <section className="credit-csv-panel">
+    <section className="pt-card credit-csv-panel">
       <div className="credit-csv-panel-header">
         <h2>月別合計</h2>
       </div>
       <div className="credit-csv-table-wrap">
-        <table className="credit-csv-monthly-table">
+        <table className="pt-table credit-csv-monthly-table">
           <colgroup>
             <col className="credit-csv-col-period" />
             <col className="credit-csv-col-amount" />

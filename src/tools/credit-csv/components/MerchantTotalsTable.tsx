@@ -18,12 +18,12 @@ export const MerchantTotalsTable = ({ rows }: { rows: MerchantSummary[] }) => {
   const pagination = usePaginatedRows(sortedRows)
 
   return (
-    <section className="credit-csv-panel">
+    <section className="pt-card credit-csv-panel">
       <div className="credit-csv-panel-header">
         <h2>店名別累計</h2>
       </div>
       <div className="credit-csv-table-wrap">
-        <table className="credit-csv-totals-table">
+        <table className="pt-table credit-csv-totals-table">
           <colgroup>
             <col className="credit-csv-col-merchant" />
             <col className="credit-csv-col-amount" />

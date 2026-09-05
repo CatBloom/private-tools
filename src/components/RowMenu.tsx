@@ -57,7 +57,7 @@ export const RowMenu = ({ items }: RowMenuProps) => {
       <button
         type="button"
         ref={triggerRef}
-        className="row-menu-trigger"
+        className="pt-button row-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="操作メニュー"

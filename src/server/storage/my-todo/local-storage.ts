@@ -1,14 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import type { TodoState } from '../../../tools/my-todo/shared/types.js'
+import { readJsonFile, resolveDataDir, writeJsonFile } from '../shared/local-fs.js'
 import type { MyTodoStorage } from './types.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
-const defaultDir = join(repoRoot, '.data', 'my-todo')
-
-const isNotFoundError = (error: unknown): boolean =>
-  typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
+const defaultDir = resolveDataDir('my-todo')
 
 export class LocalMyTodoStorage implements MyTodoStorage {
   private readonly dir: string
@@ -18,18 +13,11 @@ export class LocalMyTodoStorage implements MyTodoStorage {
   }
 
   async getTodos(): Promise<TodoState | null> {
-    try {
-      const content = await readFile(this.filePath(), 'utf8')
-      return JSON.parse(content) as TodoState
-    } catch (error) {
-      if (isNotFoundError(error)) return null
-      throw error
-    }
+    return readJsonFile<TodoState | null>(this.filePath(), null)
   }
 
   async putTodos(state: TodoState): Promise<void> {
-    await mkdir(this.dir, { recursive: true })
-    await writeFile(this.filePath(), JSON.stringify(state))
+    await writeJsonFile(this.filePath(), state)
   }
 
   private filePath(): string {

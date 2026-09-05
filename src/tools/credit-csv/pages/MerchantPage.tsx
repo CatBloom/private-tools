@@ -42,15 +42,15 @@ const MerchantView = ({ data, merchant }: { data: AppData; merchant: string }) =
 
   return (
     <div className="credit-csv-page-stack">
-      <section className="credit-csv-panel">
+      <section className="pt-card credit-csv-panel">
         <div className="credit-csv-panel-header">
           <h1>{displayName}</h1>
         </div>
         <div className="credit-csv-segmented">
-          <button className={mode === 'all' ? 'active' : ''} type="button" onClick={() => setMode('all')}>
+          <button className={`pt-button${mode === 'all' ? ' active' : ''}`} type="button" onClick={() => setMode('all')}>
             全期間
           </button>
-          <button className={mode === 'year' ? 'active' : ''} type="button" onClick={() => setMode('year')}>
+          <button className={`pt-button${mode === 'year' ? ' active' : ''}`} type="button" onClick={() => setMode('year')}>
             年指定
           </button>
           {mode === 'year' ? (

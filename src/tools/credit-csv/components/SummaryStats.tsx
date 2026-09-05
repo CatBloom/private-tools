@@ -7,11 +7,11 @@ type SummaryStatsProps = {
 
 export const SummaryStats = ({ totalAmount, count }: SummaryStatsProps) => (
   <section className="credit-csv-summary-grid">
-    <article className="credit-csv-summary-card">
+    <article className="pt-card credit-csv-summary-card">
       <span>件数</span>
       <strong>{count.toLocaleString('ja-JP')}件</strong>
     </article>
-    <article className="credit-csv-summary-card">
+    <article className="pt-card credit-csv-summary-card">
       <span>合計金額</span>
       <strong>{formatCurrency(totalAmount)}</strong>
     </article>

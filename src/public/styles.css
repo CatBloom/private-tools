@@ -24,6 +24,7 @@
   --pt-error-fg: #b3261e;
   --pt-info-bg: #e8f1fb;
   --pt-info-fg: #1769aa;
+  --pt-on-accent: #ffffff;
 
   --pt-space-1: 0.25rem;
   --pt-space-2: 0.5rem;
@@ -279,8 +280,8 @@ button, input { font: inherit; }
 }
 
 .fbk-confirm-actions .fbk-confirm-cancel { color: var(--pt-text); background: var(--pt-surface); border: 1px solid var(--pt-border); }
-.fbk-confirm-actions .fbk-confirm-confirm { color: #fff; background: var(--pt-accent); border: 1px solid var(--pt-accent); }
-.fbk-confirm-actions .fbk-confirm-confirm-danger { color: #fff; background: var(--pt-danger); border-color: var(--pt-danger); }
+.fbk-confirm-actions .fbk-confirm-confirm { color: var(--pt-on-accent); background: var(--pt-accent); border: 1px solid var(--pt-accent); }
+.fbk-confirm-actions .fbk-confirm-confirm-danger { color: var(--pt-on-accent); background: var(--pt-danger); border-color: var(--pt-danger); }
 
 /* Spinner（シェルの起動時スピナー .tool-shell-spinner と同じ見た目） */
 .fbk-spinner-wrap { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--pt-muted); }
@@ -393,7 +394,7 @@ button, input { font: inherit; }
 }
 
 .tool-layout-nav a.active {
-  color: #fff;
+  color: var(--pt-on-accent);
   background: var(--pt-accent);
 }
 
@@ -579,11 +580,7 @@ button, input { font: inherit; }
 
 /* 基本部品の共通クラス（ボタン・入力欄・カード・バッジ・タブ・テーブル）。ツール固有の
    レイアウト・配置・状態色は各ツール CSS に残す。 */
-.pt-button,
-.prompt-builder-app button,
-.my-todo-app button,
-.credit-csv-pagination-controls button,
-.credit-csv-segmented button {
+.pt-button {
   padding: 0.5rem 0.9rem;
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
@@ -591,10 +588,7 @@ button, input { font: inherit; }
   cursor: pointer;
 }
 
-.pt-button:disabled,
-.prompt-builder-app button:disabled,
-.my-todo-app button:disabled,
-.credit-csv-pagination-controls button:disabled {
+.pt-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -605,20 +599,14 @@ button, input { font: inherit; }
   background: transparent;
 }
 
-.pt-button-accent,
-.prompt-builder-app .prompt-builder-word-form button[type="submit"],
-.my-todo-app .my-todo-add-form button {
+.pt-button-accent {
   color: var(--pt-accent);
   border-color: var(--pt-accent);
   background: transparent;
 }
 
 /* font-size 16px は iOS Safari のフォーカス時自動ズームを防ぐため。 */
-.pt-input,
-.credit-csv-app input[type="text"],
-.credit-csv-filters input,
-.prompt-builder-app input[type="text"],
-.my-todo-app input[type="text"] {
+.pt-input {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
   background: var(--pt-bg);
@@ -627,21 +615,13 @@ button, input { font: inherit; }
   font-size: 16px;
 }
 
-.pt-input:focus-visible,
-.credit-csv-app input[type="text"]:focus-visible,
-.credit-csv-filters input:focus-visible,
-.prompt-builder-app input[type="text"]:focus-visible,
-.my-todo-app input[type="text"]:focus-visible {
+.pt-input:focus-visible {
   outline: 2px solid var(--pt-accent);
   outline-offset: 1px;
   border-color: var(--pt-accent);
 }
 
-.pt-card,
-.credit-csv-panel,
-.credit-csv-summary-card,
-.prompt-builder-panel,
-.my-todo-panel {
+.pt-card {
   padding: var(--pt-space-4);
   background: var(--pt-surface);
   border: 1px solid var(--pt-border);
@@ -649,10 +629,7 @@ button, input { font: inherit; }
   box-shadow: var(--pt-shadow);
 }
 
-.pt-badge,
-.prompt-builder-dirty-badge,
-.my-todo-count-badge,
-.my-todo-save-indicator {
+.pt-badge {
   color: var(--pt-muted);
   font-size: var(--pt-text-sm);
   font-weight: 700;
@@ -675,22 +652,19 @@ button, input { font: inherit; }
 }
 
 .pt-tab.is-active {
-  color: #fff;
+  color: var(--pt-on-accent);
   background: var(--pt-accent);
   border-color: var(--pt-accent);
 }
 
-.pt-table,
-.credit-csv-app table {
+.pt-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--pt-text-sm);
 }
 
 .pt-table th,
-.pt-table td,
-.credit-csv-app th,
-.credit-csv-app td {
+.pt-table td {
   padding: 0.55rem 0.5rem;
   text-align: left;
   white-space: nowrap;

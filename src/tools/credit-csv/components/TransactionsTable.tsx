@@ -30,13 +30,13 @@ export const TransactionsTable = ({ rows, viewMode, onViewModeChange }: Transact
   const pagination = usePaginatedRows(sortedRows)
 
   return (
-    <section className="credit-csv-panel">
+    <section className="pt-card credit-csv-panel">
       <div className="credit-csv-panel-header">
         <h2>明細一覧</h2>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
       </div>
       <div className="credit-csv-table-wrap">
-        <table className="credit-csv-transactions-table">
+        <table className="pt-table credit-csv-transactions-table">
           <colgroup>
             <col className="credit-csv-col-date" />
             <col className="credit-csv-col-merchant" />

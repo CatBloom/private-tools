@@ -1,7 +1,7 @@
 import type { PromptWord } from '../../../tools/prompt-builder/shared/types.js'
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
-import type { PromptWordStorage } from './word-storage.js'
+import type { PromptWordStorage } from './types.js'
 
 const KV_KEY = 'words'
 

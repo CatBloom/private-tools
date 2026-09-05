@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
-import { bodyLimit } from 'hono/body-limit'
 import { isPromptTargetId } from '../../tools/prompt-builder/shared/targets.js'
 import { isPromptTagId } from '../../tools/prompt-builder/shared/tags.js'
 import type { HistoryEntry, OutputItem, PromptWord } from '../../tools/prompt-builder/shared/types.js'
 import { selectPromptHistoryStorage, selectPromptWordStorage } from '../storage/prompt-builder/index.js'
 import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
+import { apiError, apiOk, jsonBodyLimit, notFoundJson, readJsonBody } from './shared.js'
 
 const MAX_WORDS = 2000
 const MAX_WORD_TEXT_LENGTH = 500
@@ -16,9 +16,6 @@ const MAX_OUTPUT_ITEM_TEXT_LENGTH = 500
 // weight は復元時に applyNotation で String.repeat(|weight|) されるため、RangeError を防ぐ小さな上限にする。
 const MAX_OUTPUT_ITEM_WEIGHT = 20
 const MAX_BODY_BYTES = 4 * 1024 * 1024
-
-const apiError = (message: string, status: 400 | 404 | 413 | 415) =>
-  Response.json({ ok: false, error: { message } }, { status })
 
 const isPromptWord = (value: unknown): value is PromptWord =>
   typeof value === 'object' &&
@@ -69,79 +66,47 @@ export const createPromptBuilderRoutes = (
 
   app.get('/words', async (c) => {
     const words = await storage.getWords()
-    return c.json({ ok: true, data: { words } })
+    return apiOk(c, { words })
   })
 
-  app.put(
-    '/words',
-    bodyLimit({
-      maxSize: MAX_BODY_BYTES,
-      onError: () => apiError('Request body is too large.', 413),
-    }),
-    async (c) => {
-      const contentType = c.req.header('content-type')?.toLowerCase().split(';', 1)[0]
-      if (contentType !== 'application/json') {
-        return apiError('Unsupported media type.', 415)
-      }
+  app.put('/words', jsonBodyLimit(MAX_BODY_BYTES), async (c) => {
+    const body = await readJsonBody(c)
+    if (!body.ok) return body.response
 
-      let body: unknown
-      try {
-        body = await c.req.json()
-      } catch {
-        return apiError('Invalid request.', 400)
+    const words = (body.value as { words?: unknown } | null)?.words
+    if (!isPromptWordArray(words)) {
+      if (Array.isArray(words) && words.length > MAX_WORDS) {
+        return apiError(c, 413, 'Too many words.')
       }
+      return apiError(c, 400, 'Invalid words payload.')
+    }
 
-      const words = (body as { words?: unknown } | null)?.words
-      if (!isPromptWordArray(words)) {
-        if (Array.isArray(words) && words.length > MAX_WORDS) {
-          return apiError('Too many words.', 413)
-        }
-        return apiError('Invalid words payload.', 400)
-      }
-
-      const saved = await storage.putWords(words)
-      return c.json({ ok: true, data: { words: saved } })
-    },
-  )
+    const saved = await storage.putWords(words)
+    return apiOk(c, { words: saved })
+  })
 
   app.get('/history', async (c) => {
     const entries = await historyStorage.getHistory()
-    return c.json({ ok: true, data: { entries } })
+    return apiOk(c, { entries })
   })
 
-  app.put(
-    '/history',
-    bodyLimit({
-      maxSize: MAX_BODY_BYTES,
-      onError: () => apiError('Request body is too large.', 413),
-    }),
-    async (c) => {
-      const contentType = c.req.header('content-type')?.toLowerCase().split(';', 1)[0]
-      if (contentType !== 'application/json') {
-        return apiError('Unsupported media type.', 415)
+  app.put('/history', jsonBodyLimit(MAX_BODY_BYTES), async (c) => {
+    const body = await readJsonBody(c)
+    if (!body.ok) return body.response
+
+    const entries = (body.value as { entries?: unknown } | null)?.entries
+    if (!isHistoryEntryArray(entries)) {
+      if (Array.isArray(entries) && entries.length > MAX_HISTORY_ENTRIES) {
+        return apiError(c, 413, 'Too many history entries.')
       }
+      return apiError(c, 400, 'Invalid history payload.')
+    }
 
-      let body: unknown
-      try {
-        body = await c.req.json()
-      } catch {
-        return apiError('Invalid request.', 400)
-      }
+    const saved = await historyStorage.putHistory(entries)
+    return apiOk(c, { entries: saved })
+  })
 
-      const entries = (body as { entries?: unknown } | null)?.entries
-      if (!isHistoryEntryArray(entries)) {
-        if (Array.isArray(entries) && entries.length > MAX_HISTORY_ENTRIES) {
-          return apiError('Too many history entries.', 413)
-        }
-        return apiError('Invalid history payload.', 400)
-      }
-
-      const saved = await historyStorage.putHistory(entries)
-      return c.json({ ok: true, data: { entries: saved } })
-    },
-  )
-
-  app.notFound((c) => c.json({ ok: false, error: { message: 'Not found.' } }, 404))
+  app.notFound(notFoundJson)
 
   return app
 }

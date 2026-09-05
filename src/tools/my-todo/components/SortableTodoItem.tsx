@@ -45,15 +45,16 @@ export const SortableTodoItem = ({
       <li ref={setNodeRef} style={style} className="my-todo-item is-editing">
         <input
           type="text"
+          className="pt-input"
           aria-label="タスク"
           value={editText}
           onChange={(event) => onEditTextChange(event.target.value)}
         />
         <div className="my-todo-item-actions">
-          <button type="button" disabled={!editText.trim()} onClick={onCommitEdit}>
+          <button type="button" className="pt-button" disabled={!editText.trim()} onClick={onCommitEdit}>
             保存
           </button>
-          <button type="button" onClick={onCancelEdit}>
+          <button type="button" className="pt-button" onClick={onCancelEdit}>
             キャンセル
           </button>
         </div>
@@ -67,7 +68,7 @@ export const SortableTodoItem = ({
       style={style}
       className={`my-todo-item${isDragging ? ' is-dragging' : ''}${item.completed ? ' is-completed' : ''}`}
     >
-      <button type="button" className="my-todo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
+      <button type="button" className="pt-button my-todo-drag-handle" aria-label="並べ替え" {...attributes} {...listeners}>
         ⠿
       </button>
 

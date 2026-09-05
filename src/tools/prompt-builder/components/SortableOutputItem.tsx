@@ -38,7 +38,7 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
     >
       <button
         type="button"
-        className="prompt-builder-drag-handle"
+        className="pt-button prompt-builder-drag-handle"
         aria-label="並べ替え"
         {...attributes}
         {...listeners}
@@ -48,7 +48,7 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
 
       <button
         type="button"
-        className="prompt-builder-word-row-button prompt-builder-output-item-preview"
+        className="pt-button prompt-builder-word-row-button prompt-builder-output-item-preview"
         aria-label={`${item.text}を出力から削除`}
         onClick={handleRemove}
       >
@@ -56,11 +56,11 @@ export const SortableOutputItem = ({ item, onRemove, onWeightChange }: SortableO
       </button>
 
       <div className="prompt-builder-weight-controls">
-        <button type="button" aria-label="弱める" onClick={() => onWeightChange(item.id, -1)}>
+        <button type="button" className="pt-button" aria-label="弱める" onClick={() => onWeightChange(item.id, -1)}>
           −
         </button>
         <span className="prompt-builder-weight-value">{item.weight}</span>
-        <button type="button" aria-label="強める" onClick={() => onWeightChange(item.id, 1)}>
+        <button type="button" className="pt-button" aria-label="強める" onClick={() => onWeightChange(item.id, 1)}>
           +
         </button>
       </div>

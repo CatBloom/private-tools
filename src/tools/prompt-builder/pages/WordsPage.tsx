@@ -221,6 +221,7 @@ export const WordsPage = () => {
       <li key={word.id} className="prompt-builder-row prompt-builder-word-row is-editing">
         <input
           type="text"
+          className="pt-input"
           aria-label="ワード"
           value={editText}
           onChange={(event) => setEditText(event.target.value)}
@@ -228,6 +229,7 @@ export const WordsPage = () => {
         <div className="prompt-builder-word-form-row">
           <input
             type="text"
+            className="pt-input"
             aria-label="説明"
             value={editDescription}
             onChange={(event) => setEditDescription(event.target.value)}
@@ -242,10 +244,10 @@ export const WordsPage = () => {
           </select>
         </div>
         <div className="prompt-builder-word-row-actions">
-          <button type="button" disabled={!editText.trim()} onClick={() => commitEdit(word.id)}>
+          <button type="button" className="pt-button" disabled={!editText.trim()} onClick={() => commitEdit(word.id)}>
             保存
           </button>
-          <button type="button" onClick={cancelEdit}>
+          <button type="button" className="pt-button" onClick={cancelEdit}>
             キャンセル
           </button>
         </div>
@@ -254,7 +256,7 @@ export const WordsPage = () => {
       <li key={word.id} className="prompt-builder-row prompt-builder-word-row">
         <button
           type="button"
-          className="prompt-builder-word-row-text prompt-builder-word-row-button"
+          className="pt-button prompt-builder-word-row-text prompt-builder-word-row-button"
           aria-label={`${word.text}を出力に追加`}
           onClick={() => addToOutput(word)}
         >
@@ -274,14 +276,14 @@ export const WordsPage = () => {
 
   return (
     <div className="prompt-builder-page-stack">
-      <section className="prompt-builder-panel">
+      <section className="pt-card prompt-builder-panel">
         <div className="prompt-builder-panel-header">
           <h1>ワード一覧</h1>
           <div className="prompt-builder-save-controls">
-            <button type="button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords()}>
+            <button type="button" className="pt-button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords()}>
               {saveStatus === 'saving' ? '保存中…' : '保存'}
             </button>
-            {dirty && saveStatus !== 'saving' ? <span className="prompt-builder-dirty-badge">未保存の変更あり</span> : null}
+            {dirty && saveStatus !== 'saving' ? <span className="pt-badge prompt-builder-dirty-badge">未保存の変更あり</span> : null}
           </div>
         </div>
 
@@ -294,6 +296,7 @@ export const WordsPage = () => {
         <form className="prompt-builder-word-form" onSubmit={handleAddWord}>
           <input
             type="text"
+            className="pt-input"
             placeholder="ワード"
             aria-label="ワード"
             value={newText}
@@ -303,6 +306,7 @@ export const WordsPage = () => {
           <div className="prompt-builder-word-form-row">
             <input
               type="text"
+              className="pt-input"
               placeholder="説明（任意）"
               aria-label="説明"
               value={newDescription}
@@ -322,7 +326,7 @@ export const WordsPage = () => {
               <TagOptions />
             </select>
           </div>
-          <button type="submit" disabled={loadStatus !== 'ready' || !newText.trim() || newTag === ''}>
+          <button type="submit" className="pt-button pt-button-accent" disabled={loadStatus !== 'ready' || !newText.trim() || newTag === ''}>
             追加
           </button>
         </form>
@@ -331,7 +335,7 @@ export const WordsPage = () => {
         {loadStatus === 'error' ? (
           <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
             {loadError}
-            <button type="button" onClick={loadWords}>
+            <button type="button" className="pt-button" onClick={loadWords}>
               再読み込み
             </button>
           </p>
@@ -351,7 +355,7 @@ export const WordsPage = () => {
               </select>
               <input
                 type="text"
-                className="prompt-builder-word-search"
+                className="pt-input prompt-builder-word-search"
                 aria-label="名前・説明で検索"
                 placeholder="名前・説明で検索"
                 value={searchQuery}

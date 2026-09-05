@@ -22,7 +22,7 @@ const YearlyView = ({ data }: { data: AppData }) => {
 
   return (
     <div className="credit-csv-page-stack">
-      <section className="credit-csv-panel">
+      <section className="pt-card credit-csv-panel">
         <div className="credit-csv-filters">
           <label>
             年

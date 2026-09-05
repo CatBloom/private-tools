@@ -44,13 +44,13 @@ export const Pagination = ({ page, pageCount, totalCount, start, onPageChange }:
         {lastItem.toLocaleString('ja-JP')}件
       </span>
       <div className="credit-csv-pagination-controls">
-        <button type="button" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+        <button type="button" className="pt-button" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
           前へ
         </button>
         <span aria-live="polite">
           {page} / {pageCount}
         </span>
-        <button type="button" disabled={page === pageCount} onClick={() => onPageChange(page + 1)}>
+        <button type="button" className="pt-button" disabled={page === pageCount} onClick={() => onPageChange(page + 1)}>
           次へ
         </button>
       </div>

@@ -15,8 +15,6 @@ import type { PromptHistoryStorage, PromptWordStorage } from './storage/prompt-b
 import type { MyTodoStorage } from './storage/my-todo/index.js'
 
 type AppOptions = {
-  clientScript?: string
-  themeScript?: string
   stylesAsset?: string | null
   assetOverrides?: Record<string, string | null>
   creditCsvStorage?: CreditCsvStorage
@@ -101,12 +99,10 @@ export const createApp = (options: AppOptions = {}) => {
   const isProduction = process.env.NODE_ENV === 'production'
   const clientScriptFor = (tool: (typeof TOOLS)[number]) =>
     isProduction ? tool.clientScript.prod : tool.clientScript.dev
-  const clientScript = options.clientScript ?? clientScriptFor(TOOLS.find((tool) => tool.id === 'credit-csv')!)
+  const clientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'credit-csv')!)
   const promptBuilderClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'prompt-builder')!)
   const myTodoClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'my-todo')!)
-  const themeScript =
-    options.themeScript ??
-    (process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts')
+  const themeScript = process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts'
 
   const defaultSecureHeaders = buildSecureHeaders(["'self'"])
   const inlineStyleSecureHeaders = buildSecureHeaders(["'self'", "'unsafe-inline'"])

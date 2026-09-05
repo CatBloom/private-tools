@@ -301,7 +301,7 @@
 
 .prompt-builder-app .prompt-builder-copy-button {
   width: 100%;
-  color: #fff;
+  color: var(--pt-on-accent);
   background: var(--pt-secondary);
   border-color: var(--pt-secondary);
   font-weight: 700;

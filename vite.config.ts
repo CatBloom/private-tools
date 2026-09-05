@@ -35,8 +35,8 @@ const servePublicStyles = () => ({
   },
 })
 
-// publicDir is false, so Vite does not serve src/public in dev. Serve the
-// favicon ourselves (binary), mirroring the production Hono route.
+// publicDir が false のため dev では src/public が配信されない。favicon（バイナリ）は
+// 本番の Hono ルートと同様に自前で配信する。
 const servePublicFavicon = () => ({
   name: 'serve-public-favicon',
   configureServer(server: DevServer) {

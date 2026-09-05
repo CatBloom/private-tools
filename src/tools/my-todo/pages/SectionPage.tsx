@@ -127,36 +127,37 @@ export const SectionPage = ({ section }: SectionPageProps) => {
       {loadStatus === 'error' ? (
         <p className="my-todo-status-message my-todo-status-message-error" role="alert">
           {loadError}
-          <button type="button" onClick={reloadTodos}>
+          <button type="button" className="pt-button" onClick={reloadTodos}>
             再読み込み
           </button>
         </p>
       ) : null}
 
       {loadStatus === 'ready' ? (
-        <section className="my-todo-panel">
+        <section className="pt-card my-todo-panel">
           <div className="my-todo-panel-header">
             <h1>{SECTION_LABEL[section]}</h1>
             <div className="my-todo-panel-header-status">
               {section === 'today' ? (
-                <span className="my-todo-count-badge">
+                <span className="pt-badge my-todo-count-badge">
                   {todayUnfinishedCount}/{TODAY_LIMIT}
                 </span>
               ) : null}
-              {saveStatus === 'saving' ? <span className="my-todo-save-indicator">保存中…</span> : null}
+              {saveStatus === 'saving' ? <span className="pt-badge my-todo-save-indicator">保存中…</span> : null}
             </div>
           </div>
 
           <form className="my-todo-add-form" onSubmit={handleAdd}>
             <input
               type="text"
+              className="pt-input"
               placeholder="タスクを追加"
               aria-label={`${SECTION_LABEL[section]}のタスク`}
               value={text}
               disabled={addDisabled}
               onChange={(event) => setText(event.target.value)}
             />
-            <button type="submit" disabled={addDisabled || !text.trim()}>
+            <button type="submit" className="pt-button pt-button-accent" disabled={addDisabled || !text.trim()}>
               追加
             </button>
           </form>

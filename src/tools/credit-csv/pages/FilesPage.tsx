@@ -75,7 +75,7 @@ export const FilesPage = () => {
 
   return (
     <div className="credit-csv-page-stack">
-      <section className="credit-csv-panel">
+      <section className="pt-card credit-csv-panel">
         <div className="credit-csv-panel-header">
           <h1>ファイル管理</h1>
         </div>
@@ -101,12 +101,12 @@ export const FilesPage = () => {
         </div>
       </section>
 
-      <section className="credit-csv-panel">
+      <section className="pt-card credit-csv-panel">
         <div className="credit-csv-panel-header">
           <h2>アップロード済みファイル</h2>
         </div>
         <div className="credit-csv-table-wrap">
-          <table className="credit-csv-files-table">
+          <table className="pt-table credit-csv-files-table">
             <colgroup>
               <col className="credit-csv-fcol-date" />
               <col className="credit-csv-fcol-name" />

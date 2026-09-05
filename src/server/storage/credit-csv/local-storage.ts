@@ -1,14 +1,10 @@
 import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { assertValidFileName, isValidFileName } from './types.js'
 import type { CreditCsvStorage, StoredFileMeta } from './types.js'
+import { isNotFoundError, resolveDataDir } from '../shared/local-fs.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
-const defaultDir = join(repoRoot, '.data', 'credit-csv')
-
-const isNotFoundError = (error: unknown): boolean =>
-  typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
+const defaultDir = resolveDataDir('credit-csv')
 
 export class LocalCreditCsvStorage implements CreditCsvStorage {
   private readonly dir: string

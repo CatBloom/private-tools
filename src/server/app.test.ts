@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest'
 import app from '../index'
 import { createApp } from './app'
 import type { CreditCsvStorage, StoredFileMeta } from './storage/credit-csv/index'
-import type { PromptHistoryStorage, PromptWordStorage } from './storage/prompt-builder/index'
-import type { HistoryEntry, PromptWord } from '../tools/prompt-builder/shared/types'
-import type { MyTodoStorage } from './storage/my-todo/index'
-import type { TodoState } from '../tools/my-todo/shared/types'
+import { InMemoryHistoryStorage, InMemoryPromptStorage, InMemoryTodoStorage } from '../test/in-memory-storage'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
 
@@ -39,44 +36,6 @@ class InMemoryStorage implements CreditCsvStorage {
 
   async delete(name: string): Promise<void> {
     this.files.delete(name)
-  }
-}
-
-class InMemoryPromptStorage implements PromptWordStorage {
-  private words: PromptWord[] = []
-
-  async getWords(): Promise<PromptWord[]> {
-    return this.words
-  }
-
-  async putWords(words: PromptWord[]): Promise<PromptWord[]> {
-    this.words = words
-    return words
-  }
-}
-
-class InMemoryHistoryStorage implements PromptHistoryStorage {
-  private entries: HistoryEntry[] = []
-
-  async getHistory(): Promise<HistoryEntry[]> {
-    return this.entries
-  }
-
-  async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
-    this.entries = entries
-    return entries
-  }
-}
-
-class InMemoryTodoStorage implements MyTodoStorage {
-  private state: TodoState | null = null
-
-  async getTodos(): Promise<TodoState | null> {
-    return this.state
-  }
-
-  async putTodos(state: TodoState): Promise<void> {
-    this.state = state
   }
 }
 

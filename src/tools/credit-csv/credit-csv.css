@@ -115,7 +115,7 @@
 }
 
 .credit-csv-segmented button.active {
-  color: #fff;
+  color: var(--pt-on-accent);
   background: var(--pt-accent);
   border-color: var(--pt-accent);
 }
@@ -270,7 +270,7 @@
 }
 
 .credit-csv-file-button:hover {
-  color: #fff;
+  color: var(--pt-on-accent);
   background: var(--pt-accent);
 }
 

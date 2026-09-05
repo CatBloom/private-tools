@@ -25,13 +25,13 @@ export const MerchantSummaryTable = ({ rows, viewMode, onViewModeChange }: Merch
   const pagination = usePaginatedRows(sortedRows)
 
   return (
-    <section className="credit-csv-panel">
+    <section className="pt-card credit-csv-panel">
       <div className="credit-csv-panel-header">
         <h2>月内合計</h2>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
       </div>
       <div className="credit-csv-table-wrap">
-        <table className="credit-csv-summary-table">
+        <table className="pt-table credit-csv-summary-table">
           <colgroup>
             <col className="credit-csv-col-merchant" />
             <col className="credit-csv-col-count" />

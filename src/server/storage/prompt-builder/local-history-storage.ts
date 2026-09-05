@@ -1,14 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import type { HistoryEntry } from '../../../tools/prompt-builder/shared/types.js'
-import type { PromptHistoryStorage } from './history-storage.js'
+import { readJsonFile, resolveDataDir, writeJsonFile } from '../shared/local-fs.js'
+import type { PromptHistoryStorage } from './types.js'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
-const defaultDir = join(repoRoot, '.data', 'prompt-builder')
-
-const isNotFoundError = (error: unknown): boolean =>
-  typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
+const defaultDir = resolveDataDir('prompt-builder')
 
 export class LocalPromptHistoryStorage implements PromptHistoryStorage {
   private readonly dir: string
@@ -18,18 +13,11 @@ export class LocalPromptHistoryStorage implements PromptHistoryStorage {
   }
 
   async getHistory(): Promise<HistoryEntry[]> {
-    try {
-      const content = await readFile(this.filePath(), 'utf8')
-      return JSON.parse(content) as HistoryEntry[]
-    } catch (error) {
-      if (isNotFoundError(error)) return []
-      throw error
-    }
+    return readJsonFile<HistoryEntry[]>(this.filePath(), [])
   }
 
   async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
-    await mkdir(this.dir, { recursive: true })
-    await writeFile(this.filePath(), JSON.stringify(entries))
+    await writeJsonFile(this.filePath(), entries)
     return entries
   }
 

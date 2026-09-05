@@ -1,7 +1,7 @@
 import type { HistoryEntry } from '../../../tools/prompt-builder/shared/types.js'
 import { CloudflareKvClient } from '../shared/kv-client.js'
 import type { CloudflareKvConfig } from '../shared/kv-client.js'
-import type { PromptHistoryStorage } from './history-storage.js'
+import type { PromptHistoryStorage } from './types.js'
 
 const KV_KEY = 'history'
 

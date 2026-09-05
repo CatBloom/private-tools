@@ -29,7 +29,7 @@ export const TrendChartCard = ({
   title: string
   data: Array<{ label: string; amount: number }>
 }) => (
-  <section className="credit-csv-panel credit-csv-chart-panel">
+  <section className="pt-card credit-csv-panel credit-csv-chart-panel">
     <div className="credit-csv-panel-header">
       <h2>{title}</h2>
     </div>
@@ -74,7 +74,7 @@ export const CompositionChartCard = ({
   }, [data, isMobile])
 
   return (
-  <section className="credit-csv-panel credit-csv-chart-panel">
+  <section className="pt-card credit-csv-panel credit-csv-chart-panel">
     <div className="credit-csv-panel-header">
       <h2>{title}</h2>
     </div>

@@ -257,6 +257,7 @@ export const OutputPage = () => {
         <div className="prompt-builder-word-form-row">
           <input
             type="text"
+            className="pt-input"
             aria-label="履歴名"
             value={editHistoryName}
             onChange={(event) => setEditHistoryName(event.target.value)}
@@ -273,12 +274,13 @@ export const OutputPage = () => {
         <div className="prompt-builder-word-row-actions">
           <button
             type="button"
+            className="pt-button"
             disabled={historySaveStatus === 'saving' || editHistoryName.trim() === ''}
             onClick={() => commitHistoryEdit(entry.id)}
           >
             保存
           </button>
-          <button type="button" onClick={cancelEditHistory}>
+          <button type="button" className="pt-button" onClick={cancelEditHistory}>
             キャンセル
           </button>
         </div>
@@ -287,7 +289,7 @@ export const OutputPage = () => {
       <li key={entry.id} className="prompt-builder-row prompt-builder-history-row">
         <button
           type="button"
-          className="prompt-builder-word-row-text prompt-builder-word-row-button"
+          className="pt-button prompt-builder-word-row-text prompt-builder-word-row-button"
           aria-label={`${entry.name}を復元`}
           onClick={() => restoreHistoryEntry(entry)}
         >
@@ -332,10 +334,10 @@ export const OutputPage = () => {
 
   return (
     <div className="prompt-builder-page-stack">
-      <section className="prompt-builder-panel">
+      <section className="pt-card prompt-builder-panel">
         <div className="prompt-builder-panel-header">
           <h2>出力欄</h2>
-          <button type="button" disabled={outputItems.length === 0} onClick={clearOutput}>
+          <button type="button" className="pt-button" disabled={outputItems.length === 0} onClick={clearOutput}>
             クリア
           </button>
         </div>
@@ -347,7 +349,7 @@ export const OutputPage = () => {
           <div className="prompt-builder-output-preview-actions">
             <button
               type="button"
-              className="prompt-builder-copy-button"
+              className="pt-button prompt-builder-copy-button"
               disabled={outputItems.length === 0}
               onClick={handleCopy}
             >
@@ -382,6 +384,7 @@ export const OutputPage = () => {
             <div className="prompt-builder-word-form-row">
               <input
                 type="text"
+                className="pt-input"
                 placeholder="名前"
                 aria-label="履歴名"
                 value={historyName}
@@ -401,6 +404,7 @@ export const OutputPage = () => {
             </div>
             <button
               type="submit"
+              className="pt-button"
               disabled={
                 outputItems.length === 0 ||
                 historySaveStatus === 'saving' ||
@@ -423,7 +427,7 @@ export const OutputPage = () => {
           {historyLoadStatus === 'error' ? (
             <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
               {historyLoadError}
-              <button type="button" onClick={loadHistory}>
+              <button type="button" className="pt-button" onClick={loadHistory}>
                 再読み込み
               </button>
             </p>
