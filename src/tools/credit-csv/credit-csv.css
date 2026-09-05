@@ -109,6 +109,10 @@
   border-color: var(--pt-accent);
 }
 
+.credit-csv-merchant-year {
+  margin-top: 0.75rem;
+}
+
 .credit-csv-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

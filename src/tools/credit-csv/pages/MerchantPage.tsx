@@ -53,16 +53,21 @@ const MerchantView = ({ data, merchant }: { data: AppData; merchant: string }) =
           <button className={`pt-button${mode === 'year' ? ' active' : ''}`} type="button" onClick={() => setMode('year')}>
             年指定
           </button>
-          {mode === 'year' ? (
-            <select value={selectedYear} onChange={(event) => setYear(event.target.value)}>
-              {data.years.map((yearOption) => (
-                <option key={yearOption} value={yearOption}>
-                  {yearOption}年
-                </option>
-              ))}
-            </select>
-          ) : null}
         </div>
+        {mode === 'year' ? (
+          <div className="credit-csv-filters credit-csv-merchant-year">
+            <label>
+              年
+              <select value={selectedYear} onChange={(event) => setYear(event.target.value)}>
+                {data.years.map((yearOption) => (
+                  <option key={yearOption} value={yearOption}>
+                    {yearOption}年
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
       </section>
       <SummaryStats totalAmount={summary.totalAmount} count={summary.count} />
       <TrendChartCard
