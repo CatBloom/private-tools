@@ -9,9 +9,7 @@ export type SelectByEnvOptions<T> = {
   local: () => T
 }
 
-// Every tool-specific select*Storage() applies the same rule: Cloudflare KV
-// is used only once Account ID + its own namespace env + API Token are all
-// set, otherwise every environment falls back to the local filesystem.
+// Account ID + namespace env + API Token が揃ったときだけ KV を使い、揃わなければ local にフォールバックする。
 export const selectByEnv = <T>(options: SelectByEnvOptions<T>): T => {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
   const namespaceId = process.env[options.namespaceEnv]

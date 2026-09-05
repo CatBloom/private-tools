@@ -33,8 +33,7 @@ const APRIL_CSV = textToBytes(
 
 const MAY_CSV = textToBytes(['2026/05/01,SPOTIFY,1000'].join('\r\n') + '\r\n')
 
-// jsdom の File/Blob は arrayBuffer() 等の中身読み出しを実装していないため、
-// アップロードされたファイル名から既知のバイト列を引く（実ブラウザでは file.arrayBuffer() で読める）
+// jsdom の File/Blob は arrayBuffer() を実装しないため、ファイル名から既知のバイト列を引く。
 const KNOWN_UPLOAD_BYTES: Record<string, Uint8Array<ArrayBuffer>> = {
   '202605.csv': MAY_CSV
 }
@@ -98,8 +97,7 @@ const renderApp = (initialEntry = '/') =>
     </MemoryRouter>
   )
 
-// tabs=true のため、ドロワー内ナビと本文上のタブに同名リンクが重複して存在する（仕様）。
-// クリックは可視のタブ側から行う。
+// ドロワー内ナビと本文上のタブに同名リンクが重複するため、可視のタブ側からクリックする。
 const clickTab = (label: string) =>
   fireEvent.click(within(screen.getByRole('navigation', { name: 'ページ切替' })).getByRole('link', { name: label }))
 
@@ -137,12 +135,10 @@ describe('CreditCsvRoutes', () => {
     renderApp()
     const table = await screen.findByRole('table')
 
-    // 金額でソート（初回クリックは降順）: NETFLIX(2000) が先頭
     fireEvent.click(within(table).getByRole('button', { name: /金額/ }))
     let dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[0].textContent).toContain('NETFLIX')
 
-    // もう一度クリックで昇順: NETFLIX(2000) が末尾
     fireEvent.click(within(table).getByRole('button', { name: /金額/ }))
     dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[dataRows.length - 1].textContent).toContain('NETFLIX')
@@ -166,12 +162,10 @@ describe('CreditCsvRoutes', () => {
 
     const table = await screen.findByRole('table')
 
-    // 件数でソート（初回クリックは降順）: AMAZON(2件) が先頭
     fireEvent.click(within(table).getByRole('button', { name: /件数/ }))
     let dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[0].textContent).toContain('AMAZON')
 
-    // もう一度クリックで昇順: NETFLIX(1件) が先頭
     fireEvent.click(within(table).getByRole('button', { name: /件数/ }))
     dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[0].textContent).toContain('NETFLIX')
@@ -203,11 +197,9 @@ describe('CreditCsvRoutes', () => {
 
     const table = await screen.findByRole('table')
 
-    // 既定は累計金額の降順: AMAZON(2200円) が先頭
     let dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[0].textContent).toContain('AMAZON')
 
-    // クリックで昇順に反転: NETFLIX(2000円) が先頭
     fireEvent.click(within(table).getByRole('button', { name: /累計金額/ }))
     dataRows = within(table).getAllByRole('row').slice(1)
     expect(dataRows[0].textContent).toContain('NETFLIX')
@@ -220,7 +212,6 @@ describe('CreditCsvRoutes', () => {
     expect(await screen.findByText('202604.csv')).toBeInTheDocument()
 
     const file = new File([MAY_CSV], '202605.csv', { type: 'text/csv' })
-    // ファイル選択（change）だけで自動アップロードされる（アップロードボタンは廃止）
     fireEvent.change(screen.getByLabelText('CSVファイル'), { target: { files: [file] } })
 
     expect(await screen.findByText('202605.csv')).toBeInTheDocument()
@@ -258,7 +249,6 @@ describe('CreditCsvRoutes', () => {
   it('redirects unknown internal paths back to the detail page', async () => {
     renderApp('/does-not-exist')
 
-    // 未知パスは "/"（明細）にリダイレクトされ、明細の合計が描画される
     expect(await screen.findByText(formatCurrency(4200))).toBeInTheDocument()
   })
 
@@ -292,7 +282,6 @@ describe('CreditCsvRoutes', () => {
     expect(row).not.toBeNull()
 
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
-    // 共有の確認ダイアログで OK を押す
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(screen.queryByText('202604.csv')).not.toBeInTheDocument())
@@ -305,7 +294,6 @@ describe('CreditCsvRoutes', () => {
 
     const row = (await screen.findByText('202604.csv')).closest('tr')
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: '削除' }))
-    // ダイアログでキャンセルすると削除されない
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(screen.getByText('202604.csv')).toBeInTheDocument()

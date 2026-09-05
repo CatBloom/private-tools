@@ -5,8 +5,6 @@ import type { TodoStorage } from './todo-storage.js'
 
 const KV_KEY = 'todos'
 
-// Production backend, not yet wired up (Cloudflare KV namespace/token are not
-// provisioned for this tool). Verified against a mocked fetch only.
 export class CloudflareKvTodoStorage implements TodoStorage {
   private readonly client: CloudflareKvClient
 

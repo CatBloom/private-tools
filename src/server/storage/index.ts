@@ -7,8 +7,6 @@ export type { Storage, StoredFileMeta } from './storage.js'
 export { CloudflareKvStorage } from './kv-storage.js'
 export { LocalStorage } from './local-storage.js'
 
-// Cloudflare KV is used only once its namespace/token are provisioned;
-// until then every environment falls back to the local filesystem.
 export const selectStorage = (): Storage =>
   selectByEnv<Storage>({
     namespaceEnv: 'CLOUDFLARE_KV_CREDIT_NAMESPACE_ID',

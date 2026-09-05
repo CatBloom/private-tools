@@ -5,8 +5,6 @@ import type { PromptWordStorage } from './prompt-storage.js'
 
 const KV_KEY = 'words'
 
-// Production backend, not yet wired up (Cloudflare KV namespace/token are not
-// provisioned for this tool). Verified against a mocked fetch only.
 export class CloudflareKvPromptStorage implements PromptWordStorage {
   private readonly client: CloudflareKvClient
 

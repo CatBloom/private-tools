@@ -24,13 +24,10 @@ import type { HistoryEntry, OutputItem } from '../shared/types'
 type LoadStatus = 'loading' | 'ready' | 'error'
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 type CopyStatus = 'idle' | 'copied' | 'error'
-// 履歴一覧の絞り込み。'ALL' は全件表示（既定）、それ以外はその target のみ表示。永続化しない。
 type TargetFilter = PromptTargetId | 'ALL'
 
 const getEntryTarget = (entry: HistoryEntry) => entry.target
 
-// 編集・保存フォーム・絞り込みの各 target セレクトで共通の選択肢（ワード側の TagOptions と同じパターン）。
-// プレースホルダや ALL は各 select 側で持つ。
 const TargetOptions = () => (
   <>
     {PROMPT_TARGET_IDS.map((target) => (
@@ -44,7 +41,6 @@ const TargetOptions = () => (
 const formatHistoryDate = (isoDate: string) => {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return isoDate
-  // 月日・時分秒を2桁ゼロ埋めして各行の桁を揃える（例: 2026/08/31 02:22:27）
   return date.toLocaleString('ja-JP', {
     year: 'numeric',
     month: '2-digit',
@@ -68,19 +64,16 @@ export const OutputPage = () => {
   const [historyLoadStatus, setHistoryLoadStatus] = useState<LoadStatus>('loading')
   const [historyLoadError, setHistoryLoadError] = useState<string | null>(null)
   const [historyName, setHistoryName] = useState('')
-  // プレースホルダ（未選択）を許すため '' を含む。保存時に '' なら送信させない（後述 handleSaveHistory）。
   const [historyTarget, setHistoryTarget] = useState<PromptTargetId | ''>('')
   const [historySaveStatus, setHistorySaveStatus] = useState<SaveStatus>('idle')
   const [historySaveError, setHistorySaveError] = useState<string | null>(null)
   const historySaveStatusRef = useRef(historySaveStatus)
   historySaveStatusRef.current = historySaveStatus
 
-  // 履歴の名前とターゲットをインライン編集する（historyName/historyTarget は新規保存フォーム用なので別 state）。
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
   const [editHistoryName, setEditHistoryName] = useState('')
   const [editHistoryTarget, setEditHistoryTarget] = useState<PromptTargetId>(PROMPT_TARGET_IDS[0])
 
-  // 履歴一覧の絞り込み。既定は全件表示。
   const [historyFilterTarget, setHistoryFilterTarget] = useState<TargetFilter>('ALL')
 
   const loadHistory = useCallback(async () => {
@@ -88,7 +81,7 @@ export const OutputPage = () => {
     setHistoryLoadError(null)
     try {
       const entries = await getHistory()
-      // 読み込み中に保存/削除が走っていたら、その結果を初期データで上書きしない。
+      // 読み込み中に保存/削除が走っていたら初期データで上書きしない。
       if (historySaveStatusRef.current !== 'saving') {
         setHistoryEntries(entries)
       }
@@ -134,8 +127,7 @@ export const OutputPage = () => {
   const handleSaveHistory = async (event: FormEvent) => {
     event.preventDefault()
     if (outputItems.length === 0) return
-    // 履歴の初回ロードが終わるまでは保存させない。未取得（historyEntries=[]）のまま PUT すると
-    // KV 上の既存履歴を新規1件で丸ごと置き換えてしまうため。
+    // 初回ロード完了前に保存すると、未取得のまま PUT して KV 上の既存履歴を置き換えてしまう。
     if (historyLoadStatus !== 'ready') return
     if (historyTarget === '') return
 
@@ -201,7 +193,6 @@ export const OutputPage = () => {
   const commitHistoryEdit = async (id: string) => {
     if (historyLoadStatus !== 'ready') return
 
-    // name と target を書き換える。items/createdAt/id はそのまま維持する。
     const updated = historyEntries.map((entry) =>
       entry.id === id ? { ...entry, name: editHistoryName.trim(), target: editHistoryTarget } : entry,
     )
@@ -221,7 +212,6 @@ export const OutputPage = () => {
     }
   }
 
-  // 絞り込みと ALL 表示用の target 別グループ化（並び順は PROMPT_TARGET_IDS の固定順・0件 target は除外）。
   const { visible: visibleHistoryEntries, grouped: groupedHistoryEntries } = useGroupedFilter(
     historyEntries,
     PROMPT_TARGET_IDS,
@@ -249,8 +239,6 @@ export const OutputPage = () => {
 
   const outputText = useMemo(() => buildOutput(outputItems), [outputItems])
 
-  // 履歴一行の描画。ALL 表示（ターゲットグループ内）と特定ターゲット絞り込み（フラット表示）の
-  // 両方で使う（ワード一覧の renderWordRow と同じ構造）。
   const renderHistoryRow = (entry: HistoryEntry) =>
     editingHistoryId === entry.id ? (
       <li key={entry.id} className="pbuilder-history-row is-editing">
@@ -311,7 +299,7 @@ export const OutputPage = () => {
       return
     }
 
-    // どちらの手段も使えない環境では、選択状態にしてユーザーが手動コピーできるようにする
+    // コピー手段が無い環境ではテキストを選択状態にして手動コピーできるようにする
     const node = outputTextRef.current
     const selection = typeof window.getSelection === 'function' ? window.getSelection() : null
     if (node && selection) {
@@ -333,7 +321,6 @@ export const OutputPage = () => {
           </button>
         </div>
 
-        {/* 出力結果とコピーボタンを一番上に置き、下の並べ替えリストを見なくてもコピーできるようにする。 */}
         <div className="pbuilder-output-preview">
           <p className="pbuilder-output-text" ref={outputTextRef}>
             {outputText || '（出力はまだありません）'}

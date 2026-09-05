@@ -1,14 +1,8 @@
-/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
-   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
-   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .pbuilder-app {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  /* iPhone (iOS Safari) で横方向にラバーバンド（左右に少し動く／ピンチ後に変な位置で固定
-     される）のを防ぐ。ページは横スクロールを持たない設計なので、実機のサブピクセルはみ出し
-     を clip して body が横スクロール可能になるのを断つ。clip は縦スクロール・固定トースト
-     （fixed 子孫）に影響しない（.pbuilder-app に transform 等の包含ブロック生成が無いため）。 */
+  /* iOS Safari の横ラバーバンドを防ぐ（縦スクロール・固定トーストには影響しない）。 */
   overflow-x: clip;
   background: var(--pt-bg);
   color: var(--pt-text);
@@ -32,12 +26,6 @@
   gap: 1rem;
 }
 
-/* ページ切替タブ（本文上・ドロワー内とも）の見た目は共通クラス .tool-layout-tabs/.pt-tab
-   （src/public/styles.css）に集約済み。 */
-
-/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
-   に集約済み。 */
-
 .pbuilder-panel-header {
   display: flex;
   flex-wrap: wrap;
@@ -58,10 +46,6 @@
   align-items: center;
   gap: 0.6rem;
 }
-
-/* 未保存バッジの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。
-   既定のボタン見た目・disabled 状態は共通クラス .pt-button、テキスト入力の基礎は
-   .pt-input に集約済み（同じく styles.css）。 */
 
 .pbuilder-status-message {
   margin: 0.85rem 0;
@@ -100,9 +84,7 @@
 
 .pbuilder-word-form-row input {
   flex: 3;
-  /* min-width:auto のままだとテキスト入力の既定サイズを下回って縮まず、狭い画面で隣の
-     select を右へ押し出す（横スクロール／select が画面外にはみ出す）。0 で縮小を許可する。 */
-  min-width: 0;
+  min-width: 0; /* 既定の auto だと縮まず select を画面外へ押し出す */
 }
 
 .pbuilder-word-form-row .pbuilder-tag-select {
@@ -127,7 +109,6 @@
   max-width: 12rem;
 }
 
-/* <option> はブラウザ既定の配色になりがちなので、ライト/ダーク両テーマで読めるよう明示する。 */
 .pbuilder-app select option {
   color: var(--pt-text);
   background: var(--pt-surface);
@@ -149,9 +130,6 @@
   width: 100%;
 }
 
-/* 検索付きフィルタ行（WordsPage）は登録フォームと同じ比率（説明:タグ = 3:1）に揃える。
-   タグ絞り込みに検索が連動するため、タグ選択を左・検索を右に置く。共有クラス
-   .pbuilder-word-filter を使う OutputPage の履歴絞り込み（select 単体）には影響させない。 */
 .pbuilder-word-filter-search input.pbuilder-word-search {
   flex: 3;
   min-width: 0;
@@ -163,9 +141,6 @@
   min-width: 6rem;
   max-width: 12rem;
 }
-
-/* 削除ボタンの danger 枠・登録ボタンの accent 枠は共通クラス .pt-button-danger /
-   .pt-button-accent（src/public/styles.css）に集約済み。 */
 
 .pbuilder-word-list,
 .pbuilder-output-list {
@@ -188,7 +163,6 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
-  /* 説明の有無に関わらずワード＋説明の2行分の高さを確保する（スマホ幅でも行の高さを揃える）。 */
   min-height: 3.75rem;
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
@@ -206,14 +180,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  /* 説明が長くても隣の「⋯」を押し出さず、テキスト側で折り返す（min-width:0 が必須）。 */
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-/* ワード行そのものをクリックで出力に追加できるボタンにする（既定のボタン背景/枠は解除し、
-   行に埋め込まれた見た目にする）。 */
 .pbuilder-app .pbuilder-word-row-button {
   padding: 0;
   background: transparent;
@@ -239,12 +210,10 @@
   flex-shrink: 0;
 }
 
-/* 編集中（保存/キャンセルのみ）は縦積みの行内で右寄せにする。 */
 .pbuilder-word-row.is-editing .pbuilder-word-row-actions {
   justify-content: flex-end;
 }
 
-/* ALL 絞り込み時のタグ別グループ表示（並び替えなし・見出しのみ）。 */
 .pbuilder-tag-groups {
   display: flex;
   flex-direction: column;
@@ -327,7 +296,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  /* 出力結果＋コピーを一番上に置くので、下の並べ替えリストとの間に余白を空ける。 */
   margin-bottom: 1.25rem;
 }
 
@@ -348,9 +316,6 @@
   gap: 0.4rem;
 }
 
-/* コピーは主要アクションなので画面いっぱいで目立たせる。出力タブ（アクセント青）と色が
-   被らないようセカンダリー色（teal）を使う。`.pbuilder-app` 前置で `.pbuilder-app button`
-   の既定背景に勝たせる。 */
 .pbuilder-app .pbuilder-copy-button {
   width: 100%;
   color: #fff;
@@ -412,14 +377,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  /* 長い名前でもボタンを押し出さずラベル側で折り返す（min-width:0 が必須）。 */
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-/* 「履歴に保存」はコピー（塗り）と対のセカンダリー系アクションとして、枠線を
-   セカンダリー色にする（アウトライン）。`.pbuilder-app` 前置で既定ボタンに勝たせる。 */
 .pbuilder-app .pbuilder-history-form button {
   color: var(--pt-secondary);
   border-color: var(--pt-secondary);
@@ -438,21 +400,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  /* 長い名前でボタン群が縮まないように固定する。 */
   flex-shrink: 0;
-  /* スマホ（縦積み時）はラベルの下で全幅になるので、復元/削除を右寄せにする。 */
   justify-content: flex-end;
 }
 
 @media (min-width: 48rem) {
-  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、credit-csv と揃える） */
   :root {
     font-size: 130%;
   }
 
-  /* 編集中（is-editing）は入力欄とボタンを持つため横並びにしない
-     （横並びにすると入力欄が潰れ、保存/キャンセルが折り返して崩れる）。登録フォームと
-     同じく縦積みのままにする（ワード行は編集中以外は元々ずっと横並び。history はここで PC のみ切替）。 */
   .pbuilder-history-row:not(.is-editing) {
     flex-direction: row;
     align-items: center;
@@ -463,7 +419,6 @@
     flex-direction: row;
   }
 
-  /* 名前+保存先の行を、隣の「履歴に保存」ボタン分を除いた残り幅いっぱいに広げる。 */
   .pbuilder-history-form .pbuilder-word-form-row {
     flex: 1;
   }

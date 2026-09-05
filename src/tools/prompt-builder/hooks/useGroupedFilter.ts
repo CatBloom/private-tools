@@ -1,8 +1,5 @@
 import { useMemo } from 'react'
 
-// 一覧の「'ALL' なら全件・それ以外はそのキーのみ」絞り込みと、
-// 「固定順 ID 配列でグループ化し 0 件グループを除外」を共通化するフック。
-// ワード一覧（タグ）と履歴一覧（target）で共用する。
 // getKey は再レンダーで参照が変わらないようモジュールスコープの関数を渡すこと。
 export const useGroupedFilter = <T, K extends string>(
   items: T[],

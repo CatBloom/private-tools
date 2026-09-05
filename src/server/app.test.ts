@@ -124,7 +124,6 @@ describe('server application', () => {
       expect(response.status).toBe(200)
       expect(html).toContain('id="root"')
       expect(html).toContain('src="/src/client.tsx"')
-      // 開発では抽出済み /assets/client.css は存在しないためリンクしない（404 を避ける）
       expect(html).not.toContain('/assets/client.css')
       const csp = response.headers.get('content-security-policy')
       expect(csp).toContain("style-src 'self' 'unsafe-inline'")
@@ -251,7 +250,6 @@ describe('server application', () => {
   })
 
   it('mounts the prompt word API under /tools/prompt-builder/api', async () => {
-    // Inject in-memory storage so the test does not depend on the local .data/ filesystem.
     const testApp = createApp({
       promptWordStorage: new InMemoryPromptStorage(),
       promptHistoryStorage: new InMemoryHistoryStorage(),
@@ -385,14 +383,13 @@ describe('server application', () => {
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('image/x-icon')
       const bytes = new Uint8Array(await response.arrayBuffer())
-      // .ico magic: reserved(0x0000) + type 1 (icon)
+      // .ico のマジックナンバー: reserved(0x0000) + type 1 (icon)
       expect([bytes[0], bytes[1], bytes[2], bytes[3]]).toEqual([0, 0, 1, 0])
     })
   })
 
   it('does not serve the favicon route outside production', async () => {
     const response = await createApp().request('http://localhost/favicon.ico')
-    // In dev the Vite middleware serves it; the Hono app itself returns HTML 404.
     expect(response.status).toBe(404)
     expect(response.headers.get('content-type')).toContain('text/html')
   })

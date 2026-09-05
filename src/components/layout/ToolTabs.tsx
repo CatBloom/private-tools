@@ -1,10 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { TOOLS, type ToolId } from '../../tools/registry'
 
-// 本文上のページ切替タブ（ToolLayout の tabs prop から使う）。ドロワー内の機能ナビ
-// （ToolMenu の .tool-layout-nav）と役割が重複するが、ドロワーを開かずに主要ページへ
-// 即座に切り替えられるよう仕様として併存させる（旧 my-todo/prompt-builder の Layout.tsx が
-// 持っていた `.mytodo-tabs`/`.pbuilder-tabs` の後継）。
+// ドロワーを開かずに主要ページへ切り替えられるよう、機能ナビ（ToolMenu）とは別に本文上に併存させる。
 type ToolTabsProps = {
   toolId: ToolId
 }

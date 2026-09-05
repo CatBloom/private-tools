@@ -31,9 +31,6 @@ type SectionPageProps = {
   section: TodoSectionId
 }
 
-// Today/Someday はページ（ルート）が分かれ、それぞれ自セクションの追加フォームと
-// DnD リストだけを表示する。状態・保存は TodoContext に一本化されているため、
-// タブ切替（ページ遷移）をまたいでも他方のセクションの内容は保持される。
 export const SectionPage = ({ section }: SectionPageProps) => {
   const {
     todoState,
@@ -85,8 +82,6 @@ export const SectionPage = ({ section }: SectionPageProps) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // ページが自セクションのアイテムしか描画しないため、並べ替えは常に同一セクション内で完結する
-  // （セクション間移動は別ページ化に伴い専用の「Someday/Todayへ移動」ボタンで行う）。
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return

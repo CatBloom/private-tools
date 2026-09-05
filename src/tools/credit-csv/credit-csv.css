@@ -1,6 +1,3 @@
-/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
-   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
-   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .ccsv-app {
   display: flex;
   flex-direction: column;
@@ -32,9 +29,6 @@
   flex-direction: column;
   gap: 1rem;
 }
-
-/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
-   に集約済み。ここには残らない。 */
 
 .ccsv-panel-header {
   display: flex;
@@ -68,9 +62,6 @@
   grid-column: 1 / -1;
 }
 
-/* テキスト入力の基礎（min-height/padding/border/radius/font-size）は共通クラス .pt-input
-   （src/public/styles.css）に集約済み。select は矢印装飾など ccsv 独自の見た目があるため
-   ここに残す。 */
 .ccsv-app select {
   min-height: 44px;
   padding: 0.5rem 0.7rem;
@@ -122,8 +113,6 @@
   gap: 0.4rem;
 }
 
-/* 既定のボタン見た目（padding/background/border/radius/cursor）は共通クラス .pt-button
-   （src/public/styles.css）に集約済み。 */
 .ccsv-segmented button.active {
   color: #fff;
   background: var(--pt-accent);
@@ -136,8 +125,6 @@
   gap: 0.75rem;
 }
 
-/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
-   に集約済み。ここには縦積みレイアウトのみ残す。 */
 .ccsv-summary-card {
   display: flex;
   flex-direction: column;
@@ -190,14 +177,10 @@
   overflow-x: auto;
 }
 
-/* テーブルの基礎（width/border-collapse/font-size、th/td の padding・border-bottom）は
-   共通クラス .pt-table（src/public/styles.css）に集約済み。 */
-
 .ccsv-app a {
   color: var(--pt-accent);
 }
 
-/* テーブル内の店名リンクは下線を出さず、省略記号「…」が浮いて見えないようにする（ホバー時のみ下線） */
 .ccsv-app td a {
   text-decoration: none;
 }
@@ -206,7 +189,6 @@
   text-decoration: underline;
 }
 
-/* 構成比ランキングの店名リンクもテーブルと同じ見た目（下線はホバー時のみ） */
 .ccsv-legend-row a {
   color: var(--pt-accent);
   text-decoration: none;
@@ -231,8 +213,6 @@
   align-items: center;
   gap: 0.6rem;
 }
-
-/* 既定のボタン見た目・disabled 状態は共通クラス .pt-button（src/public/styles.css）に集約済み。 */
 
 .ccsv-status-message {
   margin: 0.85rem 0 0;
@@ -316,7 +296,6 @@
   text-align: center;
 }
 
-/* ソートで表示行が入れ替わっても列幅が動かないよう固定する */
 .ccsv-transactions-table {
   table-layout: fixed;
 }
@@ -329,7 +308,6 @@
   width: 7rem;
 }
 
-/* ページネーションで表示行が入れ替わっても列幅が動かないよう固定する */
 .ccsv-summary-table,
 .ccsv-totals-table,
 .ccsv-monthly-table {
@@ -349,7 +327,6 @@
   width: 6rem;
 }
 
-/* 数値列は右寄せ、店名などの長い列は省略記号で切り詰める */
 .ccsv-cell-numeric {
   text-align: right;
 }
@@ -374,8 +351,6 @@
   opacity: 0.6;
 }
 
-/* アップロード済みファイル表：スマホでも全列（削除ボタン含む）が収まるよう列幅を固定。
-   日時を広めに取り、ファイル名(.csv省略)・サイズ・操作は最小限にする。 */
 .ccsv-files-table {
   table-layout: fixed;
 }
@@ -408,9 +383,7 @@
   text-align: right;
 }
 
-/* アイコンだけの削除ボタン（文字「削除」より狭く、行にファイル名(.csv)が収まる）。
-   `.ccsv-app button { color: inherit }` に勝つよう `.ccsv-app` を付けて詳細度を上げ、
-   アイコン(currentColor)を danger（赤）で表示する。 */
+/* `.ccsv-app button { color: inherit }` に勝つよう `.ccsv-app` を付けて詳細度を上げる。 */
 .ccsv-app .ccsv-icon-button {
   display: inline-flex;
   align-items: center;
@@ -438,7 +411,6 @@
 }
 
 @media (min-width: 48rem) {
-  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ） */
   :root {
     font-size: 130%;
   }

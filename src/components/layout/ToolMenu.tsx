@@ -3,15 +3,8 @@ import type { Theme } from '../../hooks/useTheme'
 import { TOOLS, type ToolId } from '../../tools/registry'
 import { ThemeToggle } from '../ThemeToggle'
 
-// 全ツール共通の左ドロワーメニュー本体（ToolLayout.tsx から使う）。上から
-// (1) そのツール名を見出しにした機能ナビ（registry の nav）、(2) 区切り、(3) 「他のツール」見出し
-// ＋他ツールへの導線（registry から自ツールを除いた一覧）、(4) 「← ツール一覧」とテーマ切替を
-// 横並び・同幅で並べた最下部のアクション列、の順に並べる。
-// スタイルは src/public/styles.css の `.tool-layout-*`（ツール別バンドルの CSS はシェルが
-// link しないため、常時 link される styles.css に置く）。
-// 閉じている間は `inert` を付け、非表示のドロワー内リンクへキーボード/スクリーンリーダーの
-// フォーカスが移らないようにする（`aria-hidden` だとフォーカス可能要素を隠すだけで tab 移動を
-// 防げず、フォーカスされた要素を隠すのはアクセシビリティ違反になるため）。
+// 閉じている間は `inert` を付ける（`aria-hidden` はフォーカス可能要素の tab 移動を防げず、
+// フォーカスされた要素を隠すのはアクセシビリティ違反になるため）。
 type ToolMenuProps = {
   toolId: ToolId
   open: boolean

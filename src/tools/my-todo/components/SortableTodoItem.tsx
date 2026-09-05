@@ -71,12 +71,6 @@ export const SortableTodoItem = ({
         ⠿
       </button>
 
-      {/* 実 checkbox は視覚的に隠すだけでDOMには残し、キーボード操作・aria を維持する
-          （見た目のチェック四角は完了時の行ディム＋打ち消し線と冗長なため廃止済み。
-          キーボードでのフォーカス可視化は隣接テキストの :focus-visible ~ で行う）。
-          label にタスクテキストまで含めて flex:1 にすることで、テキストや行の余白をクリック
-          してもトグルできる標準的な label-wraps-input 構造にする（ドラッグハンドル・移動/編集/
-          削除ボタンは label の外＝トグル対象外）。 */}
       <label className="mytodo-item-checkbox-label">
         <input
           type="checkbox"
@@ -88,8 +82,6 @@ export const SortableTodoItem = ({
         <span className="mytodo-item-text">{item.text}</span>
       </label>
 
-      {/* 行に個別ボタンを並べるとモバイルでタスクテキストの表示幅が狭くなるため、
-          移動・編集・削除は「⋯」オーバーフローメニューに集約する。 */}
       <div className="mytodo-item-actions">
         <RowMenu
           items={[

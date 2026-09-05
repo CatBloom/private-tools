@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Material Symbols の expand_more（下向きシェブロン、行の操作メニューのトリガー）。並べ替え
-// ハンドルの ⠿（点）と形を分けて役割を区別する。装飾用途のみなので aria-hidden・
-// focusable="false" にし、意味は呼び出し側ボタンの aria-label で伝える。
+// 装飾用途のみなので aria-hidden・focusable="false" にし、意味は呼び出し側ボタンの aria-label で伝える。
 const ExpandMoreIcon = () => (
   <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z" />
@@ -22,16 +20,12 @@ type RowMenuProps = {
   items: RowMenuItem[]
 }
 
-// 行の操作（移動・編集・削除）を1つの「⋯」に集約するオーバーフローメニュー（my-todo/prompt-builder
-// 共通）。モバイルで行の表示幅を確保するため、行に並んでいた個別ボタンをこれに置き換える。
 export const RowMenu = ({ items }: RowMenuProps) => {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  // 開いている間だけ外側クリック・Escape を監視する（閉じている行では何もしない＝
-  // 行数ぶんのリスナーが常時張り付くのを避ける）。他行の「⋯」を開く操作は「外側クリック」に
-  // 該当するため、これだけで「同時に開くのは1つ」を満たす（グローバルな開閉状態の共有は不要）。
+  // 開いている間だけ外側クリック・Escape を監視する（閉じている行にリスナーを張り続けない）。
   useEffect(() => {
     if (!open) return
 

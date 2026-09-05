@@ -12,7 +12,6 @@ const formatFileSize = (size: number) => {
 const formatUploadedAt = (isoDate: string) => {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return isoDate
-  // 月日・時分秒を2桁ゼロ埋めして各行の桁を揃える（例: 2026/08/31 02:22:27）
   return date.toLocaleString('ja-JP', {
     year: 'numeric',
     month: '2-digit',
@@ -28,13 +27,11 @@ export const FilesPage = () => {
   const { files, upload, remove } = useAppDataContext()
   const { showAlert } = useAlert()
   const { confirm } = useConfirm()
-  // アップロード日の降順（最新が上）で表示する
   const sortedFiles = [...files].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
-  // ファイルを選択した時点で自動アップロードする（アップロードボタンは廃止）
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) {
@@ -50,7 +47,7 @@ export const FilesPage = () => {
       showAlert('error', error instanceof Error ? error.message : 'アップロードに失敗しました。')
     } finally {
       setIsUploading(false)
-      // 同じファイルを選び直しても onChange が再発火するよう値をリセットする
+      // 同じファイルを選び直しても onChange が再発火するよう値をリセット
       if (inputRef.current) {
         inputRef.current.value = ''
       }

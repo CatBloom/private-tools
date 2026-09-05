@@ -15,16 +15,8 @@ type KvListResponse = {
   result_info: { cursor?: string; list_complete?: boolean }
 }
 
-// Production backend, not yet wired up (Cloudflare KV namespace/token are not
-// provisioned). Verified against a mocked fetch only.
-//
-// Metadata storage choice: Cloudflare's "write value" endpoint accepts
-// metadata alongside the value in the same multipart request, and the "list
-// keys" endpoint returns that metadata inline with each key. That keeps one
-// KV key per CSV file (no separate meta key to keep in sync, no extra
-// round-trip on put or delete) at the cost of an O(n) scan over key metadata
-// for list — an acceptable trade-off given at most a few hundred YYYYMM
-// files.
+// value と一緒に metadata を書き込み、list はそれを inline で返す。1ファイル1KVキーで済み
+// 別途 meta キーの同期が不要（list は O(n) スキャンだが数百件程度なので許容）。
 export class CloudflareKvStorage implements Storage {
   private readonly client: CloudflareKvClient
 

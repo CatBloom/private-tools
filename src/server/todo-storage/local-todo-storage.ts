@@ -10,9 +10,6 @@ const defaultDir = join(repoRoot, '.data', 'my-todo')
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-// Local development fallback for todo persistence, used until Cloudflare KV
-// is configured for this tool. Stores the single todo state as a plain JSON
-// file under a gitignored directory.
 export class LocalTodoStorage implements TodoStorage {
   private readonly dir: string
 

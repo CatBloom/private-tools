@@ -29,11 +29,9 @@ const CREDIT_CSV_PREFIX = '/tools/credit-csv'
 const PROMPT_BUILDER_PREFIX = '/tools/prompt-builder'
 const MY_TODO_PREFIX = '/tools/my-todo'
 
-// style-src の緩和が必要なツールの path プレフィックス（registry の inlineStyle: true）。
 const inlineStylePrefixes = TOOLS.filter((tool) => tool.inlineStyle).map((tool) => tool.path)
 const isInlineStylePath = (path: string) =>
   inlineStylePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
-// 各ツールの API プレフィックス（`<path>/api`）。エラーハンドラで JSON/HTML を振り分けるために使う。
 const toolApiPrefixes = TOOLS.map((tool) => `${tool.path}/api`)
 
 const staticAssetRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
@@ -41,8 +39,7 @@ const assetsDir = join(staticAssetRoot, 'assets')
 const stylesFilePath = join(staticAssetRoot, 'styles.css')
 const faviconFilePath = join(staticAssetRoot, 'favicon.ico')
 
-// favicon.ico is binary, so it can't go through readCachedFile (utf8). Read the
-// bytes once at module scope and reuse them.
+// バイナリなので utf8 の readCachedFile は使えない。モジュールスコープで1度だけ読む。
 let faviconCache: Uint8Array | null | undefined
 const readFaviconBytes = (): Uint8Array | null => {
   if (faviconCache === undefined) {
@@ -95,8 +92,7 @@ const buildSecureHeaders = (styleSrc: string[]) =>
     xFrameOptions: 'DENY',
   })
 
-// includeBuiltCss は production のときだけ true。開発では抽出済み /assets/*.css は
-// 存在せず（Vite が JS 経由で CSS を注入する）、リンクすると 404 になるため出さない。
+// builtCssHref は production のときだけ渡す（開発では /assets/*.css が存在せず 404 になる）。
 const toolShellHtml = (title: string, clientScript: string, builtCssHref: string | null) =>
   `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="stylesheet" href="/styles.css">${builtCssHref ? `<link rel="stylesheet" href="${builtCssHref}">` : ''}</head><body><div id="root"><div class="tool-shell-loading" role="status" aria-label="読み込み中"><div class="tool-shell-spinner"></div></div></div><script type="module" src="${clientScript}"></script></body></html>`
 
@@ -113,8 +109,6 @@ export const createApp = (options: AppOptions = {}) => {
     (process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts')
 
   const defaultSecureHeaders = buildSecureHeaders(["'self'"])
-  // recharts（credit-csv）、@dnd-kit（prompt-builder / my-todo）は共にインライン style
-  // を使うため、同じ緩和ヘッダーを使い回す。
   const inlineStyleSecureHeaders = buildSecureHeaders(["'self'", "'unsafe-inline'"])
 
   app.use('*', (c, next) => {
@@ -131,8 +125,6 @@ export const createApp = (options: AppOptions = {}) => {
   app.route(`${MY_TODO_PREFIX}/api`, createMyTodoRoutes(options.todoStorage))
 
   if (process.env.NODE_ENV === 'production') {
-    // In development the Vite dev server serves /favicon.ico (see vite.config.ts);
-    // in production Hono serves it from src/public/favicon.ico.
     app.get('/favicon.ico', (c) => {
       const bytes = readFaviconBytes()
       if (bytes === null) return c.notFound()
@@ -180,9 +172,7 @@ export const createApp = (options: AppOptions = {}) => {
 
     app.get(tool.path, (c) => c.html(shell()))
     app.get(`${tool.path}/*`, (c) => {
-      // app.route() flattens the API sub-app's routes into this router without
-      // carrying over its own notFound handler, so unmatched API paths would
-      // otherwise fall through to this wildcard shell instead of a JSON 404.
+      // app.route() は sub-app の notFound を引き継がないため、未マッチの API パスを明示的に振り分ける。
       if (c.req.path.startsWith(`${tool.path}/api`)) {
         return c.json({ ok: false, error: { message: 'Not found.' } }, 404)
       }
@@ -197,8 +187,6 @@ export const createApp = (options: AppOptions = {}) => {
     return c.html('<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Not found</title></head><body><main><h1>Not found</h1></main></body></html>', 404)
   })
 
-  // 未処理例外（例: ストレージ層の失敗）を汎用500で握りつぶさず、API パスでは
-  // サニタイズ済みメッセージを JSON で返す（トークン等の秘密は storage 側で除外済み）。
   app.onError((err, c) => {
     const message = err instanceof Error ? err.message : 'Internal server error.'
     const path = c.req.path

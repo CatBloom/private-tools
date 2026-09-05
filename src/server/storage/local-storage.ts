@@ -10,8 +10,6 @@ const defaultDir = join(repoRoot, '.data', 'credit-csv')
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-// Local development fallback for CSV persistence, used until Cloudflare KV is
-// configured. Stores each CSV as a plain file under a gitignored directory.
 export class LocalStorage implements Storage {
   private readonly dir: string
 

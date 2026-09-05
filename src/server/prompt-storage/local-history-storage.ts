@@ -10,9 +10,6 @@ const defaultDir = join(repoRoot, '.data', 'prompt-builder')
 const isNotFoundError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ENOENT'
 
-// Local development fallback for output history persistence, used until
-// Cloudflare KV is configured for this tool. Stores the shared history list as
-// a single plain JSON file under a gitignored directory.
 export class LocalHistoryStorage implements PromptHistoryStorage {
   private readonly dir: string
 

@@ -1,16 +1,10 @@
-/* 色トークンは src/public/styles.css の --pt-*（1系統のデザイントークン）を直接参照する。
-   ライト/ダークの切替はそちらの [data-theme] 定義に一本化されており、ここでの再定義は不要
-   （このラッパー自身の data-theme 属性が [data-theme="dark"/"light"] にマッチして継承される）。 */
 .mytodo-app {
   display: flex;
   flex-direction: column;
-  /* 親（#root/body）に高さ指定が無く min-height:100% は auto に解決されコンテンツ高さで
-     止まる（ダーク時に地色が透ける）。ビューポート基準で全高を埋める。dvh はモバイルの
-     アドレスバー可変分。 */
+  /* 親に高さ指定が無く min-height:100% はコンテンツ高さで止まる（ダーク時に地色が透ける）ため vh/dvh を使う。 */
   min-height: 100vh;
   min-height: 100dvh;
-  /* iPhone (iOS Safari) の横ラバーバンドを防ぐ（prompt-builder の .pbuilder-app と同じ理由）。 */
-  overflow-x: clip;
+  overflow-x: clip; /* iOS Safari の横ラバーバンド対策 */
   background: var(--pt-bg);
   color: var(--pt-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -32,18 +26,11 @@
   gap: 1rem;
 }
 
-/* ページ切替タブ（本文上・ドロワー内とも）の見た目は共通クラス .tool-layout-tabs/.pt-tab
-   （src/public/styles.css）に集約済み。 */
-
 .mytodo-panel-header-status {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
-
-/* 保存状態インジケーターの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。
-   既定のボタン見た目・disabled 状態は共通クラス .pt-button、テキスト入力の基礎は
-   .pt-input に集約済み（同じく styles.css）。 */
 
 .mytodo-status-message {
   margin: 0;
@@ -62,9 +49,6 @@
   margin-left: 0.6rem;
 }
 
-/* 基礎（padding/surface/border/radius/shadow）は共通クラス .pt-card（src/public/styles.css）
-   に集約済み。 */
-
 .mytodo-panel-header {
   display: flex;
   flex-wrap: wrap;
@@ -79,8 +63,6 @@
   font-size: 1.05rem;
 }
 
-/* 件数バッジの見た目は共通クラス .pt-badge（src/public/styles.css）に集約済み。 */
-
 .mytodo-add-form {
   display: flex;
   gap: 0.6rem;
@@ -91,8 +73,6 @@
   flex: 1;
   min-width: 0;
 }
-
-/* 登録（追加）ボタンの accent 枠は共通クラス .pt-button-accent（src/public/styles.css）に集約済み。 */
 
 .mytodo-limit-reason {
   margin: 0 0 0.85rem;
@@ -107,8 +87,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  /* 空セクションへのドロップを受けられるよう、0件でも高さを確保する。 */
-  min-height: 2.5rem;
+  min-height: 2.5rem; /* 空セクションへのドロップを受けられるよう高さを確保 */
 }
 
 .mytodo-empty {
@@ -127,9 +106,7 @@
   background: var(--pt-bg);
   border: 1px solid var(--pt-border);
   border-radius: 0.75rem;
-  /* ドラッグ開始は .mytodo-drag-handle の listeners のみ（行本体には付与しない）。
-     行に touch-action:none を付けると、テキスト・チェック・余白を起点にした縦スクロールが
-     モバイルで阻害されるため付けない（抑制はハンドル側だけに限定する）。 */
+  /* touch-action:none は .mytodo-drag-handle 側だけに付ける（行に付けるとモバイルの縦スクロールが阻害される）。 */
 }
 
 .mytodo-item.is-dragging {
@@ -137,7 +114,6 @@
   box-shadow: var(--pt-shadow);
 }
 
-/* 完了時は行全体をディムして未完了と一目で見分けられるようにする。 */
 .mytodo-item.is-completed {
   background: color-mix(in srgb, var(--pt-bg) 85%, var(--pt-text) 15%);
   opacity: 0.75;
@@ -159,10 +135,6 @@
   touch-action: none;
 }
 
-/* チェックボックス＋タスクテキスト＋行の余白までを1つのクリック領域にする
-   （label-wraps-input の標準形。ドラッグハンドル・移動/編集/削除ボタンは label の外）。
-   完了表示は行のディム＋テキストの打ち消し線（下記 .mytodo-item.is-completed）で行うため、
-   見た目のチェック四角は持たない（冗長になるため廃止）。 */
 .mytodo-item-checkbox-label {
   display: flex;
   flex: 1;
@@ -173,8 +145,7 @@
   cursor: pointer;
 }
 
-/* 実 input は視覚的に隠しつつ DOM・キーボード操作・aria は維持する（display:none は
-   フォーカスできなくなるため使わない）。 */
+/* display:none だとフォーカスできなくなるため、視覚的に隠すだけにする。 */
 .mytodo-item-checkbox-input {
   position: absolute;
   width: 1px;
@@ -187,8 +158,7 @@
   border: 0;
 }
 
-/* 見た目のチェック四角が無いため、キーボードでのフォーカス可視化は隣接するタスクテキストに
-   outline を出す（Tab でフォーカス→Space でトグルが視覚的に分かるようにする）。 */
+/* 見た目のチェック四角が無いため、キーボードフォーカスは隣接するテキストに outline を出す。 */
 .mytodo-item-checkbox-input:focus-visible ~ .mytodo-item-text {
   outline: 2px solid var(--pt-accent);
   outline-offset: 2px;
@@ -210,12 +180,7 @@
   flex-shrink: 0;
 }
 
-/* 削除ボタンの danger 枠は共通クラス .pt-button-danger（src/public/styles.css）に集約済み。
-   行の操作（移動・編集・削除）を集約した「⋯」オーバーフローメニューの見た目も共通クラス
-   .row-menu-*（同ファイル、src/components/RowMenu.tsx）に集約済み。 */
-
 @media (min-width: 48rem) {
-  /* ブラウザを130%ズームした時と同じサイズ感にする（PCのみ、他ツールと揃える）。 */
   :root {
     font-size: 130%;
   }

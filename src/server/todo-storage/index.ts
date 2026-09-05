@@ -7,8 +7,6 @@ export type { TodoStorage } from './todo-storage.js'
 export { CloudflareKvTodoStorage } from './kv-todo-storage.js'
 export { LocalTodoStorage } from './local-todo-storage.js'
 
-// Cloudflare KV is used only once its namespace/token are provisioned;
-// until then every environment falls back to the local filesystem.
 export const selectTodoStorage = (): TodoStorage =>
   selectByEnv<TodoStorage>({
     namespaceEnv: 'CLOUDFLARE_KV_TODO_NAMESPACE_ID',

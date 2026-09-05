@@ -8,13 +8,11 @@ import { getHistory, putHistory } from '../api'
 import { writeOutputItems } from '../lib/outputStorage'
 import type { HistoryEntry, OutputItem } from '../shared/types'
 
-// execCommand/Clipboard API の分岐は src/lib/copyText.test.ts で網羅済み。ここでは
-// copyText の成否を受けた OutputPage 側の UI 分岐（トースト・手動選択フォールバック）だけを見る。
+// execCommand/Clipboard API の分岐は src/lib/copyText.test.ts で網羅済み。ここでは成否を受けた UI 分岐だけを見る。
 vi.mock('../../../lib/copyText', () => ({
   copyText: vi.fn(),
 }))
 
-// OutputPage は useAlert/useConfirm を使うため、常に Provider でラップして render する。
 const renderPage = () =>
   render(
     <AlertProvider>
@@ -31,9 +29,7 @@ vi.mock('../api', () => ({
   putHistory: vi.fn(),
 }))
 
-// jsdom はドラッグ操作を再現できないため、@dnd-kit はレンダリングだけ通す最小モックにする
-// （並べ替えの結線は notation.test.ts の reorder で検証し、ここでは選択・強調・保存・
-//   コピーなど周辺ロジックの結線だけを見る）。
+// jsdom はドラッグを再現できないため @dnd-kit はレンダリングのみのモック（並べ替えは notation.test.ts で検証）。
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   closestCenter: vi.fn(),
@@ -182,7 +178,6 @@ describe('OutputPage', () => {
 
     fireEvent.change(screen.getByLabelText('保存先で絞り込み'), { target: { value: 'character' } })
 
-    // 特定 target 絞り込みではグループ見出しを出さず、フラット表示に戻る。
     expect(screen.queryByRole('heading', { name: 'Base' })).not.toBeInTheDocument()
     expect(screen.queryByText('base set', { exact: false })).not.toBeInTheDocument()
     expect(screen.getByText('char set', { exact: false })).toBeInTheDocument()
@@ -240,8 +235,6 @@ describe('OutputPage', () => {
     fireEvent.click(firstDelete)
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
-    // While the PUT is pending, every delete/rename-start button is disabled so a second
-    // click cannot race on a stale history array.
     await waitFor(() => {
       screen.getAllByRole('button', { name: '削除' }).forEach((button) => expect(button).toBeDisabled())
       screen.getAllByRole('button', { name: '編集' }).forEach((button) => expect(button).toBeDisabled())
@@ -337,7 +330,6 @@ describe('OutputPage', () => {
 
     await waitFor(() => expect(putHistory).toHaveBeenCalledTimes(1))
     expect(putHistory).toHaveBeenCalledWith([{ ...entry, target: 'negative' }])
-    // ALL 絞り込みのままなので、target 変更後は "negative" グループに移って見出しが出る。
     expect(await screen.findByRole('heading', { name: 'Negative' })).toBeInTheDocument()
     expect(await screen.findByText('履歴を更新しました')).toBeInTheDocument()
   })

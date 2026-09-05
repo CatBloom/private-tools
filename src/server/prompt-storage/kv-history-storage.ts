@@ -5,8 +5,6 @@ import type { PromptHistoryStorage } from './history-storage.js'
 
 const KV_KEY = 'history'
 
-// Production backend, not yet wired up (Cloudflare KV namespace/token are not
-// provisioned for this tool). Verified against a mocked fetch only.
 export class CloudflareKvHistoryStorage implements PromptHistoryStorage {
   private readonly client: CloudflareKvClient
 

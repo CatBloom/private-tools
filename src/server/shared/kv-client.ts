@@ -4,10 +4,7 @@ export type CloudflareKvConfig = {
   apiToken: string
 }
 
-// Thin wrapper over the Cloudflare Workers KV REST API. Every tool-specific
-// KV storage (credit-csv, prompt words/history, todo) builds the same
-// baseUrl/headers/request skeleton on top of this; only the key name, value
-// shape, and serialization differ per tool.
+// Cloudflare Workers KV REST API の薄いラッパー。ツール別 KV storage 共通の基盤。
 export class CloudflareKvClient {
   private readonly baseUrl: string
   private readonly headers: Record<string, string>
@@ -28,9 +25,8 @@ export class CloudflareKvClient {
     }
   }
 
-  // Reads a whole key as JSON — the shape used by every tool that stores a
-  // single key's worth of data (words/history/todos). credit-csv's multipart
-  // value+metadata shape doesn't fit this and builds directly on request().
+  // 1キーに JSON をまるごと格納するツール（words/history/todos）向け。credit-csv の
+  // multipart value+metadata はこの形に合わないため request() を直接使う。
   async getJson<T>(key: string): Promise<T | null> {
     const response = await this.request(`/values/${key}`, { method: 'GET' })
     if (response.status === 404) return null

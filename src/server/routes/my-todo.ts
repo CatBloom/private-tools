@@ -4,15 +4,9 @@ import type { TodoItem, TodoState } from '../../tools/my-todo/shared/types.js'
 import { selectTodoStorage } from '../todo-storage/index.js'
 import type { TodoStorage } from '../todo-storage/index.js'
 
-// Generous ceiling on a single todo item's text, just to keep a malformed or
-// abusive payload from growing a KV value without bound.
 const MAX_ITEM_TEXT_LENGTH = 1000
-// Same rationale, applied to the combined today+someday item count. This is a
-// structural ceiling only — the UI-level "Today は5件まで" rule is not
-// enforced server-side.
+// 構造的な上限のみ。UI 側の「Today は5件まで」はサーバーでは強制しない。
 const MAX_TOTAL_ITEMS = 500
-// Reject an oversized body before parsing it (mirrors the credit-csv upload
-// guard; also stays under Vercel's ~4.5MB Serverless body ceiling).
 const MAX_BODY_BYTES = 4 * 1024 * 1024
 
 const EMPTY_STATE: TodoState = { today: [], someday: [], lastRolloverDate: null }

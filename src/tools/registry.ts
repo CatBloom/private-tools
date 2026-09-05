@@ -1,5 +1,4 @@
-// ツール定義の一覧。react 非依存・JSX なしの純データで、サーバー（app.ts）・SSR（TopPage.ts）・
-// ビルド設定（vite.config.ts、node から実行）・クライアント共通メニュー（Phase 5b）から import する。
+// ツール定義の一覧。react 非依存の純データで、サーバー・SSR・ビルド設定・クライアント共通メニューから import する。
 // ツールを増やすときはここに1件追加し、対応する src/client-<id>.tsx エントリを1ファイル追加する。
 
 export type ToolNavItem = {

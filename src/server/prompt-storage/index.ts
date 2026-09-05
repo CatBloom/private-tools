@@ -15,8 +15,6 @@ export { LocalHistoryStorage } from './local-history-storage.js'
 
 const PROMPT_NAMESPACE_ENV = 'CLOUDFLARE_KV_PROMPT_NAMESPACE_ID'
 
-// Cloudflare KV is used only once its namespace/token are provisioned;
-// until then every environment falls back to the local filesystem.
 export const selectPromptStorage = (): PromptWordStorage =>
   selectByEnv<PromptWordStorage>({
     namespaceEnv: PROMPT_NAMESPACE_ENV,
@@ -27,8 +25,7 @@ export const selectPromptStorage = (): PromptWordStorage =>
     local: () => new LocalPromptStorage(),
   })
 
-// Same Cloudflare KV env vars as selectPromptStorage(), just a separate key
-// namespace ('history' vs 'words').
+// selectPromptStorage() と同じ env vars で、KV キーだけ別（'history' vs 'words'）。
 export const selectPromptHistoryStorage = (): PromptHistoryStorage =>
   selectByEnv<PromptHistoryStorage>({
     namespaceEnv: PROMPT_NAMESPACE_ENV,
