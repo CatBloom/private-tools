@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import devServer from '@hono/vite-dev-server'
+import { TOOLS } from './src/tools/registry'
 
 const publicStylesheet = resolve('src/public/styles.css')
 const publicFavicon = resolve('src/public/favicon.ico')
@@ -34,8 +35,8 @@ const servePublicStyles = () => ({
   },
 })
 
-// publicDir is false, so Vite does not serve src/public in dev. Serve the
-// favicon ourselves (binary), mirroring the production Hono route.
+// publicDir が false のため dev では src/public が配信されない。favicon（バイナリ）は
+// 本番の Hono ルートと同様に自前で配信する。
 const servePublicFavicon = () => ({
   name: 'serve-public-favicon',
   configureServer(server: DevServer) {
@@ -58,15 +59,43 @@ export default defineConfig({
     emptyOutDir: false,
     rollupOptions: {
       input: {
-        client: 'src/client.tsx',
-        'client-prompt': 'src/client-prompt.tsx',
-        'client-todo': 'src/client-todo.tsx',
+        ...Object.fromEntries(TOOLS.map((tool) => [tool.entry.name, tool.entry.src])),
         theme: 'src/ui/theme.ts',
       },
       output: {
         entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name][extname]',
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) return
+          // pnpm の仮想ストアは node_modules/.pnpm/<pkg>@<ver>/node_modules/<pkg>/... と
+          // 二重に node_modules を挟むため、最後の node_modules 以降の先頭セグメントで
+          // パッケージ名を判定する。
+          const afterNodeModules = id.split('node_modules/').at(-1)!
+          const pkg = afterNodeModules.startsWith('@')
+            ? afterNodeModules.split('/').slice(0, 2).join('/')
+            : afterNodeModules.split('/')[0]
+          if (pkg === 'react' || pkg === 'react-dom' || pkg === 'scheduler') return 'vendor-react'
+          if (pkg === 'react-router' || pkg === 'react-router-dom') return 'vendor-router'
+          if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
+          if (
+            pkg === 'recharts' ||
+            pkg === 'recharts-scale' ||
+            pkg === 'victory-vendor' ||
+            pkg === 'react-smooth' ||
+            pkg === 'react-transition-group' ||
+            pkg === 'dom-helpers' ||
+            pkg === 'decimal.js' ||
+            pkg === 'decimal.js-light' ||
+            pkg === 'eventemitter3' ||
+            pkg === 'fast-equals' ||
+            pkg === 'tiny-invariant' ||
+            pkg === 'react-is' ||
+            pkg.startsWith('d3-')
+          ) {
+            return 'vendor-recharts'
+          }
+        },
       },
     },
   },

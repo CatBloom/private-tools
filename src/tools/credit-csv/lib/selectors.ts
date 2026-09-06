@@ -96,8 +96,7 @@ export const collapseTopN = <T extends { name: string; value: number }>(
   const top = data.slice(0, limit);
   const otherTotal = data.slice(limit).reduce((sum, row) => sum + row.value, 0);
 
-  // 「その他」は個別の店名を持たない集約項目。追加フィールド(merchantKey等)は付かない
-  // ため T としてキャストする（T の追加フィールドは任意である前提）。
+  // 「その他」は T の追加フィールド（merchantKey 等）を持たないためキャストする。
   return otherTotal !== 0 ? [...top, { name: otherLabel, value: otherTotal } as T] : top;
 };
 

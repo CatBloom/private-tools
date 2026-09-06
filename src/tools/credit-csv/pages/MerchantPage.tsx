@@ -4,7 +4,7 @@ import { TrendChartCard } from '../components/Charts'
 import { MerchantMonthlyTable } from '../components/MerchantMonthlyTable'
 import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
-import { usePersistedState } from '../hooks/usePersistedState'
+import { usePersistedState } from '../../../hooks/usePersistedState'
 import {
   buildMerchantTrendAll,
   buildMerchantTrendYear,
@@ -41,28 +41,33 @@ const MerchantView = ({ data, merchant }: { data: AppData; merchant: string }) =
       : buildMerchantTrendYear(data.transactions, merchant, selectedYear)
 
   return (
-    <div className="ccsv-page-stack">
-      <section className="ccsv-panel">
-        <div className="ccsv-panel-header">
+    <div className="credit-csv-page-stack">
+      <section className="pt-card credit-csv-panel">
+        <div className="credit-csv-panel-header">
           <h1>{displayName}</h1>
         </div>
-        <div className="ccsv-segmented">
-          <button className={mode === 'all' ? 'active' : ''} type="button" onClick={() => setMode('all')}>
+        <div className="credit-csv-segmented">
+          <button className={`pt-button${mode === 'all' ? ' active' : ''}`} type="button" onClick={() => setMode('all')}>
             全期間
           </button>
-          <button className={mode === 'year' ? 'active' : ''} type="button" onClick={() => setMode('year')}>
+          <button className={`pt-button${mode === 'year' ? ' active' : ''}`} type="button" onClick={() => setMode('year')}>
             年指定
           </button>
-          {mode === 'year' ? (
-            <select value={selectedYear} onChange={(event) => setYear(event.target.value)}>
-              {data.years.map((yearOption) => (
-                <option key={yearOption} value={yearOption}>
-                  {yearOption}年
-                </option>
-              ))}
-            </select>
-          ) : null}
         </div>
+        {mode === 'year' ? (
+          <div className="credit-csv-filters credit-csv-merchant-year">
+            <label>
+              年
+              <select value={selectedYear} onChange={(event) => setYear(event.target.value)}>
+                {data.years.map((yearOption) => (
+                  <option key={yearOption} value={yearOption}>
+                    {yearOption}年
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
       </section>
       <SummaryStats totalAmount={summary.totalAmount} count={summary.count} />
       <TrendChartCard

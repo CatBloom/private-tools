@@ -6,7 +6,6 @@ import { getWords, putWords } from '../api'
 import { readOutputItems } from '../lib/outputStorage'
 import type { PromptWord } from '../shared/types'
 
-// WordsPage は useAlert/useConfirm を使うため、常に Provider でラップして render する。
 const renderPage = () =>
   render(
     <AlertProvider>
@@ -16,12 +15,12 @@ const renderPage = () =>
     </AlertProvider>,
   )
 
-// ワード一覧は既定でタグ ALL（全件・グループ表示）なので、一覧を操作するテストは
-// 読み込み完了の待ち合わせだけしてから進める。
 const showAllWords = async () => {
   await screen.findByLabelText('タグで絞り込み')
   return screen.findByText('cat girl')
 }
+
+const openRowMenu = (row: HTMLElement) => fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
 
 vi.mock('../api', () => ({
   getWords: vi.fn(),
@@ -68,22 +67,18 @@ describe('WordsPage', () => {
 
     const searchInput = screen.getByLabelText('名前・説明で検索')
 
-    // 名前の部分一致（大文字小文字を区別しない）
     fireEvent.change(searchInput, { target: { value: 'CAT' } })
     expect(screen.getByText('cat girl')).toBeInTheDocument()
     expect(screen.queryByText('blue sky')).not.toBeInTheDocument()
 
-    // 説明の部分一致
     fireEvent.change(searchInput, { target: { value: 'ネコ耳' } })
     expect(screen.getByText('cat girl')).toBeInTheDocument()
     expect(screen.queryByText('blue sky')).not.toBeInTheDocument()
 
-    // 検索とタグ絞り込みは AND（検索にヒットしても別タグなら出さない）
     const filterSelect = screen.getByLabelText('タグで絞り込み')
     fireEvent.change(filterSelect, { target: { value: 'quality' } })
     expect(screen.queryByText('cat girl')).not.toBeInTheDocument()
 
-    // 空欄に戻すと全件表示に戻る
     fireEvent.change(searchInput, { target: { value: '' } })
     fireEvent.change(filterSelect, { target: { value: 'ALL' } })
     expect(screen.getByText('cat girl')).toBeInTheDocument()
@@ -99,7 +94,6 @@ describe('WordsPage', () => {
     expect(await screen.findByText('該当するワードがありません。')).toBeInTheDocument()
     expect(screen.queryByText('ワードが登録されていません。')).not.toBeInTheDocument()
 
-    // フラット表示（特定タグ絞り込み）でも検索が効く
     fireEvent.change(screen.getByLabelText('タグで絞り込み'), { target: { value: 'illustrator' } })
     fireEvent.change(screen.getByLabelText('名前・説明で検索'), { target: { value: 'cat' } })
     expect(screen.getByText('cat girl')).toBeInTheDocument()
@@ -111,26 +105,24 @@ describe('WordsPage', () => {
     renderPage()
     await showAllWords()
 
-    // 固定順は appearance, character, expression, illustrator, negative, quality, scene, text, others。
-    // 0件のタグは見出しごと出さないので、sampleWords に存在する illustrator/quality のみ表示される。
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'Illustrator',
       'Quality',
     ])
 
-    const illustratorGroup = screen.getByRole('heading', { name: 'Illustrator' }).closest('.pbuilder-tag-group')!
+    const illustratorGroup = screen.getByRole('heading', { name: 'Illustrator' }).closest('.prompt-builder-tag-group')!
     expect(within(illustratorGroup as HTMLElement).getByText('cat girl')).toBeInTheDocument()
 
-    const qualityGroup = screen.getByRole('heading', { name: 'Quality' }).closest('.pbuilder-tag-group')!
+    const qualityGroup = screen.getByRole('heading', { name: 'Quality' }).closest('.prompt-builder-tag-group')!
     expect(within(qualityGroup as HTMLElement).getByText('blue sky')).toBeInTheDocument()
   })
 
-  it('adds a selected word to the shared output storage', async () => {
+  it('adds a selected word to the shared output storage when the row is clicked', async () => {
     renderPage()
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '出力に追加' }))
+    fireEvent.click(within(wordRow).getByRole('button', { name: 'cat girlを出力に追加' }))
 
     expect(await screen.findByText('出力に追加しました')).toBeInTheDocument()
     expect(readOutputItems().map((item) => item.text)).toEqual(['cat girl'])
@@ -141,7 +133,7 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    const addButton = within(wordRow).getByRole('button', { name: '出力に追加' })
+    const addButton = within(wordRow).getByRole('button', { name: 'cat girlを出力に追加' })
 
     fireEvent.click(addButton)
     expect(await screen.findByText('出力に追加しました')).toBeInTheDocument()
@@ -153,13 +145,11 @@ describe('WordsPage', () => {
   })
 
   it('disables adding words until the initial load completes', async () => {
-    // 初回 getWords を保留させ、ロード中の状態を作る
     let resolveLoad: (words: PromptWord[]) => void = () => {}
     vi.mocked(getWords).mockImplementationOnce(() => new Promise<PromptWord[]>((resolve) => { resolveLoad = resolve }))
 
     renderPage()
 
-    // ロード中は入力・追加を無効化（未取得の一覧への追加→保存で既存を消すのを防ぐ）
     expect(screen.getByLabelText('ワード')).toBeDisabled()
     expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
 
@@ -194,7 +184,6 @@ describe('WordsPage', () => {
     const [words] = vi.mocked(putWords).mock.calls[0]
     expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'new word'])
     expect(words.map((word) => word.tag)).toEqual(['illustrator', 'quality', 'expression'])
-    // 手動保存は成功トーストを出す
     expect(await screen.findByText('保存しました')).toBeInTheDocument()
   })
 
@@ -203,7 +192,8 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    openRowMenu(wordRow)
+    fireEvent.click(within(wordRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(screen.queryByText('cat girl')).not.toBeInTheDocument())
@@ -215,7 +205,8 @@ describe('WordsPage', () => {
     await showAllWords()
 
     const wordRow = screen.getByText('cat girl').closest('li')!
-    fireEvent.click(within(wordRow).getByRole('button', { name: '削除' }))
+    openRowMenu(wordRow)
+    fireEvent.click(within(wordRow).getByRole('menuitem', { name: '削除' }))
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(screen.getByText('cat girl')).toBeInTheDocument()
@@ -258,7 +249,6 @@ describe('WordsPage', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
       const [words] = vi.mocked(putWords).mock.calls[0]
       expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'auto word'])
-      // 自動保存でも成功トーストを出す
       expect(screen.getByText('保存しました')).toBeInTheDocument()
     })
 
@@ -270,15 +260,12 @@ describe('WordsPage', () => {
       fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
-      // 1回目の変更からアイドルが完了する直前
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
 
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
       fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
-      // 2回目の変更でタイマーがリセットされるので、そこからアイドル完了までは発火しない
-      // （1回目の変更からは十分に時間が経っていても）
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
       expect(putWords).not.toHaveBeenCalled()
 
@@ -300,11 +287,9 @@ describe('WordsPage', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
       await screen.findByText('save failed')
 
-      // エラー後はデバウンスのたびに再送し続けない（KV 書き込みクォータを浪費しない）
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS * 3)
       expect(putWords).toHaveBeenCalledTimes(1)
 
-      // 次のワード編集で自動保存が再アームされる
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
       fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
@@ -343,19 +328,16 @@ describe('WordsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1) // 通信中（未解決）
+      expect(putWords).toHaveBeenCalledTimes(1)
 
-      // 保存の通信中にユーザーが別のワードを追加する
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
       fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
-      // 古いスナップショットの結果（空配列）を返しても、通信中に足した 'second' は消えない
       resolveSave([])
       await waitFor(() => expect(screen.getByText('second')).toBeInTheDocument())
       expect(screen.getByText('first')).toBeInTheDocument()
 
-      // 新しい状態が次の debounce で再保存される（'second' を含む）
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
       await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
       expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
@@ -375,20 +357,17 @@ describe('WordsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1) // A 通信中（未解決）
+      expect(putWords).toHaveBeenCalledTimes(1)
 
-      // 通信中に別のワードを追加し、保存が終わる前にページ遷移（アンマウント）する
       fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
       fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       unmount()
 
-      // in-flight A が確定するまで、cleanup の B は送らない（直列化＝古い A を後着させない）
       await Promise.resolve()
       expect(putWords).toHaveBeenCalledTimes(1)
 
-      // A を確定させると、その後に最新 B（'second' を含む）が送られる
       resolveSave([])
       await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
       expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
@@ -408,12 +387,10 @@ describe('WordsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '追加' }))
 
       await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1) // 通信中（未解決）
+      expect(putWords).toHaveBeenCalledTimes(1)
 
-      // 追加編集せずに遷移（アンマウント）する
       unmount()
 
-      // 実行中の保存が成功すると、その内容がそのまま現在値なので、cleanup は二重送信しない
       resolveSave([])
       await vi.runAllTimersAsync()
       await Promise.resolve()
@@ -434,7 +411,6 @@ describe('WordsPage', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
       await screen.findByText('save failed')
 
-      // 失敗後、追加編集せずに遷移（アンマウント）しても、未保存の変更が再送される
       unmount()
       await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
       expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('first')

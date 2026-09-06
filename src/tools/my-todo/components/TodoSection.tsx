@@ -12,7 +12,7 @@ export const TodoSection = ({ id, children }: TodoSectionProps) => {
   const { setNodeRef } = useDroppable({ id })
 
   return (
-    <ul ref={setNodeRef} className="mytodo-item-list">
+    <ul ref={setNodeRef} className="my-todo-item-list">
       {children}
     </ul>
   )

@@ -1,0 +1,72 @@
+import { CloudflareKvClient } from '../shared/kv-client.js'
+import type { CloudflareKvConfig } from '../shared/kv-client.js'
+import { assertValidFileName, isValidFileName } from './types.js'
+import type { CreditCsvStorage, StoredFileMeta } from './types.js'
+
+export type { CloudflareKvConfig } from '../shared/kv-client.js'
+
+type KvListKey = {
+  name: string
+  metadata?: { size?: number; uploadedAt?: string }
+}
+
+type KvListResponse = {
+  result: KvListKey[]
+  result_info: { cursor?: string; list_complete?: boolean }
+}
+
+// value と一緒に metadata を書き込み、list はそれを inline で返す。1ファイル1KVキーで済み
+// 別途 meta キーの同期が不要（list は O(n) スキャンだが数百件程度なので許容）。
+export class CloudflareKvCreditCsvStorage implements CreditCsvStorage {
+  private readonly client: CloudflareKvClient
+
+  constructor(config: CloudflareKvConfig) {
+    this.client = new CloudflareKvClient(config)
+  }
+
+  async list(): Promise<StoredFileMeta[]> {
+    const metas: StoredFileMeta[] = []
+    let cursor: string | undefined
+    do {
+      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
+      const response = await this.client.request(`/keys${query}`, { method: 'GET' })
+      if (!response.ok) throw new Error(`Cloudflare KV list failed with status ${response.status}`)
+      const body = (await response.json()) as KvListResponse
+      for (const key of body.result) {
+        const { size, uploadedAt } = key.metadata ?? {}
+        if (isValidFileName(key.name) && typeof size === 'number' && typeof uploadedAt === 'string') {
+          metas.push({ name: key.name, size, uploadedAt })
+        }
+      }
+      cursor = body.result_info.list_complete ? undefined : body.result_info.cursor
+    } while (cursor)
+    return metas.sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  async get(name: string): Promise<Uint8Array | null> {
+    assertValidFileName(name)
+    const response = await this.client.request(`/values/${name}`, { method: 'GET' })
+    if (response.status === 404) return null
+    if (!response.ok) throw new Error(`Cloudflare KV get failed with status ${response.status}`)
+    return new Uint8Array(await response.arrayBuffer())
+  }
+
+  async put(name: string, bytes: Uint8Array): Promise<StoredFileMeta> {
+    assertValidFileName(name)
+    const meta: StoredFileMeta = { name, size: bytes.byteLength, uploadedAt: new Date().toISOString() }
+    const form = new FormData()
+    form.append('value', new Blob([new Uint8Array(bytes)]), name)
+    form.append('metadata', JSON.stringify({ size: meta.size, uploadedAt: meta.uploadedAt }))
+    const response = await this.client.request(`/values/${name}`, { method: 'PUT', body: form })
+    if (!response.ok) throw new Error(`Cloudflare KV put failed with status ${response.status}`)
+    return meta
+  }
+
+  async delete(name: string): Promise<void> {
+    assertValidFileName(name)
+    const response = await this.client.request(`/values/${name}`, { method: 'DELETE' })
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Cloudflare KV delete failed with status ${response.status}`)
+    }
+  }
+}

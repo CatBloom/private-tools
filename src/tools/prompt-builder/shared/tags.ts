@@ -30,6 +30,6 @@ export const isPromptTagId = (value: string): value is PromptTagId =>
 
 export const DEFAULT_TAG: PromptTagId = 'others'
 
-// タグ無し／不正なタグのワード（旧データ）を安全側の既定タグへ寄せる。
+// タグ無し／不正なタグを安全側の既定タグへ寄せる。
 export const normalizeTag = (value: unknown): PromptTagId =>
   typeof value === 'string' && isPromptTagId(value) ? value : DEFAULT_TAG

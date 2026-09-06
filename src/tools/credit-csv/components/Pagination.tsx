@@ -38,19 +38,19 @@ export const Pagination = ({ page, pageCount, totalCount, start, onPageChange }:
   const lastItem = Math.min(start + PAGE_SIZE, totalCount)
 
   return (
-    <nav className="ccsv-pagination" aria-label="テーブルのページ">
-      <span className="ccsv-pagination-status">
+    <nav className="credit-csv-pagination" aria-label="テーブルのページ">
+      <span className="credit-csv-pagination-status">
         {totalCount.toLocaleString('ja-JP')}件中 {firstItem.toLocaleString('ja-JP')}〜
         {lastItem.toLocaleString('ja-JP')}件
       </span>
-      <div className="ccsv-pagination-controls">
-        <button type="button" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+      <div className="credit-csv-pagination-controls">
+        <button type="button" className="pt-button" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
           前へ
         </button>
         <span aria-live="polite">
           {page} / {pageCount}
         </span>
-        <button type="button" disabled={page === pageCount} onClick={() => onPageChange(page + 1)}>
+        <button type="button" className="pt-button" disabled={page === pageCount} onClick={() => onPageChange(page + 1)}>
           次へ
         </button>
       </div>
