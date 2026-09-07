@@ -39,9 +39,9 @@ export type ToolDefinition = {
 export const TOOLS: readonly ToolDefinition[] = [
   {
     id: 'my-todo',
-    name: 'MyTodo',
+    name: 'My Todo',
     path: '/tools/my-todo',
-    description: 'シンプルなToDoリスト',
+    description: 'シンプルなTodoリスト',
     entry: { name: 'client-my-todo', src: 'src/client-my-todo.tsx' },
     clientScript: { dev: '/src/client-my-todo.tsx', prod: '/assets/client-my-todo.js' },
     css: { prod: '/assets/client-my-todo.css' },

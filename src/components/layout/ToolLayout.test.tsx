@@ -67,7 +67,7 @@ describe('ToolLayout', () => {
       'href',
       '/tools/credit-csv'
     )
-    expect(screen.getByRole('link', { name: 'MyTodo' })).toHaveAttribute('href', '/tools/my-todo')
+    expect(screen.getByRole('link', { name: 'My Todo' })).toHaveAttribute('href', '/tools/my-todo')
     expect(screen.queryByRole('link', { name: 'Prompt Builder' })).not.toBeInTheDocument()
   })
 
