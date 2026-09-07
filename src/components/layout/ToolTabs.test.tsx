@@ -15,7 +15,8 @@ describe('ToolTabs', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('link', { name: 'ワード' })).toHaveAttribute('href', '/words')
+    expect(screen.getByRole('link', { name: 'ワード一覧' })).toHaveAttribute('href', '/words')
+    expect(screen.getByRole('link', { name: '登録' })).toHaveAttribute('href', '/register')
     expect(screen.getByRole('link', { name: '出力' })).toHaveAttribute('href', '/output')
   })
 
@@ -27,8 +28,8 @@ describe('ToolTabs', () => {
     )
 
     expect(screen.getByRole('link', { name: '出力' })).toHaveClass('pt-tab', 'is-active')
-    expect(screen.getByRole('link', { name: 'ワード' })).toHaveClass('pt-tab')
-    expect(screen.getByRole('link', { name: 'ワード' })).not.toHaveClass('is-active')
+    expect(screen.getByRole('link', { name: 'ワード一覧' })).toHaveClass('pt-tab')
+    expect(screen.getByRole('link', { name: 'ワード一覧' })).not.toHaveClass('is-active')
   })
 
   it('renders both full and short label spans for a nav item with shortLabel', () => {

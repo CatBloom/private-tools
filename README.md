@@ -12,7 +12,7 @@
 - **Prompt Builder（`/tools/prompt-builder`）** — 画像生成プロンプトの「ワード」をタグで管理し、選択順に並べてカンマ区切りで組み立て・コピーするツール。
   - ワード管理（`/words`）: タグ12種での絞り込み・登録・インライン編集・削除。
   - 出力組み立て（`/output`）: ドラッグ＆ドロップでの並べ替え、強調記法の付与、名前付きスナップショットとしての保存履歴（復元・編集・削除）。
-- **MyTodo（`/tools/my-todo`）** — 今日やること（Today）といつかやること（Someday）を分けて管理するシンプルな ToDo リスト。
+- **My Todo（`/tools/my-todo`）** — 今日やること（Today）といつかやること（Someday）を分けて管理するシンプルな Todo リスト。
   - 追加・完了チェック・インライン編集・削除、ドラッグ＆ドロップでの並べ替え、Today ⇔ Someday の移動（Today は未完了5件まで）。
   - 日付が変わると Today の未完了タスクを自動で Someday へ繰り越す。
 
@@ -55,7 +55,7 @@ pnpm run dev     # http://localhost:5173
 - `CLOUDFLARE_KV_API_TOKEN`（Workers KV Storage: Edit 権限。全ツール共有）
 - `CLOUDFLARE_KV_CREDIT_NAMESPACE_ID`（Credit CSV Viewer 用 Namespace）
 - `CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`（Prompt Builder 用 Namespace）
-- `CLOUDFLARE_KV_TODO_NAMESPACE_ID`（MyTodo 用 Namespace）
+- `CLOUDFLARE_KV_TODO_NAMESPACE_ID`（My Todo 用 Namespace）
 
 ツールごとに Account ID・API トークン・そのツール専用の Namespace ID の3つが揃うと KV を使用し、揃わない場合はそのツールだけローカルフォールバックになる（Vercel の読み取り専用 FS では書き込みに失敗するため、本番では KV 設定が必須）。
 

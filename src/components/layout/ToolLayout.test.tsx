@@ -55,7 +55,8 @@ describe('ToolLayout', () => {
   it('shows the current tool feature nav', () => {
     renderLayout()
 
-    expect(screen.getByRole('link', { name: 'ワード' })).toHaveAttribute('href', '/words')
+    expect(screen.getByRole('link', { name: 'ワード一覧' })).toHaveAttribute('href', '/words')
+    expect(screen.getByRole('link', { name: '登録' })).toHaveAttribute('href', '/register')
     expect(screen.getByRole('link', { name: '出力' })).toHaveAttribute('href', '/output')
   })
 
@@ -66,7 +67,7 @@ describe('ToolLayout', () => {
       'href',
       '/tools/credit-csv'
     )
-    expect(screen.getByRole('link', { name: 'MyTodo' })).toHaveAttribute('href', '/tools/my-todo')
+    expect(screen.getByRole('link', { name: 'My Todo' })).toHaveAttribute('href', '/tools/my-todo')
     expect(screen.queryByRole('link', { name: 'Prompt Builder' })).not.toBeInTheDocument()
   })
 
@@ -106,7 +107,7 @@ describe('ToolLayout', () => {
 
     const tabsNav = screen.getByRole('navigation', { name: 'ページ切替' })
     expect(tabsNav).toBeInTheDocument()
-    expect(within(tabsNav).getByRole('link', { name: 'ワード' })).toHaveClass('pt-tab', 'is-active')
+    expect(within(tabsNav).getByRole('link', { name: 'ワード一覧' })).toHaveClass('pt-tab', 'is-active')
   })
 
   it('marks the drawer as inert while closed and interactive while open', () => {

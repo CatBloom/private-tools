@@ -162,7 +162,7 @@ describe('server application', () => {
     const html = await response.text()
 
     expect(response.status).toBe(200)
-    expect(html).toContain('<title>MyTodo</title>')
+    expect(html).toContain('<title>My Todo</title>')
     expect(html).toContain('id="root"')
     expect(html).toContain('src="/src/client-my-todo.tsx"')
     expect(html).not.toContain('/assets/client-my-todo.css')

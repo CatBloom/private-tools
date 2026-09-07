@@ -4,13 +4,16 @@ import { AlertProvider, ConfirmProvider } from '../../../components/feedback'
 import { WordsPage } from './WordsPage'
 import { getWords, putWords } from '../api'
 import { readOutputItems } from '../lib/outputStorage'
+import { WordsProvider } from '../state/WordsProvider'
 import type { PromptWord } from '../shared/types'
 
 const renderPage = () =>
   render(
     <AlertProvider>
       <ConfirmProvider>
-        <WordsPage />
+        <WordsProvider>
+          <WordsPage />
+        </WordsProvider>
       </ConfirmProvider>
     </AlertProvider>,
   )
@@ -144,46 +147,22 @@ describe('WordsPage', () => {
     expect(readOutputItems()).toHaveLength(1)
   })
 
-  it('disables adding words until the initial load completes', async () => {
-    let resolveLoad: (words: PromptWord[]) => void = () => {}
-    vi.mocked(getWords).mockImplementationOnce(() => new Promise<PromptWord[]>((resolve) => { resolveLoad = resolve }))
-
-    renderPage()
-
-    expect(screen.getByLabelText('ワード')).toBeDisabled()
-    expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
-
-    resolveLoad(sampleWords)
-    await screen.findByLabelText('タグで絞り込み')
-    expect(screen.getByLabelText('ワード')).toBeEnabled()
-  })
-
-  it('disables adding a word until a tag is selected', async () => {
+  it('edits a word and saves the current word list via putWords', async () => {
     renderPage()
     await showAllWords()
 
-    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'no tag word' } })
-    expect(screen.getByRole('button', { name: '追加' })).toBeDisabled()
-
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-    expect(screen.getByRole('button', { name: '追加' })).toBeEnabled()
-  })
-
-  it('saves the current word list via putWords', async () => {
-    renderPage()
-    await showAllWords()
-
-    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+    const wordRow = screen.getByText('cat girl').closest('li')!
+    openRowMenu(wordRow)
+    fireEvent.click(within(wordRow).getByRole('menuitem', { name: '編集' }))
+    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'cat maid' } })
+    fireEvent.click(within(wordRow).getByRole('button', { name: '保存' }))
 
     const saveButton = await screen.findByRole('button', { name: '保存' })
     fireEvent.click(saveButton)
 
     await waitFor(() => expect(putWords).toHaveBeenCalledTimes(1))
     const [words] = vi.mocked(putWords).mock.calls[0]
-    expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'new word'])
-    expect(words.map((word) => word.tag)).toEqual(['illustrator', 'quality', 'expression'])
+    expect(words.map((word) => word.text)).toEqual(['cat maid', 'blue sky'])
     expect(await screen.findByText('保存しました')).toBeInTheDocument()
   })
 
@@ -210,210 +189,5 @@ describe('WordsPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'キャンセル' }))
 
     expect(screen.getByText('cat girl')).toBeInTheDocument()
-  })
-
-  it('shows a success toast after adding a word', async () => {
-    renderPage()
-    await showAllWords()
-
-    fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
-    fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-    fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-    expect(await screen.findByText('追加しました')).toBeInTheDocument()
-  })
-
-  describe('word list auto save (debounce)', () => {
-    const AUTO_SAVE_DELAY_MS = 30_000
-
-    beforeEach(() => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    it('auto-saves once after the debounce delay from the last change', async () => {
-      renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'auto word' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      expect(putWords).not.toHaveBeenCalled()
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-
-      expect(putWords).toHaveBeenCalledTimes(1)
-      const [words] = vi.mocked(putWords).mock.calls[0]
-      expect(words.map((word) => word.text)).toEqual(['cat girl', 'blue sky', 'auto word'])
-      expect(screen.getByText('保存しました')).toBeInTheDocument()
-    })
-
-    it('resets the debounce timer while changes keep happening', async () => {
-      renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS - 1000)
-      expect(putWords).not.toHaveBeenCalled()
-
-      await vi.advanceTimersByTimeAsync(1000)
-      expect(putWords).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not auto-retry after a failed save until the next edit re-arms it', async () => {
-      vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
-
-      renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-      await screen.findByText('save failed')
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS * 3)
-      expect(putWords).toHaveBeenCalledTimes(1)
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(2)
-    })
-
-    it('does not double-save when a manual save happens before the debounce fires', async () => {
-      renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'manual word' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      const saveButton = await screen.findByRole('button', { name: '保存' })
-      fireEvent.click(saveButton)
-
-      await vi.waitFor(() => expect(putWords).toHaveBeenCalledTimes(1))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-    })
-
-    it('keeps edits made while an auto-save is in flight and re-saves them', async () => {
-      let resolveSave: (value: PromptWord[]) => void = () => {}
-      vi.mocked(putWords).mockImplementationOnce(
-        () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
-      )
-
-      renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      resolveSave([])
-      await waitFor(() => expect(screen.getByText('second')).toBeInTheDocument())
-      expect(screen.getByText('first')).toBeInTheDocument()
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
-      expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
-    })
-
-    it('serializes the unmount flush behind an in-flight save so the newest edit is sent last', async () => {
-      let resolveSave: (value: PromptWord[]) => void = () => {}
-      vi.mocked(putWords).mockImplementationOnce(
-        () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
-      )
-
-      const { unmount } = renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'second' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      unmount()
-
-      await Promise.resolve()
-      expect(putWords).toHaveBeenCalledTimes(1)
-
-      resolveSave([])
-      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
-      expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('second')
-    })
-
-    it('does not duplicate the write when navigating during a successful save with no further edit', async () => {
-      let resolveSave: (value: PromptWord[]) => void = () => {}
-      vi.mocked(putWords).mockImplementationOnce(
-        () => new Promise<PromptWord[]>((resolve) => { resolveSave = resolve }),
-      )
-
-      const { unmount } = renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'only' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-
-      unmount()
-
-      resolveSave([])
-      await vi.runAllTimersAsync()
-      await Promise.resolve()
-      expect(putWords).toHaveBeenCalledTimes(1)
-    })
-
-    it('re-sends the pending edit on unmount after a failed save with no further edits', async () => {
-      vi.mocked(putWords).mockRejectedValueOnce(new Error('save failed'))
-
-      const { unmount } = renderPage()
-      await showAllWords()
-
-      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'first' } })
-      fireEvent.change(screen.getByLabelText('タグ'), { target: { value: 'expression' } })
-      fireEvent.click(screen.getByRole('button', { name: '追加' }))
-
-      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
-      expect(putWords).toHaveBeenCalledTimes(1)
-      await screen.findByText('save failed')
-
-      unmount()
-      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(2))
-      expect(vi.mocked(putWords).mock.calls[1][0].map((word) => word.text)).toContain('first')
-    })
   })
 })

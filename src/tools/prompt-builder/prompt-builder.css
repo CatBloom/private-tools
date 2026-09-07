@@ -340,6 +340,62 @@
   border-color: var(--pt-secondary);
 }
 
+.prompt-builder-decompose-textarea {
+  width: 100%;
+  min-height: 6rem;
+  margin: 0.85rem 0;
+  resize: vertical;
+}
+
+.prompt-builder-decompose-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 分解結果の行は常に編集状態（縦積み）で表示する。1行目: text＋✕、2行目: 説明＋タグ。 */
+.prompt-builder-decompose-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+/* 既登録（words に trim 後完全一致の text がある）の行は入力を disabled にした上で半透明にする。 */
+.prompt-builder-decompose-row-registered {
+  opacity: 0.6;
+}
+
+.prompt-builder-decompose-row-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.prompt-builder-decompose-row-line .pt-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.prompt-builder-decompose-remove {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.prompt-builder-decompose-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.prompt-builder-decompose-bulk-actions button {
+  flex: 1;
+}
+
 @media (min-width: 48rem) {
   :root {
     font-size: 130%;
