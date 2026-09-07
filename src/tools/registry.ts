@@ -75,7 +75,8 @@ export const TOOLS: readonly ToolDefinition[] = [
     clientScript: { dev: '/src/client-prompt-builder.tsx', prod: '/assets/client-prompt-builder.js' },
     css: { prod: '/assets/client-prompt-builder.css' },
     nav: [
-      { label: 'ワード', to: '/words' },
+      { label: 'ワード一覧', to: '/words' },
+      { label: '登録', to: '/register' },
       { label: '出力', to: '/output' },
     ],
     inlineStyle: true,

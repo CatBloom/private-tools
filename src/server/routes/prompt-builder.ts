@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { MAX_WORDS } from '../../tools/prompt-builder/shared/limits.js'
 import { isPromptTargetId } from '../../tools/prompt-builder/shared/targets.js'
 import { isPromptTagId } from '../../tools/prompt-builder/shared/tags.js'
 import type { HistoryEntry, OutputItem, PromptWord } from '../../tools/prompt-builder/shared/types.js'
@@ -6,7 +7,6 @@ import { selectPromptHistoryStorage, selectPromptWordStorage } from '../storage/
 import type { PromptHistoryStorage, PromptWordStorage } from '../storage/prompt-builder/index.js'
 import { apiError, apiOk, jsonBodyLimit, notFoundJson, readJsonBody } from './shared.js'
 
-const MAX_WORDS = 2000
 const MAX_WORD_TEXT_LENGTH = 500
 const MAX_WORD_DESCRIPTION_LENGTH = 2000
 const MAX_HISTORY_ENTRIES = 200

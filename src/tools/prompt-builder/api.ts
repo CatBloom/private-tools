@@ -25,11 +25,13 @@ export const getWords = async (): Promise<PromptWord[]> => {
   return data.words
 }
 
-export const putWords = async (words: PromptWord[]): Promise<PromptWord[]> => {
+export const putWords = async (words: PromptWord[], options?: { keepalive?: boolean }): Promise<PromptWord[]> => {
   const response = await fetch(`${API_BASE}/words`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ words }),
+    // pagehide からの flush はページ破棄後も送信を継続させるため keepalive を付ける。
+    ...(options?.keepalive ? { keepalive: true } : {}),
   })
   const data = await readResult<{ words: PromptWord[] }>(response)
   return data.words

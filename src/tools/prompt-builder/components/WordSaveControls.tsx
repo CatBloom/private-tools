@@ -1,0 +1,29 @@
+import type { SaveStatus } from '../state/WordsProvider'
+
+type WordSaveButtonProps = {
+  dirty: boolean
+  saveStatus: SaveStatus
+  onSave: () => void
+}
+
+export const WordSaveButton = ({ dirty, saveStatus, onSave }: WordSaveButtonProps) => (
+  <div className="prompt-builder-save-controls">
+    {/* バッジはボタンの左に置く。右寄せの並びで後ろに出すと、表示のたびに保存ボタンの位置がずれるため。 */}
+    {dirty && saveStatus !== 'saving' ? <span className="pt-badge prompt-builder-dirty-badge">未保存の変更あり</span> : null}
+    <button type="button" className="pt-button" disabled={!dirty || saveStatus === 'saving'} onClick={onSave}>
+      {saveStatus === 'saving' ? '保存中…' : '保存'}
+    </button>
+  </div>
+)
+
+type WordSaveErrorProps = {
+  saveStatus: SaveStatus
+  saveError: string | null
+}
+
+export const WordSaveError = ({ saveStatus, saveError }: WordSaveErrorProps) =>
+  saveStatus === 'error' ? (
+    <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+      {saveError}
+    </p>
+  ) : null

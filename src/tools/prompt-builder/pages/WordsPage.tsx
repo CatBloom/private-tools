@@ -1,26 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useMemo, useState } from 'react'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { RowMenu } from '../../../components/RowMenu'
-import { getWords, putWords } from '../api'
-import { useGroupedFilter } from '../hooks/useGroupedFilter'
+import { WordSaveButton, WordSaveError } from '../components/WordSaveControls'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
+import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { formatLabel } from '../shared/labels'
-import { DEFAULT_TAG, PROMPT_TAG_IDS, PROMPT_TAG_LABELS, normalizeTag, type PromptTagId } from '../shared/tags'
+import { useWords } from '../state/WordsProvider'
+import { DEFAULT_TAG, PROMPT_TAG_IDS, PROMPT_TAG_LABELS, type PromptTagId } from '../shared/tags'
 import type { PromptWord } from '../shared/types'
 
-type LoadStatus = 'loading' | 'ready' | 'error'
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 type TagFilter = PromptTagId | 'ALL'
-
-// KV書き込み枠節約のためのデバウンス間隔（編集停止からこの時間で自動保存）
-const AUTO_SAVE_DELAY_MS = 30_000
-
-const createWord = (text: string, description: string, tag: PromptTagId): PromptWord => ({
-  id: crypto.randomUUID(),
-  text: text.trim(),
-  description: description.trim(),
-  tag,
-})
 
 const getWordTag = (word: PromptWord) => word.tag
 
@@ -37,26 +26,8 @@ const TagOptions = () => (
 export const WordsPage = () => {
   const { showAlert } = useAlert()
   const { confirm } = useConfirm()
-  const [words, setWords] = useState<PromptWord[]>([])
-  const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [dirty, setDirty] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [saveError, setSaveError] = useState<string | null>(null)
-
-  // タイマー発火時・アンマウント時の flush から最新値を参照するための ref（stale closure 対策）
-  const wordsRef = useRef(words)
-  wordsRef.current = words
-  const dirtyRef = useRef(dirty)
-  dirtyRef.current = dirty
-  // putWords に成功した直近のスナップショット参照。アンマウント flush が未保存かを参照比較で判定する。
-  const lastSentRef = useRef<PromptWord[] | null>(null)
-  // 実行中の putWords。アンマウント flush をこの後ろに直列化し、古い保存が後着で最新を上書きしないようにする。
-  const inFlightRef = useRef<Promise<unknown> | null>(null)
-
-  const [newText, setNewText] = useState('')
-  const [newDescription, setNewDescription] = useState('')
-  const [newTag, setNewTag] = useState<PromptTagId | ''>('')
+  const { words, loadStatus, loadError, reloadWords, dirty, saveStatus, saveError, saveWords, updateWord, deleteWord } =
+    useWords()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -65,48 +36,6 @@ export const WordsPage = () => {
 
   const [filterTag, setFilterTag] = useState<TagFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-
-  const loadWords = useCallback(async () => {
-    setLoadStatus('loading')
-    setLoadError(null)
-    try {
-      const data = await getWords()
-      // 読み込み中に編集が始まっていたら（dirty）、初期データで上書きしない。
-      if (!dirtyRef.current) {
-        setWords(data.map((word) => ({ ...word, tag: normalizeTag(word.tag) })))
-        setSaveStatus('idle')
-      }
-      setLoadStatus('ready')
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : '読み込みに失敗しました。')
-      setLoadStatus('error')
-    }
-  }, [])
-
-  useEffect(() => {
-    loadWords()
-  }, [loadWords])
-
-  const markWordsDirty = () => {
-    setDirty(true)
-    setSaveStatus((current) => (current === 'saving' ? current : 'idle'))
-  }
-
-  const handleAddWord = (event: FormEvent) => {
-    event.preventDefault()
-    // 初回ロード完了前に追加すると、保存時に KV 上の既存ワードを「追加した1件だけ」で置き換えてしまう。
-    if (loadStatus !== 'ready') return
-    const text = newText.trim()
-    if (!text) return
-    if (newTag === '') return
-
-    setWords((current) => [...current, createWord(text, newDescription, newTag)])
-    markWordsDirty()
-    setNewText('')
-    setNewDescription('')
-    setNewTag('')
-    showAlert('success', '追加しました')
-  }
 
   const startEdit = (word: PromptWord) => {
     setEditingId(word.id)
@@ -121,10 +50,7 @@ export const WordsPage = () => {
     const text = editText.trim()
     if (!text) return
 
-    setWords((current) =>
-      current.map((word) => (word.id === id ? { ...word, text, description: editDescription.trim(), tag: editTag } : word)),
-    )
-    markWordsDirty()
+    updateWord(id, { text, description: editDescription, tag: editTag })
     setEditingId(null)
   }
 
@@ -143,67 +69,13 @@ export const WordsPage = () => {
     filterTag,
   )
 
-  const deleteWord = async (id: string) => {
+  const handleDeleteWord = async (id: string) => {
     const confirmed = await confirm('このワードを削除しますか？', { title: '削除', danger: true })
     if (!confirmed) return
 
-    setWords((current) => current.filter((word) => word.id !== id))
-    markWordsDirty()
+    deleteWord(id)
     showAlert('success', '削除しました')
   }
-
-  const saveWords = useCallback(async () => {
-    // 送信後に増えた編集で上書きしないよう、送信対象の参照をここで固定する。
-    const snapshot = wordsRef.current
-    setSaveStatus('saving')
-    setSaveError(null)
-    const request = putWords(snapshot)
-    inFlightRef.current = request
-    try {
-      await request
-      lastSentRef.current = snapshot
-      if (wordsRef.current === snapshot) {
-        setDirty(false)
-        setSaveStatus('saved')
-        showAlert('success', '保存しました')
-      } else {
-        // 送信中に編集されていた（参照が変わった）。dirty のままにして次の debounce で再保存させる。
-        setSaveStatus('idle')
-      }
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : '保存に失敗しました。')
-      setSaveStatus('error')
-    } finally {
-      if (inFlightRef.current === request) inFlightRef.current = null
-    }
-  }, [showAlert])
-
-  // 保存失敗後は自動リトライしない（放置すると KV 書き込みクォータを浪費する）。次の編集が
-  // saveStatus を 'idle' に戻して再アームする。
-  useEffect(() => {
-    if (!dirty || saveStatus === 'saving' || saveStatus === 'error') return
-    const timer = window.setTimeout(() => {
-      saveWords()
-    }, AUTO_SAVE_DELAY_MS)
-    return () => window.clearTimeout(timer)
-  }, [dirty, words, saveStatus, saveWords])
-
-  // ページ切替時に未保存分を失わないよう、アンマウント時に best-effort で1回だけ flush する。
-  useEffect(() => {
-    return () => {
-      if (dirtyRef.current && wordsRef.current !== lastSentRef.current) {
-        const pending = inFlightRef.current
-        if (pending) {
-          // in-flight の保存確定後に送ることで、古い保存が後着で最新を上書きするレースを避ける。
-          pending.catch(() => {}).then(() => {
-            if (wordsRef.current !== lastSentRef.current) putWords(wordsRef.current).catch(() => {})
-          })
-        } else {
-          putWords(wordsRef.current).catch(() => {})
-        }
-      }
-    }
-  }, [])
 
   const addToOutput = (word: PromptWord) => {
     const current = readOutputItems()
@@ -267,7 +139,7 @@ export const WordsPage = () => {
           <RowMenu
             items={[
               { key: 'edit', label: '編集', onClick: () => startEdit(word) },
-              { key: 'delete', label: '削除', onClick: () => deleteWord(word.id), danger: true },
+              { key: 'delete', label: '削除', onClick: () => handleDeleteWord(word.id), danger: true },
             ]}
           />
         </div>
@@ -279,63 +151,16 @@ export const WordsPage = () => {
       <section className="pt-card prompt-builder-panel">
         <div className="prompt-builder-panel-header">
           <h1>ワード一覧</h1>
-          <div className="prompt-builder-save-controls">
-            <button type="button" className="pt-button" disabled={!dirty || saveStatus === 'saving'} onClick={() => saveWords()}>
-              {saveStatus === 'saving' ? '保存中…' : '保存'}
-            </button>
-            {dirty && saveStatus !== 'saving' ? <span className="pt-badge prompt-builder-dirty-badge">未保存の変更あり</span> : null}
-          </div>
+          <WordSaveButton dirty={dirty} saveStatus={saveStatus} onSave={() => saveWords()} />
         </div>
 
-        {saveStatus === 'error' ? (
-          <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
-            {saveError}
-          </p>
-        ) : null}
-
-        <form className="prompt-builder-word-form" onSubmit={handleAddWord}>
-          <input
-            type="text"
-            className="pt-input"
-            placeholder="ワード"
-            aria-label="ワード"
-            value={newText}
-            disabled={loadStatus !== 'ready'}
-            onChange={(event) => setNewText(event.target.value)}
-          />
-          <div className="prompt-builder-word-form-row">
-            <input
-              type="text"
-              className="pt-input"
-              placeholder="説明（任意）"
-              aria-label="説明"
-              value={newDescription}
-              disabled={loadStatus !== 'ready'}
-              onChange={(event) => setNewDescription(event.target.value)}
-            />
-            <select
-              aria-label="タグ"
-              className="prompt-builder-tag-select"
-              value={newTag}
-              disabled={loadStatus !== 'ready'}
-              onChange={(event) => setNewTag(event.target.value as PromptTagId | '')}
-            >
-              <option value="" disabled>
-                タグを選択してください
-              </option>
-              <TagOptions />
-            </select>
-          </div>
-          <button type="submit" className="pt-button pt-button-accent" disabled={loadStatus !== 'ready' || !newText.trim() || newTag === ''}>
-            追加
-          </button>
-        </form>
+        <WordSaveError saveStatus={saveStatus} saveError={saveError} />
 
         {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
         {loadStatus === 'error' ? (
           <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
             {loadError}
-            <button type="button" className="pt-button" onClick={loadWords}>
+            <button type="button" className="pt-button" onClick={reloadWords}>
               再読み込み
             </button>
           </p>
