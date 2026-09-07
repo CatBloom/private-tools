@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { RowMenu } from '../../../components/RowMenu'
-import { WordSaveButton, WordSaveError } from '../components/WordSaveControls'
+import { WordLoadError, WordSaveButton, WordSaveError } from '../components/WordSaveControls'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
 import { formatLabel } from '../shared/labels'
@@ -157,14 +157,7 @@ export const WordsPage = () => {
         <WordSaveError saveStatus={saveStatus} saveError={saveError} />
 
         {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
-        {loadStatus === 'error' ? (
-          <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
-            {loadError}
-            <button type="button" className="pt-button" onClick={reloadWords}>
-              再読み込み
-            </button>
-          </p>
-        ) : null}
+        <WordLoadError loadStatus={loadStatus} loadError={loadError} onReload={reloadWords} />
 
         {loadStatus === 'ready' ? (
           <>

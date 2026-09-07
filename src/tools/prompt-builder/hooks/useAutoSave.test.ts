@@ -166,4 +166,41 @@ describe('useAutoSave', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(calls).toHaveLength(1)
   })
+
+  it('serializes a save that starts during an in-flight flush, finishing with the latest snapshot last', async () => {
+    const callOrder: string[] = []
+    let resolveFirst: () => void = () => {}
+    let resolveSecond: () => void = () => {}
+
+    const save = vi.fn((snapshot: string[]) => {
+      if (snapshot.join(',') === 'a') {
+        callOrder.push('start-a')
+        return new Promise<void>((resolve) => { resolveFirst = () => { callOrder.push('end-a'); resolve() } })
+      }
+      callOrder.push('start-ab')
+      return new Promise<void>((resolve) => { resolveSecond = () => { callOrder.push('end-ab'); resolve() } })
+    })
+    const onSaved = vi.fn()
+    const { edit } = renderAutoSave({ save, onSaved })
+
+    edit('a')
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(callOrder).toEqual(['start-a'])
+
+    // 1本目が in-flight のうちに2本目の flush を起こす。
+    edit('b')
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(callOrder).toEqual(['start-a'])
+
+    resolveFirst()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(callOrder).toEqual(['start-a', 'end-a', 'start-ab'])
+
+    resolveSecond()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(callOrder).toEqual(['start-a', 'end-a', 'start-ab', 'end-ab'])
+    expect(onSaved).toHaveBeenLastCalledWith(['a', 'b'])
+  })
 })

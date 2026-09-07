@@ -40,6 +40,17 @@ export const buildDecomposeRows = (tokens: ParsedPromptToken[], edits: Map<strin
   })
 }
 
+// 行を外すと後続の同 text の出現順が詰まりキーが変わるため、残る行の編集を新キーへ付け替える。
+export const remapRowEdits = (edits: Map<string, RowEdit>, remaining: DecomposeRow[]): Map<string, RowEdit> => {
+  const newKeys = tokenKeys(remaining.map((row) => ({ text: row.originalText, weight: row.weight })))
+  const next = new Map<string, RowEdit>()
+  remaining.forEach((row, index) => {
+    const edit = edits.get(row.key)
+    if (edit) next.set(newKeys[index], edit)
+  })
+  return next
+}
+
 export const setRowEdit = (
   edits: Map<string, RowEdit>,
   key: string,

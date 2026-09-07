@@ -42,10 +42,15 @@ export const useAutoSave = <T,>({ value, dirty, delayMs, save, onSaved, onSucces
     setStatus((current) => (current === 'saving' ? current : 'idle'))
   }, [])
 
-  // 実行中の request をこの後ろに直列化し、古い保存が後着で最新を上書きしないようにする。
+  // 先行する request の完了を待ってから送る。待っている間に同じ snapshot が既に送信済みになっていたら
+  // （先行 request 自身がそれだったなど）二重送信になるため送らない。
   const performSave = useCallback(async (snapshot: T, options?: { keepalive?: boolean }) => {
     const { save, onSaved } = callbacksRef.current
-    const request = save(snapshot, options ?? {})
+    const previous = inFlightRef.current
+    const request = (previous ? previous.catch(() => {}) : Promise.resolve()).then(() => {
+      if (lastSentRef.current === snapshot) return
+      return save(snapshot, options ?? {})
+    })
     inFlightRef.current = request
     try {
       await request
@@ -90,20 +95,11 @@ export const useAutoSave = <T,>({ value, dirty, delayMs, save, onSaved, onSucces
     return () => window.clearTimeout(timer)
   }, [dirty, value, status, delayMs, saveNow])
 
-  // performSave が安定なので初回マウント時に1回だけ登録し、アンマウントで1回だけ flush する。
+  // performSave 自身が直列化するため、in-flight の有無を見ずに1回呼ぶだけでよい。
   useEffect(() => {
     const flush = () => {
       if (dirtyRef.current && valueRef.current !== lastSentRef.current) {
-        const snapshot = valueRef.current
-        const pending = inFlightRef.current
-        if (pending) {
-          // in-flight の保存確定後に送ることで、古い保存が後着で最新を上書きするレースを避ける。
-          pending.catch(() => {}).then(() => {
-            if (valueRef.current !== lastSentRef.current) performSave(valueRef.current, { keepalive: true }).catch(() => {})
-          })
-        } else {
-          performSave(snapshot, { keepalive: true }).catch(() => {})
-        }
+        performSave(valueRef.current, { keepalive: true }).catch(() => {})
       }
     }
 

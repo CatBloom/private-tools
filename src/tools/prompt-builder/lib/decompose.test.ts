@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDecomposeRows, buildPrompt, setRowEdit, toOutputItems, tokenKeys, type RowEdit } from './decompose'
+import { buildDecomposeRows, buildPrompt, remapRowEdits, setRowEdit, toOutputItems, tokenKeys, type RowEdit } from './decompose'
 import { parsePrompt } from './parsePrompt'
 
 describe('tokenKeys', () => {
@@ -24,6 +24,22 @@ describe('buildDecomposeRows', () => {
 
     expect(rows[0]).toMatchObject({ text: 'edited', tag: 'expression', description: 'memo' })
     expect(rows[1]).toMatchObject({ text: 'BBBB', tag: 'others', description: '' })
+  })
+})
+
+describe('remapRowEdits', () => {
+  it('carries the remaining duplicate row\'s edit to its new key and drops the removed row\'s edit', () => {
+    const edits = new Map<string, RowEdit>([
+      ['AAAA#0', { text: 'first-edit', tag: 'expression', description: 'a' }],
+      ['AAAA#1', { text: 'second-edit', tag: 'quality', description: 'b' }],
+    ])
+    const rows = buildDecomposeRows(parsePrompt('AAAA,AAAA'), edits)
+    const remaining = rows.filter((row) => row.key !== 'AAAA#0')
+
+    const remapped = remapRowEdits(edits, remaining)
+
+    expect(remapped.size).toBe(1)
+    expect(remapped.get('AAAA#0')).toEqual({ text: 'second-edit', tag: 'quality', description: 'b' })
   })
 })
 

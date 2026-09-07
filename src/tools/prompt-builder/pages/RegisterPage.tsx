@@ -1,8 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAlert, useConfirm } from '../../../components/feedback'
-import { WordSaveButton, WordSaveError } from '../components/WordSaveControls'
-import { buildDecomposeRows, buildPrompt, setRowEdit, toOutputItems, type DecomposeRow, type RowEdit } from '../lib/decompose'
+import { WordLoadError, WordSaveButton, WordSaveError } from '../components/WordSaveControls'
+import { buildDecomposeRows, buildPrompt, remapRowEdits, setRowEdit, toOutputItems, type DecomposeRow, type RowEdit } from '../lib/decompose'
 import { parsePrompt } from '../lib/parsePrompt'
 import { readOutputItems, writeOutputItems } from '../lib/outputStorage'
 import { formatLabel } from '../shared/labels'
@@ -26,7 +26,7 @@ export const RegisterPage = () => {
   const { showAlert } = useAlert()
   const { confirm } = useConfirm()
   const navigate = useNavigate()
-  const { words, loadStatus, dirty, saveStatus, saveError, saveWords, addWords } = useWords()
+  const { words, loadStatus, loadError, reloadWords, dirty, saveStatus, saveError, saveWords, addWords } = useWords()
 
   const [newText, setNewText] = useState('')
   const [newDescription, setNewDescription] = useState('')
@@ -69,6 +69,7 @@ export const RegisterPage = () => {
     // 元 text＋weight で再構築する。編集後の text を使うと他の行の編集まで textarea に混ざってしまうため。
     const remaining = rows.filter((candidate) => candidate.key !== row.key)
     setDecomposeInput(buildPrompt(remaining.map((candidate) => ({ text: candidate.originalText, weight: candidate.weight }))))
+    setRowEdits((current) => remapRowEdits(current, remaining))
     showAlert('success', `${row.text.trim()}を外しました`)
   }
 
@@ -110,6 +111,7 @@ export const RegisterPage = () => {
         </div>
 
         <WordSaveError saveStatus={saveStatus} saveError={saveError} />
+        <WordLoadError loadStatus={loadStatus} loadError={loadError} onReload={reloadWords} />
 
         <form className="prompt-builder-word-form" onSubmit={handleAddWord}>
           <input

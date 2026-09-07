@@ -101,6 +101,22 @@ describe('RegisterPage', () => {
 
       expect(await screen.findByText(/上限（2000件）を超える/)).toBeInTheDocument()
     })
+
+    it('shows a load error with a reload control, and reload re-fetches successfully', async () => {
+      vi.mocked(getWords).mockRejectedValueOnce(new Error('load failed'))
+
+      renderPage()
+
+      expect(await screen.findByText('load failed')).toBeInTheDocument()
+      const reloadButton = screen.getByRole('button', { name: '再読み込み' })
+
+      vi.mocked(getWords).mockResolvedValueOnce(sampleWords)
+      fireEvent.click(reloadButton)
+
+      await waitFor(() => expect(getWords).toHaveBeenCalledTimes(2))
+      await waitFor(() => expect(screen.queryByText('load failed')).not.toBeInTheDocument())
+      await waitFor(() => expect(screen.getByLabelText('ワード')).toBeEnabled())
+    })
   })
 
   describe('prompt decomposition', () => {
@@ -166,6 +182,22 @@ describe('RegisterPage', () => {
       await waitFor(() => expect(screen.getByLabelText('分解するプロンプト')).toHaveValue('AAAA, {{CCCC}}'))
       expect(getRows()).toHaveLength(2)
       expect(await screen.findByText('BBBBを外しました')).toBeInTheDocument()
+    })
+
+    it('keeps the second duplicate row\'s edit (not the removed first row\'s) after removing the first row', async () => {
+      const { container } = renderPage()
+      await screen.findByLabelText('分解するプロンプト')
+
+      fireEvent.change(screen.getByLabelText('分解するプロンプト'), { target: { value: 'AAAA,AAAA' } })
+
+      const getRows = () => container.querySelectorAll('.prompt-builder-decompose-row')
+      fireEvent.change(within(getRows()[1] as HTMLElement).getByLabelText('タグ'), { target: { value: 'expression' } })
+
+      fireEvent.click(within(getRows()[0] as HTMLElement).getByRole('button', { name: 'この行を外す' }))
+      fireEvent.click(await screen.findByRole('button', { name: '削除' }))
+
+      await waitFor(() => expect(getRows()).toHaveLength(1))
+      expect(within(getRows()[0] as HTMLElement).getByLabelText('タグ')).toHaveValue('expression')
     })
 
     it('does not remove the row when the confirm dialog is cancelled', async () => {

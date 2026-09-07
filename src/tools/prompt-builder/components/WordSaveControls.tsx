@@ -1,4 +1,4 @@
-import type { SaveStatus } from '../state/WordsProvider'
+import type { LoadStatus, SaveStatus } from '../state/WordsProvider'
 
 type WordSaveButtonProps = {
   dirty: boolean
@@ -25,5 +25,21 @@ export const WordSaveError = ({ saveStatus, saveError }: WordSaveErrorProps) =>
   saveStatus === 'error' ? (
     <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
       {saveError}
+    </p>
+  ) : null
+
+type WordLoadErrorProps = {
+  loadStatus: LoadStatus
+  loadError: string | null
+  onReload: () => void
+}
+
+export const WordLoadError = ({ loadStatus, loadError, onReload }: WordLoadErrorProps) =>
+  loadStatus === 'error' ? (
+    <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+      {loadError}
+      <button type="button" className="pt-button" onClick={onReload}>
+        再読み込み
+      </button>
     </p>
   ) : null
