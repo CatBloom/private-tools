@@ -196,7 +196,7 @@ Bill Manager 専用。`BillManagerStorage`（`getLedger/putLedger`、`LedgerStat
 
 ### セキュリティと API 規約
 
-- CSP は単一 middleware でパス分岐: `registry.ts` の `inlineStyle: true` なツール（現状 credit-csv・prompt-builder・my-todo の全ツール）の path 配下だけ `style-src 'self' 'unsafe-inline'`（credit-csv は recharts のインライン style＋Vite の CSS 注入、prompt-builder／my-todo は @dnd-kit の inline transform のため。共通の `inlineStyleSecureHeaders` を使う）、それ以外（TOP 等）は `style-src 'self'`。**`script-src` は全ルート厳格**（dev のみ Vite preamble 用に `'unsafe-inline'`）。TOP に React バンドルを出さないこと（テーマ用 `theme.js` のみ）・ルート別 CSP はテストが検証している。
+- CSP は単一 middleware でパス分岐: `registry.ts` の `inlineStyle: true` なツール（現状 credit-csv・prompt-builder・my-todo・bill-manager の全ツール）の path 配下だけ `style-src 'self' 'unsafe-inline'`（credit-csv は recharts のインライン style＋Vite の CSS 注入、prompt-builder／my-todo は @dnd-kit の inline transform、bill-manager は Vite の CSS 注入（dev）のため。共通の `inlineStyleSecureHeaders` を使う）、それ以外（TOP 等）は `style-src 'self'`。**`script-src` は全ルート厳格**（dev のみ Vite preamble 用に `'unsafe-inline'`）。TOP に React バンドルを出さないこと（テーマ用 `theme.js` のみ）・ルート別 CSP はテストが検証している。
 - API レスポンスは `{ ok:true, data }` / `{ ok:false, error:{ message } }`。エラーメッセージに内部情報を含めない。
 - サーバー専用の認証情報（KV トークン等）・`node:fs`・storage コードをクライアントバンドルに入れない（各 `client-*.tsx → <Tool>App → api.ts` の依存に storage を混ぜない。ビルド後 `src/public/assets/client-credit-csv.js`・`client-prompt-builder.js`・`client-my-todo.js`・`client-bill-manager.js` を grep して混入ゼロを確認できる）。
 
