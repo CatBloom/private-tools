@@ -119,7 +119,7 @@ describe('MonthPage', () => {
     const incomeLabel = await screen.findByText(
       (text, element) => text === '収入' && element?.parentElement?.className === 'bill-manager-summary-row',
     )
-    const incomeRow = incomeLabel.closest('.bill-manager-summary-row')!
+    const incomeRow = incomeLabel.closest<HTMLElement>('.bill-manager-summary-row')!
     expect(within(incomeRow).getByText('330,000円')).toBeInTheDocument()
   })
 
