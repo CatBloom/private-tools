@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { LedgerState } from '../../../tools/bill-manager/shared/types'
 import { LocalBillManagerStorage } from './local-storage'
 
 describe('LocalBillManagerStorage', () => {
@@ -23,9 +24,16 @@ describe('LocalBillManagerStorage', () => {
   })
 
   it('round-trips putLedger and getLedger through real file I/O', async () => {
-    const state = {
+    const state: LedgerState = {
       months: {
-        '202401': [{ id: '1', name: '家賃', amount: 80000, variable: false, carryOver: true }],
+        '202401': {
+          entries: [
+            { id: '1', name: '家賃', amount: 80000, category: 'rent', variable: false, carryOver: true, excluded: false },
+          ],
+          income: 300000,
+          extraIncome: null,
+          specials: [],
+        },
       },
     }
 
