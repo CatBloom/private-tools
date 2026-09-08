@@ -3,7 +3,19 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryBillManagerStorage } from '../../test/in-memory-storage.js'
 import { createBillManagerRoutes } from './bill-manager.js'
 
-const validEntry = { id: '1', name: '家賃', amount: 80000, variable: false, carryOver: true }
+const validEntry = {
+  id: '1',
+  name: '家賃',
+  amount: 80000,
+  category: 'rent',
+  variable: false,
+  carryOver: true,
+  excluded: false,
+}
+
+const validSpecial = { id: 's1', amount: 825, memo: 'メロブ(paidy)' }
+
+const emptyMonth = { entries: [], income: null, extraIncome: null, specials: [] }
 
 describe('bill-manager routes', () => {
   let app: Hono
@@ -21,7 +33,11 @@ describe('bill-manager routes', () => {
   })
 
   it('puts state and returns it from a subsequent get', async () => {
-    const state = { months: { '202401': [validEntry] } }
+    const state = {
+      months: {
+        '202401': { entries: [validEntry], income: 300000, extraIncome: 50000, specials: [validSpecial] },
+      },
+    }
     const putResponse = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -35,8 +51,12 @@ describe('bill-manager routes', () => {
     await expect(getResponse.json()).resolves.toEqual({ ok: true, data: { state } })
   })
 
-  it('accepts a null amount', async () => {
-    const state = { months: { '202401': [{ ...validEntry, amount: null }] } }
+  it('accepts a null entry amount, income, and extraIncome', async () => {
+    const state = {
+      months: {
+        '202401': { entries: [{ ...validEntry, amount: null }], income: null, extraIncome: null, specials: [] },
+      },
+    }
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -82,11 +102,38 @@ describe('bill-manager routes', () => {
     expect(response.status).toBe(400)
   })
 
+  it('rejects a month whose value is an array instead of a LedgerMonth object', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': [validEntry] } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a month whose entries value is not an array', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, entries: {} } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a month whose specials value is not an array', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, specials: {} } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
   it('rejects an invalid month key', async () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '2024-01': [validEntry] } } }),
+      body: JSON.stringify({ state: { months: { '2024-01': { ...emptyMonth, entries: [validEntry] } } } }),
     })
     expect(response.status).toBe(400)
   })
@@ -95,7 +142,7 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202413': [validEntry] } } }),
+      body: JSON.stringify({ state: { months: { '202413': { ...emptyMonth, entries: [validEntry] } } } }),
     })
     expect(response.status).toBe(400)
   })
@@ -104,7 +151,9 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, amount: -1 }] } } }),
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, amount: -1 }] } } },
+      }),
     })
     expect(response.status).toBe(400)
   })
@@ -113,7 +162,9 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, amount: 100.5 }] } } }),
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, amount: 100.5 }] } } },
+      }),
     })
     expect(response.status).toBe(400)
   })
@@ -122,7 +173,9 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, amount: 1_000_000_001 }] } } }),
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, amount: 1_000_000_001 }] } } },
+      }),
     })
     expect(response.status).toBe(400)
   })
@@ -131,7 +184,7 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, id: '' }] } } }),
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, id: '' }] } } } }),
     })
     expect(response.status).toBe(400)
   })
@@ -140,7 +193,31 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, variable: 'no' }] } } }),
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, variable: 'no' }] } } },
+      }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects an entry with a non-boolean excluded field', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, excluded: 'no' }] } } },
+      }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects an entry with a category outside the fixed list', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, category: 'food' }] } } },
+      }),
     })
     expect(response.status).toBe(400)
   })
@@ -149,7 +226,60 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': [{ ...validEntry, name: 'x'.repeat(101) }] } } }),
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, entries: [{ ...validEntry, name: 'x'.repeat(101) }] } } },
+      }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a negative income', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, income: -1 } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a non-integer extraIncome', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, extraIncome: 100.5 } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a special expense with a null amount', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, specials: [{ ...validSpecial, amount: null }] } } },
+      }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a special expense with a memo longer than the maximum length', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, specials: [{ ...validSpecial, memo: 'x'.repeat(201) }] } } },
+      }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a special expense with an empty id', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        state: { months: { '202401': { ...emptyMonth, specials: [{ ...validSpecial, id: '' }] } } },
+      }),
     })
     expect(response.status).toBe(400)
   })
@@ -158,7 +288,7 @@ describe('bill-manager routes', () => {
     const months: Record<string, unknown> = {}
     for (let year = 2000; year < 2021; year += 1) {
       for (let month = 1; month <= 12; month += 1) {
-        months[`${year}${String(month).padStart(2, '0')}`] = []
+        months[`${year}${String(month).padStart(2, '0')}`] = emptyMonth
       }
     }
     const response = await request('/ledger', {
@@ -169,7 +299,7 @@ describe('bill-manager routes', () => {
     expect(response.status).toBe(413)
     await expect(response.json()).resolves.toEqual({
       ok: false,
-      error: { message: 'Too many months or entries.' },
+      error: { message: 'Too many months, entries, or specials.' },
     })
   })
 
@@ -178,7 +308,17 @@ describe('bill-manager routes', () => {
     const response = await request('/ledger', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: { months: { '202401': entries } } }),
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, entries } } } }),
+    })
+    expect(response.status).toBe(413)
+  })
+
+  it('rejects a month with too many specials', async () => {
+    const specials = Array.from({ length: 51 }, (_, i) => ({ ...validSpecial, id: String(i) }))
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, specials } } } }),
     })
     expect(response.status).toBe(413)
   })
