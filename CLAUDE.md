@@ -28,7 +28,7 @@ CI（`.github/workflows/ci.yml`）は PR と `main` への push で lint / typec
 
 ## アーキテクチャ
 
-Hono SSR をシェルに、ツールはクライアント側でマウントするマルチツール構成（現在3ツール: Credit CSV Viewer / Prompt Builder / My Todo）。Vercel の Hono プリセットが `src/index.ts` を Function のエントリとして使う。ツール横断の仕組み（登録・共有 UI・デザイントークン・ストレージ骨格・ビルド設定）を先に説明し、各ツール固有の差分はその後の節にまとめる。
+Hono SSR をシェルに、ツールはクライアント側でマウントするマルチツール構成（現在4ツール: Credit CSV Viewer / Prompt Builder / My Todo / Bill Manager）。Vercel の Hono プリセットが `src/index.ts` を Function のエントリとして使う。ツール横断の仕組み（登録・共有 UI・デザイントークン・ストレージ骨格・ビルド設定）を先に説明し、各ツール固有の差分はその後の節にまとめる。
 
 ### ツール登録とルーティング
 
@@ -119,11 +119,24 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - 行の操作（セクション間移動・編集・削除）は共通 `src/components/RowMenu.tsx`（⋯）に集約する（モバイルでのタスクテキスト表示幅を確保するため、行に個別ボタンを並べない）。
 - UI: `index.tsx` が default export `MyTodoApp`（`my-todo.css` を import、`<ToolLayout toolId="my-todo" appClassName="my-todo-app">` でラップ）。`SectionPage` が追加フォーム・@dnd-kit（`PointerSensor`＋`TouchSensor`＋`KeyboardSensor`）での並べ替え・完了チェック・インライン編集・削除・セクション間移動を提供する。テーマ切替は共通 `useTheme`/`ThemeToggle`（`.my-todo-app[data-theme]` にスコープ）。
 
+### Bill Manager（`src/tools/bill-manager/`）
+
+固定費（家賃・光熱費など）とクレジットカードの月額を合わせた「支払月の合計」を出すツール。細かい家計管理はしない。ページは `/`（既定）のみで、不明パスはリダイレクトする。
+
+- `shared/types.ts` — react 非依存の型（`LedgerEntry = {id,name,amount,variable,carryOver}`／`LedgerState = {months: Record<支払月YYYYMM, LedgerEntry[]>}`）と構造的な上限（`MAX_MONTHS`／`MAX_ENTRIES_PER_MONTH`／`MAX_ENTRY_NAME_LENGTH`／`MAX_ENTRY_AMOUNT`）・`isMonthKey`。**サーバー route からも import する**ため JSX を含めない。
+- **データの持ち方**: 支払月ごとに `LedgerEntry[]` のスナップショットを独立して保存する（マスター無し）。ある月を編集しても他の月には波及しない。
+- **月の初期化（`lib/initMonth.ts` の `resolveMonthEntries`、純粋関数）**: 記録の無い月を開いたら、「その月より前で記録がある最新の月」から行をコピーして表示する。コピー時、`variable: true` の行は `amount: null`（未入力）にし、`carryOver: false` の行は除外する。`id` はそのまま引き継ぐ。前の記録が無ければ空。**表示のための初期化はクライアント計算のみ**（state は書き換えない）で、その月で最初の編集（`addEntry`／`updateEntry`／`removeEntry`）が発生したときに初めて `LedgerContext` が state に書き込み（materialize）て PUT する。
+- **クレカ額（`lib/creditAmount.ts`／`creditCsvApi.ts`）**: 支払月 M のクレカ額 = 利用月 M-1（`CREDIT_PAYMENT_OFFSET_MONTHS = 1`、`creditUsageMonth`）の credit-csv ファイル `YYYYMM.csv` の合計（`sumCreditCsv` が `src/lib/credit-csv/csv.ts` の `parseUploadedCsv` を使って集計）。`creditCsvApi.ts` の `fetchCreditCsvBytes` が credit-csv の API（`GET /tools/credit-csv/api/files/<YYYYMM>.csv`、URL のベースは `registry.ts` の `TOOLS` から引く）を同一オリジンで fetch する（200 → 集計、404 → 未取込 = `null`）。**KV には保存せず、表示のたびに毎回計算する**（修正不可）。`src/tools/credit-csv/` 配下は直接 import しない（`src/tools/tool-boundary.test.ts` が検出する）。
+- `lib/monthKey.ts` — 支払月キー（YYYYMM）の加減算・整形の純粋関数（`shiftMonth`／`currentMonthKey`／`formatMonthLabel`）。
+- `lib/summary.ts` — 行の集計（`summarizeEntries`：`amount` が `null` の行を除いた `fixedTotal` と、その件数 `missingCount`）。
+- `state/LedgerContext.tsx` — 支払月ごとの固定費スナップショットを1箇所に持ち上げ、ページを切り替えても保持する（`useLedger`）。保存は `TodoContext` と同じ「変更ごと即時 PUT＋1秒ゲート（`MIN_WRITE_INTERVAL_MS = 1000`）＋in-flight 直列化・失敗時は自動リトライしない」。選択中の支払月（`month`、既定は当月）・その月の行（`entries`／`entriesSource`）・操作（`addEntry`／`updateEntry`／`removeEntry`）を提供する。
+- UI: `index.tsx` が default export `BillManagerApp`（`bill-manager.css` を import、`<ToolLayout toolId="bill-manager" appClassName="bill-manager-app">` でラップ）。`LedgerPage` が 前月／翌月ナビ・集計カード（固定費合計／クレカ額／合計）・行一覧（共通 `RowMenu` で名前編集・「毎月変わる」切替・「この月で終了」⇄「翌月へ引き継ぐ」・削除）・追加フォームを提供する。`entriesSource === 'derived'` の月はコピー内容である旨を注記する。テーマ切替は共通 `useTheme`/`ThemeToggle`（`.bill-manager-app[data-theme]` にスコープ）。
+
 ### ストレージ共通骨格（`src/server/storage/shared/`）
 
-- `kv-client.ts` — Cloudflare Workers KV REST の薄いラッパー `CloudflareKvClient`（`getJson`/`putJson`/`request`）。3ツールの KV ストレージ実装はこの上に積む。credit-csv の value+metadata 形式の一覧取得だけはこの形に合わないため `request()` を直接使う。
+- `kv-client.ts` — Cloudflare Workers KV REST の薄いラッパー `CloudflareKvClient`（`getJson`/`putJson`/`request`）。各ツールの KV ストレージ実装はこの上に積む。credit-csv の value+metadata 形式の一覧取得だけはこの形に合わないため `request()` を直接使う。
 - `select-storage.ts` — `selectByEnv(options)`：Account ID＋ツール別 Namespace env＋API Token が揃えば KV 実装、揃わなければ Local 実装を返す判定を共通化する。各ツールの `select*Storage()` はこの関数へ `namespaceEnv`／`kv`／`local` を渡すだけ。
-- 環境変数は Account ID（`CLOUDFLARE_ACCOUNT_ID`）と API トークン（`CLOUDFLARE_KV_API_TOKEN`）を3ツールで共有し、Namespace のみツールごとに `CLOUDFLARE_KV_<TOOL>_NAMESPACE_ID` 形式で別立てする（credit-csv: `CLOUDFLARE_KV_CREDIT_NAMESPACE_ID`、prompt-builder: `CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`、my-todo: `CLOUDFLARE_KV_TODO_NAMESPACE_ID`）。**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**。
+- 環境変数は Account ID（`CLOUDFLARE_ACCOUNT_ID`）と API トークン（`CLOUDFLARE_KV_API_TOKEN`）を全ツールで共有し、Namespace のみツールごとに `CLOUDFLARE_KV_<TOOL>_NAMESPACE_ID` 形式で別立てする（credit-csv: `CLOUDFLARE_KV_CREDIT_NAMESPACE_ID`、prompt-builder: `CLOUDFLARE_KV_PROMPT_NAMESPACE_ID`、my-todo: `CLOUDFLARE_KV_TODO_NAMESPACE_ID`、bill-manager: `CLOUDFLARE_KV_BILL_NAMESPACE_ID`）。**サーバー専用・`process.env` からのみ・クライアントに絶対混入させない**。
 
 ### Credit CSV ストレージ（`src/server/storage/credit-csv/`）
 
@@ -140,6 +153,10 @@ Prompt Builder 専用。ワード用と履歴用の2系統で、どちらも**�
 
 My Todo 専用。`MyTodoStorage`（`getTodos/putTodos`、`TodoState` を丸ごと読み書き）と2実装 `LocalMyTodoStorage`（`.data/my-todo/todos.json`）／`CloudflareKvMyTodoStorage`。KV キーは単一の `todos`。`selectMyTodoStorage()` は `CLOUDFLARE_KV_TODO_NAMESPACE_ID` で `selectByEnv` に委譲する。
 
+### Bill ストレージ（`src/server/storage/bill-manager/`）
+
+Bill Manager 専用。`BillManagerStorage`（`getLedger/putLedger`、`LedgerState` を丸ごと読み書き）と2実装 `LocalBillManagerStorage`（`.data/bill-manager/ledger.json`）／`CloudflareKvBillManagerStorage`。KV キーは単一の `ledger`。`selectBillManagerStorage()` は `CLOUDFLARE_KV_BILL_NAMESPACE_ID` で `selectByEnv` に委譲する。
+
 ### CSV アップロード API（`src/server/routes/credit-csv.ts`）
 
 `createCreditCsvRoutes(storage?)` が Hono サブアプリを返す（`/tools/credit-csv/api` にマウント）。`GET/POST /files`（POST は multipart、field `file`）、`GET/DELETE /files/:name`。バリデーション: ファイル名 `^\d{6}\.csv$`（不正 400）、4MiB 超 413、非 multipart 415、未存在 404。CSV は生バイトのまま保存し、デコード（Shift_JIS）・パースはクライアントで行う。
@@ -154,6 +171,10 @@ My Todo 専用。`MyTodoStorage`（`getTodos/putTodos`、`TodoState` を丸ご�
 ### Todo API（`src/server/routes/my-todo.ts`）
 
 `createMyTodoRoutes(storage?)` が Hono サブアプリを返す（`/tools/my-todo/api` にマウント）。`GET /todos`（現在の状態。未保存なら空状態）、`PUT /todos`（JSON `{ state }` で丸ごと置換）。バリデーション: 非 JSON 415、payload 不正 400、アイテムの `text` 長 1000 文字超は無効、`today`+`someday` の合計アイテム数 500 件超 413、ボディ 4MiB 超 413。`TODAY_LIMIT`（Today 未完了5件まで）は UI 側のルールでサーバー側では強制しない。
+
+### Ledger API（`src/server/routes/bill-manager.ts`）
+
+`createBillManagerRoutes(storage?)` が Hono サブアプリを返す（`/tools/bill-manager/api` にマウント）。`GET /ledger`（現在の状態。未保存なら空状態）、`PUT /ledger`（JSON `{ state }` で丸ごと置換）。バリデーション: 非 JSON 415、payload 不正（月キー不正・行フィールド不正・`amount` が 0 以上の整数でない、を含む）400、ボディ 4MiB 超／月数 240 超（`MAX_MONTHS`）／1月あたりの行数 50 超（`MAX_ENTRIES_PER_MONTH`）413。
 
 ### 静的資産の配信（dev と production で経路が違う）
 
@@ -177,7 +198,7 @@ My Todo 専用。`MyTodoStorage`（`getTodos/putTodos`、`TodoState` を丸ご�
 
 - CSP は単一 middleware でパス分岐: `registry.ts` の `inlineStyle: true` なツール（現状 credit-csv・prompt-builder・my-todo の全ツール）の path 配下だけ `style-src 'self' 'unsafe-inline'`（credit-csv は recharts のインライン style＋Vite の CSS 注入、prompt-builder／my-todo は @dnd-kit の inline transform のため。共通の `inlineStyleSecureHeaders` を使う）、それ以外（TOP 等）は `style-src 'self'`。**`script-src` は全ルート厳格**（dev のみ Vite preamble 用に `'unsafe-inline'`）。TOP に React バンドルを出さないこと（テーマ用 `theme.js` のみ）・ルート別 CSP はテストが検証している。
 - API レスポンスは `{ ok:true, data }` / `{ ok:false, error:{ message } }`。エラーメッセージに内部情報を含めない。
-- サーバー専用の認証情報（KV トークン等）・`node:fs`・storage コードをクライアントバンドルに入れない（各 `client-*.tsx → <Tool>App → api.ts` の依存に storage を混ぜない。ビルド後 `src/public/assets/client-credit-csv.js`・`client-prompt-builder.js`・`client-my-todo.js` を grep して混入ゼロを確認できる）。
+- サーバー専用の認証情報（KV トークン等）・`node:fs`・storage コードをクライアントバンドルに入れない（各 `client-*.tsx → <Tool>App → api.ts` の依存に storage を混ぜない。ビルド後 `src/public/assets/client-credit-csv.js`・`client-prompt-builder.js`・`client-my-todo.js`・`client-bill-manager.js` を grep して混入ゼロを確認できる）。
 
 ### テスト
 

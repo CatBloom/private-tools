@@ -1,1 +1,157 @@
-/* Bill Manager 固有のレイアウト。共有 UI（.pt-* / .fbk-* / .tool-layout-* / .row-menu-*）は styles.css に置く。 */
+/* Bill Manager 固有のレイアウト。共有 UI（.pt-* / .fbk-* / .tool-layout-* / .row-menu-*）は styles.css に置く。
+   デスクトップでの本文中央寄せ（max-width: 1040px）は .tool-layout-main に既にあるためここでは指定しない。 */
+
+.bill-manager-app {
+  display: flex;
+  flex-direction: column;
+  /* 親に高さ指定が無く min-height:100% はコンテンツ高さで止まる（ダーク時に地色が透ける）ため vh/dvh を使う。 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip; /* iOS Safari の横ラバーバンド対策 */
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bill-manager-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bill-manager-status-message {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.75rem;
+}
+
+.bill-manager-status-message-error {
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
+}
+
+.bill-manager-status-message-error button {
+  margin-left: 0.6rem;
+}
+
+.bill-manager-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.bill-manager-month-label {
+  min-width: 8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bill-manager-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bill-manager-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bill-manager-summary-total {
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--pt-border);
+  font-size: 1.1rem;
+}
+
+.bill-manager-note {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.bill-manager-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.85rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bill-manager-empty {
+  margin: 0;
+  padding: 0.6rem 0;
+  color: var(--pt-muted);
+  font-size: 0.9rem;
+  list-style: none;
+}
+
+.bill-manager-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.75rem;
+}
+
+.bill-manager-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bill-manager-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.bill-manager-row-amount {
+  width: 100%;
+}
+
+.bill-manager-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.bill-manager-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.bill-manager-add-form input[type="text"],
+.bill-manager-add-form input[type="number"] {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.bill-manager-add-form-variable {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--pt-text-sm);
+  white-space: nowrap;
+}
+
+@media (min-width: 48rem) {
+  .bill-manager-row-main {
+    flex-wrap: nowrap;
+  }
+
+  .bill-manager-row-amount {
+    width: 12rem;
+  }
+}
