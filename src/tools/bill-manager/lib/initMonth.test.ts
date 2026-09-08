@@ -39,7 +39,7 @@ describe('resolveMonth', () => {
     expect(result.month.entries).toEqual([entry()])
   })
 
-  it('nulls out the amount of variable entries when copying forward', () => {
+  it('zeroes out the amount of variable entries when copying forward', () => {
     const state: LedgerState = {
       months: {
         202608: month({
@@ -49,7 +49,7 @@ describe('resolveMonth', () => {
     }
     const result = resolveMonth(state, '202609')
     expect(result.month.entries).toEqual([
-      entry({ id: 'e2', name: '電気代', category: 'utility', amount: null, variable: true }),
+      entry({ id: 'e2', name: '電気代', category: 'utility', amount: 0, variable: true }),
     ])
   })
 

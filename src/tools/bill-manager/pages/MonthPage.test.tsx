@@ -165,7 +165,7 @@ describe('MonthPage', () => {
     expect(savedEntry).toMatchObject({ name: '家賃（更新）', category: 'utility' })
   })
 
-  it('shows status badges (変動／終了／除外) next to the entry name', async () => {
+  it('shows status badges (変動費／終了), in that order, before the category badge, and never shows an 除外 badge', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: {
         202609: {
@@ -179,12 +179,14 @@ describe('MonthPage', () => {
     renderPage('202609')
 
     const row = await findEntryRow('通信費')
-    expect(within(row).getByText('変動')).toBeInTheDocument()
-    expect(within(row).getByText('終了')).toBeInTheDocument()
-    expect(within(row).getByText('除外')).toBeInTheDocument()
+    const badges = within(row)
+      .getAllByText((_, element) => element?.classList.contains('pt-badge') ?? false)
+      .map((badge) => badge.textContent)
+    expect(badges).toEqual(['変動費', '終了', '通信'])
+    expect(within(row).queryByText('除外')).not.toBeInTheDocument()
   })
 
-  it('shows short ON/OFF style labels in the row overflow menu', async () => {
+  it('shows fixed (non-toggle-worded) labels in the row overflow menu', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: {
         202609: {
@@ -199,10 +201,32 @@ describe('MonthPage', () => {
     fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
 
     expect(screen.getByRole('menuitem', { name: '編集' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: '変動 ON' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: '計上 OFF' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '変動費' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'クレカ払い' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '今月終了' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '削除' })).toBeInTheDocument()
+  })
+
+  it('does not include a 変動 checkbox in the add form (variable is toggled later via the row menu)', async () => {
+    renderPage('202609')
+    await screen.findByPlaceholderText('項目名')
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.queryByText('変動')).not.toBeInTheDocument()
+  })
+
+  it('shows 0 (not blank) for a variable entry copied into a derived month', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202608: {
+          ...createEmptyLedgerMonth(),
+          entries: [{ id: 'e1', name: '電気代', amount: 5000, category: 'utility', variable: true, carryOver: true, excluded: false }],
+        },
+      },
+    })
+    renderPage('202609')
+
+    const row = await findEntryRow('電気代')
+    expect(within(row).getByLabelText('電気代の金額')).toHaveValue(0)
   })
 
   it('disables the add button and shows a note once the entry limit is reached', async () => {
