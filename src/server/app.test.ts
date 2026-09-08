@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import app from '../index'
 import { createApp } from './app'
 import type { CreditCsvStorage, StoredFileMeta } from './storage/credit-csv/index'
-import { InMemoryHistoryStorage, InMemoryPromptStorage, InMemoryTodoStorage } from '../test/in-memory-storage'
+import {
+  InMemoryBillManagerStorage,
+  InMemoryHistoryStorage,
+  InMemoryPromptStorage,
+  InMemoryTodoStorage,
+} from '../test/in-memory-storage'
 
 const request = (path: string, init?: RequestInit) => app.request(`http://localhost${path}`, init)
 
@@ -195,6 +200,22 @@ describe('server application', () => {
   it('returns a JSON 404 for unknown routes under the my-todo API', async () => {
     const testApp = createApp({ myTodoStorage: new InMemoryTodoStorage() })
     const response = await testApp.request('http://localhost/tools/my-todo/api/missing')
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Not found.' } })
+  })
+
+  it('mounts the bill-manager API under /tools/bill-manager/api', async () => {
+    const testApp = createApp({ billManagerStorage: new InMemoryBillManagerStorage() })
+    const response = await testApp.request('http://localhost/tools/bill-manager/api/ledger')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true, data: { state: { months: {} } } })
+  })
+
+  it('returns a JSON 404 for unknown routes under the bill-manager API', async () => {
+    const testApp = createApp({ billManagerStorage: new InMemoryBillManagerStorage() })
+    const response = await testApp.request('http://localhost/tools/bill-manager/api/unknown')
 
     expect(response.status).toBe(404)
     await expect(response.json()).resolves.toEqual({ ok: false, error: { message: 'Not found.' } })
