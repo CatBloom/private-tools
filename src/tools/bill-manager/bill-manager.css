@@ -157,7 +157,10 @@
   border-radius: 0.65rem;
 }
 
-.bill-manager-entry-row.is-excluded {
+/* 「計上しない」ON の行は名前・カテゴリ・金額などの入力側だけを薄くする。行全体に opacity を
+   掛けると、行の子である RowMenu のポップアップ（row-menu-anchor 配下）まで一緒に薄くなり
+   操作しづらくなるため、content 側にだけ opacity を限定する。 */
+.bill-manager-entry-row.is-excluded .bill-manager-entry-row-content {
   opacity: 0.55;
 }
 
@@ -165,8 +168,34 @@
   text-decoration: line-through;
 }
 
+.bill-manager-entry-row-content {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .bill-manager-entry-row.is-editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.bill-manager-entry-row-edit-fields {
+  display: flex;
   flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.bill-manager-entry-row-edit-fields input[type="text"] {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+}
+
+.bill-manager-entry-row-edit-fields select {
+  flex: 1 1 6rem;
+  min-width: 5rem;
 }
 
 .bill-manager-entry-name {
@@ -185,6 +214,11 @@
   white-space: nowrap;
 }
 
+.bill-manager-entry-status {
+  flex: none;
+  font-size: 0.65rem;
+}
+
 .bill-manager-entry-amount {
   flex: none;
   width: 5.5rem;
@@ -195,6 +229,7 @@
 
 .bill-manager-entry-row-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 0.4rem;
 }
 

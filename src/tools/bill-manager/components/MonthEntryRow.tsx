@@ -4,8 +4,7 @@ import { ENTRY_CATEGORIES, ENTRY_CATEGORY_LABELS, MAX_ENTRY_NAME_LENGTH, type En
 
 type MonthEntryRowProps = {
   entry: LedgerEntry
-  onRename: (name: string) => void
-  onCategoryChange: (category: EntryCategory) => void
+  onEdit: (patch: { name: string; category: EntryCategory }) => void
   onAmountCommit: (raw: string) => void
   onToggleVariable: () => void
   onToggleExcluded: () => void
@@ -14,50 +13,60 @@ type MonthEntryRowProps = {
 }
 
 // 1項目1行のコンパクト表示。名前・カテゴリの編集はモバイルの横幅制約のため行全体を
-// 一時的に入力欄に差し替える（RowMenu はボタンの並びのみでセレクトを内包できないため）。
-export const MonthEntryRow = ({
-  entry,
-  onRename,
-  onCategoryChange,
-  onAmountCommit,
-  onToggleVariable,
-  onToggleExcluded,
-  onToggleCarryOver,
-  onDelete,
-}: MonthEntryRowProps) => {
-  const [mode, setMode] = useState<'name' | 'category' | null>(null)
+// 一時的に入力欄（名前 input＋カテゴリ select）に差し替える単一の「編集」モードにまとめる
+// （RowMenu はボタンの並びのみでセレクトを内包できないため）。
+export const MonthEntryRow = ({ entry, onEdit, onAmountCommit, onToggleVariable, onToggleExcluded, onToggleCarryOver, onDelete }: MonthEntryRowProps) => {
+  const [editing, setEditing] = useState(false)
   const [nameDraft, setNameDraft] = useState(entry.name)
+  const [categoryDraft, setCategoryDraft] = useState<EntryCategory>(entry.category)
 
   const handleAmountKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') event.currentTarget.blur()
   }
 
-  const startEditName = () => {
+  const startEdit = () => {
     setNameDraft(entry.name)
-    setMode('name')
+    setCategoryDraft(entry.category)
+    setEditing(true)
   }
-  const commitName = () => {
-    if (nameDraft.trim()) onRename(nameDraft.trim())
-    setMode(null)
+  const commitEdit = () => {
+    const trimmed = nameDraft.trim()
+    if (!trimmed) return
+    onEdit({ name: trimmed, category: categoryDraft })
+    setEditing(false)
   }
 
-  if (mode === 'name') {
+  if (editing) {
     return (
       <li className="bill-manager-entry-row is-editing">
-        <input
-          type="text"
-          className="pt-input"
-          aria-label="項目名（編集）"
-          value={nameDraft}
-          maxLength={MAX_ENTRY_NAME_LENGTH}
-          onChange={(event) => setNameDraft(event.target.value)}
-          autoFocus
-        />
+        <div className="bill-manager-entry-row-edit-fields">
+          <input
+            type="text"
+            className="pt-input"
+            aria-label="項目名（編集）"
+            value={nameDraft}
+            maxLength={MAX_ENTRY_NAME_LENGTH}
+            onChange={(event) => setNameDraft(event.target.value)}
+            autoFocus
+          />
+          <select
+            className="pt-input"
+            aria-label="カテゴリ（編集）"
+            value={categoryDraft}
+            onChange={(event) => setCategoryDraft(event.target.value as EntryCategory)}
+          >
+            {ENTRY_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {ENTRY_CATEGORY_LABELS[category]}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="bill-manager-entry-row-actions">
-          <button type="button" className="pt-button" disabled={!nameDraft.trim()} onClick={commitName}>
+          <button type="button" className="pt-button" disabled={!nameDraft.trim()} onClick={commitEdit}>
             保存
           </button>
-          <button type="button" className="pt-button" onClick={() => setMode(null)}>
+          <button type="button" className="pt-button" onClick={() => setEditing(false)}>
             キャンセル
           </button>
         </div>
@@ -65,63 +74,33 @@ export const MonthEntryRow = ({
     )
   }
 
-  if (mode === 'category') {
-    return (
-      <li className="bill-manager-entry-row is-editing">
-        <select
-          className="pt-input"
-          aria-label="カテゴリ（編集）"
-          defaultValue={entry.category}
-          onChange={(event) => {
-            onCategoryChange(event.target.value as EntryCategory)
-            setMode(null)
-          }}
-          autoFocus
-        >
-          {ENTRY_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {ENTRY_CATEGORY_LABELS[category]}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="pt-button" onClick={() => setMode(null)}>
-          キャンセル
-        </button>
-      </li>
-    )
-  }
-
   return (
     <li className={`bill-manager-entry-row${entry.excluded ? ' is-excluded' : ''}`}>
-      <span className="bill-manager-entry-name" title={entry.name}>
-        {entry.name}
-      </span>
-      <span className="pt-badge bill-manager-entry-category">{ENTRY_CATEGORY_LABELS[entry.category]}</span>
-      <input
-        type="number"
-        inputMode="numeric"
-        className="pt-input bill-manager-entry-amount bill-manager-amount"
-        aria-label={`${entry.name}の金額`}
-        defaultValue={entry.amount ?? ''}
-        placeholder="未入力"
-        onBlur={(event) => onAmountCommit(event.target.value)}
-        onKeyDown={handleAmountKeyDown}
-      />
+      <div className="bill-manager-entry-row-content">
+        <span className="bill-manager-entry-name" title={entry.name}>
+          {entry.name}
+        </span>
+        <span className="pt-badge bill-manager-entry-category">{ENTRY_CATEGORY_LABELS[entry.category]}</span>
+        {entry.variable ? <span className="pt-badge bill-manager-entry-status">変動</span> : null}
+        {!entry.carryOver ? <span className="pt-badge bill-manager-entry-status">終了</span> : null}
+        {entry.excluded ? <span className="pt-badge bill-manager-entry-status">除外</span> : null}
+        <input
+          type="number"
+          inputMode="numeric"
+          className="pt-input bill-manager-entry-amount bill-manager-amount"
+          aria-label={`${entry.name}の金額`}
+          defaultValue={entry.amount ?? ''}
+          placeholder="未入力"
+          onBlur={(event) => onAmountCommit(event.target.value)}
+          onKeyDown={handleAmountKeyDown}
+        />
+      </div>
       <RowMenu
         items={[
-          { key: 'edit-name', label: '名前を編集', onClick: startEditName },
-          { key: 'edit-category', label: 'カテゴリ変更', onClick: () => setMode('category') },
-          { key: 'toggle-variable', label: entry.variable ? '変動をOFFにする' : '変動をONにする', onClick: onToggleVariable },
-          {
-            key: 'toggle-excluded',
-            label: entry.excluded ? '計上しないをOFFにする' : '計上しないをONにする',
-            onClick: onToggleExcluded,
-          },
-          {
-            key: 'toggle-carry-over',
-            label: entry.carryOver ? 'この月で終了にする' : '翌月へ引き継ぐ',
-            onClick: onToggleCarryOver,
-          },
+          { key: 'edit', label: '編集', onClick: startEdit },
+          { key: 'toggle-variable', label: entry.variable ? '変動 OFF' : '変動 ON', onClick: onToggleVariable },
+          { key: 'toggle-excluded', label: entry.excluded ? '計上 ON' : '計上 OFF', onClick: onToggleExcluded },
+          { key: 'toggle-carry-over', label: entry.carryOver ? '今月終了' : '引き継ぐ', onClick: onToggleCarryOver },
           { key: 'delete', label: '削除', onClick: onDelete, danger: true },
         ]}
       />

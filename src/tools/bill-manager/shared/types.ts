@@ -8,7 +8,7 @@ export const ENTRY_CATEGORY_LABELS: Record<EntryCategory, string> = {
   rent: '家賃',
   insurance: '保険',
   telecom: '通信',
-  loan: 'ローン・残債',
+  loan: '残債',
   investment: '投資',
   utility: '光熱費',
   other: 'その他',
