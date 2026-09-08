@@ -205,15 +205,7 @@ export const MonthPage = () => {
                 placeholder="未入力"
                 onBlur={(event) => setIncome(month, parseAmountInput(event.target.value))}
               />
-              <RowMenu
-                items={[
-                  {
-                    key: 'extra-income',
-                    label: currentMonth.extraIncome !== null ? '臨時収入を編集' : '臨時収入を追加',
-                    onClick: startEditExtraIncome,
-                  },
-                ]}
-              />
+              <RowMenu items={[{ key: 'extra-income', label: '臨時収入', onClick: startEditExtraIncome }]} />
             </div>
             {extraIncomeEditing ? (
               <form className="bill-manager-extra-income-form" onSubmit={commitExtraIncome}>
@@ -247,8 +239,7 @@ export const MonthPage = () => {
                   <MonthEntryRow
                     key={entry.id}
                     entry={entry}
-                    onRename={(name) => updateEntry(entry.id, { name })}
-                    onCategoryChange={(category) => updateEntry(entry.id, { category })}
+                    onEdit={(patch) => updateEntry(entry.id, patch)}
                     onAmountCommit={(raw) => updateEntry(entry.id, { amount: parseAmountInput(raw) })}
                     onToggleVariable={() => updateEntry(entry.id, { variable: !entry.variable })}
                     onToggleExcluded={() => updateEntry(entry.id, { excluded: !entry.excluded })}

@@ -124,7 +124,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 固定費・特殊費用・収入・クレジットカードの月額を合わせて「その月の現金残（収入−支出）」を見るツール。細かい家計簿ではない。ページは `/`（年間ビュー・既定）・`/year/:year`・`/month`（当月へ `Navigate`）・`/month/:month`（月ビュー）で、不明パスは `/` へリダイレクトする。
 
 - `shared/types.ts` — react 非依存の型・定数。**サーバー route からも import する**ため JSX を含めない。
-  - `EntryCategory`（`rent`／`insurance`／`telecom`／`loan`／`investment`／`utility`／`other`。表示は `ENTRY_CATEGORY_LABELS`＝家賃／保険／通信／ローン・残債／投資／光熱費／その他）
+  - `EntryCategory`（`rent`／`insurance`／`telecom`／`loan`／`investment`／`utility`／`other`。表示は `ENTRY_CATEGORY_LABELS`＝家賃／保険／通信／残債／投資／光熱費／その他）
   - `LedgerEntry = {id,name,amount,category,variable,carryOver,excluded}`（`variable`＝「変動」＝翌月コピー時に `amount` を `null` にする。`excluded`＝「計上しない」＝記録は残すが固定費合計に含めない）
   - `SpecialExpense = {id,amount,memo}`（特殊費用。翌月へコピーしない）
   - `LedgerMonth = {entries,income,extraIncome,specials}`（`income`＝給与、翌月へ引き継ぐ。`extraIncome`＝臨時収入〈賞与など〉、翌月へコピーしない）
@@ -138,7 +138,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `state/LedgerContext.tsx` — 支払月ごとのスナップショットを1箇所に持ち上げ、ページを切り替えても保持する（`useLedger`）。保存は `TodoContext` と同じ「変更ごと即時 PUT＋1秒ゲート（`MIN_WRITE_INTERVAL_MS = 1000`）＋in-flight 直列化・失敗時は自動リトライしない」。選択中の支払月（`month`／`setMonth`）・選択中の年（`year`／`setYear`）・その月の解決済み記録（`currentMonth`／`currentMonthSource`）・支払月ごとのクレカ額キャッシュ（`creditByMonth: Record<YYYYMM, number|null|undefined>`。`undefined`＝未取得、`null`＝未取込。選択月・選択年の12か月分を自動でまとめて取得する）・操作（`addEntry`／`updateEntry`／`removeEntry`＝選択中の支払月に対して、`setIncome`／`setExtraIncome`／`addSpecial`／`updateSpecial`／`removeSpecial`＝対象月を明示的に指定）を提供する。
 - UI: `index.tsx` が default export `BillManagerApp`（`bill-manager.css` を import、`<ToolLayout toolId="bill-manager" appClassName="bill-manager-app" tabs>` でラップ）。ナビタブは「年間」「月」（registry の `nav`）。
   - `YearPage`（既定画面）: `.pt-table` ベースの表。行＝項目（カテゴリ順、`excluded` は打消し線＋薄く表示し合計には含めない）、列＝1〜12月＋年間合計。項目行の下に集計行（特殊費用／固定費合計／クレカ／支出合計／収入／**現金残**）。記録の無い月は列見出しに「見込」タグを付け、セルを薄い色で表示する。スマホでは項目名列を `position: sticky` で固定し横スクロールする。月見出しはその月の月ビューへのリンク。前年／翌年ボタン。
-  - `MonthPage`: 1項目1行のコンパクト表示（`components/MonthEntryRow.tsx`。名前・カテゴリバッジ・金額入力・`RowMenu`〈⋯〉を1行に収め、名前編集・カテゴリ変更は行を一時的に入力欄へ差し替える）。前月／翌月ナビ。集計カード（収入／支出合計＋内訳1行／**現金残**〈強調〉、注記は未入力・クレカ未取込・収入未入力があるときだけ1行）。収入行（給与の金額入力＋`RowMenu` で臨時収入〈賞与など〉を追加・編集、あれば行内に小さく併記）。項目一覧の `RowMenu`: 名前を編集／カテゴリ変更／**変動**（ON/OFF）／**計上しない**（ON/OFF）／この月で終了⇄翌月へ引き継ぐ／削除（`useConfirm`）。特殊費用（`components/SpecialRow.tsx`、金額＋メモの小さな行、追加・削除のみ）。追加フォームは名前・金額・カテゴリ（select）・「変動」チェック・追加を1行に（スマホは折り返し可）。`currentMonthSource === 'derived'` の注記あり。
+  - `MonthPage`: 1項目1行のコンパクト表示（`components/MonthEntryRow.tsx`。名前・カテゴリバッジ・状態バッジ（変動／終了／計上しないのとき「変動」「終了」「除外」を名前の横に表示）・金額入力・`RowMenu`〈⋯〉を1行に収める）。名前・カテゴリの編集は「編集」の単一モードにまとめ、行を名前 input＋カテゴリ select（スマホでは2行に折り返し可）と右寄せの保存／キャンセルへ一時的に差し替える。`excluded` の行は名前・カテゴリ・金額など**入力側だけ**を薄く（＋打消し線）し、`RowMenu` のボタン・ポップアップは通常の濃さで表示する（行全体に `opacity` を掛けない）。前月／翌月ナビ。集計カード（収入／支出合計＋内訳1行／**現金残**〈強調〉、注記は未入力・クレカ未取込・収入未入力があるときだけ1行）。収入行（給与の金額入力＋`RowMenu` で臨時収入〈賞与など〉を追加・編集、あれば行内に小さく併記）。項目一覧の `RowMenu`: 編集／**変動 ON**⇄**変動 OFF**／**計上 ON**⇄**計上 OFF**／今月終了⇄引き継ぐ／削除（`useConfirm`）。特殊費用（`components/SpecialRow.tsx`、金額＋メモの小さな行、追加・削除のみ）。追加フォームは名前・金額・カテゴリ（select）・「変動」チェック・追加を1行に（スマホは折り返し可）。`currentMonthSource === 'derived'` の注記あり。
   - テーマ切替は共通 `useTheme`/`ThemeToggle`（`.bill-manager-app[data-theme]` にスコープ）。
 
 ### ストレージ共通骨格（`src/server/storage/shared/`）

@@ -135,7 +135,7 @@ describe('MonthPage', () => {
     expect(vi.mocked(putLedger).mock.calls[0][0].months['202609'].entries.map((entry) => entry.name)).toContain('電気代')
   })
 
-  it('edits an entry name via the row overflow menu (⋯ → 名前を編集)', async () => {
+  it('edits an entry name and category via the row overflow menu (⋯ → 編集)', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: {
         202609: {
@@ -149,10 +149,60 @@ describe('MonthPage', () => {
 
     const row = await findEntryRow('家賃')
     fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: '名前を編集' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '編集' }))
 
     expect(screen.getByLabelText('項目名（編集）')).toHaveValue('家賃')
+    expect(screen.getByLabelText('カテゴリ（編集）')).toHaveValue('rent')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('項目名（編集）'), { target: { value: '家賃（更新）' } })
+    fireEvent.change(screen.getByLabelText('カテゴリ（編集）'), { target: { value: 'utility' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    expect(await screen.findByTitle('家賃（更新）')).toBeInTheDocument()
+    await waitFor(() => expect(putLedger).toHaveBeenCalledTimes(1))
+    const savedEntry = vi.mocked(putLedger).mock.calls[0][0].months['202609'].entries[0]
+    expect(savedEntry).toMatchObject({ name: '家賃（更新）', category: 'utility' })
+  })
+
+  it('shows status badges (変動／終了／除外) next to the entry name', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202609: {
+          ...createEmptyLedgerMonth(),
+          entries: [
+            { id: 'e1', name: '通信費', amount: 7700, category: 'telecom', variable: true, carryOver: false, excluded: true },
+          ],
+        },
+      },
+    })
+    renderPage('202609')
+
+    const row = await findEntryRow('通信費')
+    expect(within(row).getByText('変動')).toBeInTheDocument()
+    expect(within(row).getByText('終了')).toBeInTheDocument()
+    expect(within(row).getByText('除外')).toBeInTheDocument()
+  })
+
+  it('shows short ON/OFF style labels in the row overflow menu', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202609: {
+          ...createEmptyLedgerMonth(),
+          entries: [{ id: 'e1', name: '家賃', amount: 80000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+        },
+      },
+    })
+    renderPage('202609')
+
+    const row = await findEntryRow('家賃')
+    fireEvent.click(within(row).getByRole('button', { name: '操作メニュー' }))
+
+    expect(screen.getByRole('menuitem', { name: '編集' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '変動 ON' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '計上 OFF' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '今月終了' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '削除' })).toBeInTheDocument()
   })
 
   it('disables the add button and shows a note once the entry limit is reached', async () => {
