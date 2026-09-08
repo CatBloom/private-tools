@@ -2,28 +2,44 @@ import { useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Spinner } from '../../../components/feedback'
 import { buildYearGrid, type YearGridMonth, type YearGridTotals } from '../lib/yearGrid'
+import { ENTRY_CATEGORY_LABELS } from '../shared/types'
 import { useLedger } from '../state/LedgerContext'
 
 const yenFormatter = new Intl.NumberFormat('ja-JP')
 const formatAmount = (value: number | null): string => (value === null ? '–' : yenFormatter.format(value))
+/** クレカ未取込の月で null になった値（支出合計・現金残高）の代替表示。 */
+const CREDIT_MISSING_CELL = '—'
 
 type SummaryRowSpec = {
   label: string
   field: keyof YearGridTotals
   missingLabel?: string
+  resultRow?: boolean
+  firstResultRow?: boolean
   emphasize?: boolean
 }
 
 const SUMMARY_ROWS: SummaryRowSpec[] = [
-  { label: '特殊費用', field: 'specialTotal' },
-  { label: '固定費合計', field: 'fixedTotal' },
   { label: 'クレカ', field: 'credit', missingLabel: '未取込' },
-  { label: '支出合計', field: 'expenseTotal' },
-  { label: '収入', field: 'income' },
-  { label: '現金残', field: 'cashRemaining', emphasize: true },
+  { label: '支出合計', field: 'expenseTotal', resultRow: true, firstResultRow: true },
+  { label: '収入', field: 'income', resultRow: true },
+  { label: '現金残高', field: 'cashRemaining', resultRow: true, emphasize: true },
 ]
 
+const summaryRowClassName = ({ resultRow, firstResultRow, emphasize }: SummaryRowSpec): string => {
+  let className = 'bill-manager-year-summary-row'
+  if (resultRow) className += ' bill-manager-year-result-row'
+  if (firstResultRow) className += ' bill-manager-year-result-row-first'
+  if (emphasize) className += ' bill-manager-year-cash-row'
+  return className
+}
+
 const monthCellClassName = (month: YearGridMonth): string | undefined => (month.source !== 'stored' ? 'is-derived' : undefined)
+
+// クレカ／収入は summary から、支出合計・現金残高は月ごとに null 化されたフィールドから読む
+// （クレカ未取込の月は summary 側の値ではなく expenseTotal／cashRemaining が null になっている）。
+const monthValue = (monthColumn: YearGridMonth, field: keyof YearGridTotals): number | null =>
+  field === 'expenseTotal' || field === 'cashRemaining' ? monthColumn[field] : monthColumn.summary[field]
 
 export const YearPage = () => {
   const { year: yearParam } = useParams<{ year: string }>()
@@ -82,51 +98,63 @@ export const YearPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {grid.rows.length === 0 ? (
-                    <tr>
-                      <td className="bill-manager-year-sticky-col" colSpan={14}>
-                        支払い項目がありません。
-                      </td>
-                    </tr>
-                  ) : (
-                    grid.rows.map((row) => (
-                      <tr key={row.name} className={row.excluded ? 'is-excluded' : undefined}>
-                        <th scope="row" className="bill-manager-year-sticky-col">
-                          {row.name}
-                        </th>
-                        {row.amounts.map((amount, index) => (
-                          <td key={grid.months[index].month} className={monthCellClassName(grid.months[index])}>
-                            {formatAmount(amount)}
-                          </td>
-                        ))}
-                        <td>{formatAmount(row.yearTotal)}</td>
-                      </tr>
-                    ))
-                  )}
-
-                  {SUMMARY_ROWS.map(({ label, field, missingLabel, emphasize }) => (
-                    <tr
-                      key={field}
-                      className={`bill-manager-year-summary-row${emphasize ? ' bill-manager-year-cash-row' : ''}`}
-                    >
+                  {grid.categoryRows.map((row) => (
+                    <tr key={row.category}>
                       <th scope="row" className="bill-manager-year-sticky-col">
-                        {label}
+                        {ENTRY_CATEGORY_LABELS[row.category]}
+                      </th>
+                      {row.amounts.map((amount, index) => (
+                        <td key={grid.months[index].month} className={monthCellClassName(grid.months[index])}>
+                          {formatAmount(amount)}
+                        </td>
+                      ))}
+                      <td>{formatAmount(row.yearTotal)}</td>
+                    </tr>
+                  ))}
+
+                  <tr>
+                    <th scope="row" className="bill-manager-year-sticky-col">
+                      特殊費用
+                    </th>
+                    {grid.specialRow.amounts.map((amount, index) => (
+                      <td key={grid.months[index].month} className={monthCellClassName(grid.months[index])}>
+                        {formatAmount(amount)}
+                      </td>
+                    ))}
+                    <td>{formatAmount(grid.specialRow.yearTotal)}</td>
+                  </tr>
+
+                  {SUMMARY_ROWS.map((spec) => (
+                    <tr key={spec.field} className={summaryRowClassName(spec)}>
+                      <th scope="row" className="bill-manager-year-sticky-col">
+                        {spec.label}
                       </th>
                       {grid.months.map((monthColumn) => {
-                        const value = monthColumn.summary[field]
-                        const text = value === null && missingLabel ? missingLabel : formatAmount(value)
+                        const value = monthValue(monthColumn, spec.field)
+                        const text = value === null ? (spec.missingLabel ?? CREDIT_MISSING_CELL) : formatAmount(value)
                         return (
                           <td key={monthColumn.month} className={monthCellClassName(monthColumn)}>
-                            {emphasize ? <strong>{text}</strong> : text}
+                            {spec.emphasize ? <strong>{text}</strong> : text}
                           </td>
                         )
                       })}
-                      <td>{emphasize ? <strong>{formatAmount(grid.totals[field])}</strong> : formatAmount(grid.totals[field])}</td>
+                      <td>
+                        {spec.emphasize ? (
+                          <strong>{formatAmount(grid.totals[spec.field])}</strong>
+                        ) : (
+                          formatAmount(grid.totals[spec.field])
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {grid.months.some((monthColumn) => monthColumn.summary.creditMissing) ? (
+              <p className="bill-manager-note">
+                クレカ／支出合計／収入／現金残高の年間合計は、クレカ未取込の月を除いています。
+              </p>
+            ) : null}
           </section>
         </>
       ) : null}
