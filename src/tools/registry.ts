@@ -89,7 +89,10 @@ export const TOOLS: readonly ToolDefinition[] = [
     entry: { name: 'client-bill-manager', src: 'src/client-bill-manager.tsx' },
     clientScript: { dev: '/src/client-bill-manager.tsx', prod: '/assets/client-bill-manager.js' },
     css: { prod: '/assets/client-bill-manager.css' },
-    nav: [{ label: '毎月の支払い', to: '/' }],
+    nav: [
+      { label: '年間', to: '/' },
+      { label: '月', to: '/month' },
+    ],
     inlineStyle: true,
   },
 ]

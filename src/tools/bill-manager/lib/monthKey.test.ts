@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentMonthKey, formatMonthLabel, shiftMonth } from './monthKey'
+import { currentMonthKey, formatMonthLabel, monthsOfYear, shiftMonth, yearOf } from './monthKey'
 
 describe('shiftMonth', () => {
   it('adds months within the same year', () => {
@@ -40,5 +40,30 @@ describe('formatMonthLabel', () => {
 
   it('does not zero-pad the month in the label', () => {
     expect(formatMonthLabel('202601')).toBe('2026年1月')
+  })
+})
+
+describe('yearOf', () => {
+  it('extracts the year from a month key', () => {
+    expect(yearOf('202609')).toBe(2026)
+  })
+})
+
+describe('monthsOfYear', () => {
+  it('returns all 12 month keys for a year, January first', () => {
+    expect(monthsOfYear(2026)).toEqual([
+      '202601',
+      '202602',
+      '202603',
+      '202604',
+      '202605',
+      '202606',
+      '202607',
+      '202608',
+      '202609',
+      '202610',
+      '202611',
+      '202612',
+    ])
   })
 })

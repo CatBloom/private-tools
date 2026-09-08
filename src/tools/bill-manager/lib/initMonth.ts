@@ -1,10 +1,10 @@
-import type { LedgerEntry, LedgerState } from '../shared/types'
+import { createEmptyLedgerMonth, type LedgerMonth, type LedgerState } from '../shared/types'
 
-export type MonthEntriesSource = 'stored' | 'derived' | 'empty'
+export type MonthSource = 'stored' | 'derived' | 'empty'
 
-export type ResolvedMonthEntries = {
-  entries: LedgerEntry[]
-  source: MonthEntriesSource
+export type ResolvedMonth = {
+  month: LedgerMonth
+  source: MonthSource
 }
 
 // 対象月より前で記録がある最新の月キー（無ければ null）。YYYYMM は零埋め固定長のため辞書順比較で数値順と一致する。
@@ -16,18 +16,25 @@ const findLatestPriorMonth = (state: LedgerState, month: string): string | null 
 }
 
 /**
- * 支払月の行を解決する。保存済みならそのまま、無ければ直前の記録月からコピーする
- * （variable な行は amount を null に、carryOver:false の行は除外）。表示専用の計算で state は書き換えない。
+ * 支払月の記録を解決する。保存済みならそのまま、無ければ直前の記録月から派生させる：
+ * entries は carryOver:false を除外・variable:true は amount を null に（excluded はそのまま引き継ぐ）、
+ * income はそのまま引き継ぎ、extraIncome は null、specials は空にする。表示専用の計算で state は書き換えない。
  */
-export const resolveMonthEntries = (state: LedgerState, month: string): ResolvedMonthEntries => {
+export const resolveMonth = (state: LedgerState, month: string): ResolvedMonth => {
   const stored = state.months[month]
-  if (stored) return { entries: stored, source: 'stored' }
+  if (stored) return { month: stored, source: 'stored' }
 
   const priorMonth = findLatestPriorMonth(state, month)
-  if (priorMonth === null) return { entries: [], source: 'empty' }
+  if (priorMonth === null) return { month: createEmptyLedgerMonth(), source: 'empty' }
 
-  const derived = state.months[priorMonth]
-    .filter((entry) => entry.carryOver)
-    .map((entry) => (entry.variable ? { ...entry, amount: null } : entry))
-  return { entries: derived, source: 'derived' }
+  const prior = state.months[priorMonth]
+  const derived: LedgerMonth = {
+    entries: prior.entries
+      .filter((entry) => entry.carryOver)
+      .map((entry) => (entry.variable ? { ...entry, amount: null } : entry)),
+    income: prior.income,
+    extraIncome: null,
+    specials: [],
+  }
+  return { month: derived, source: 'derived' }
 }
