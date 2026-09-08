@@ -121,16 +121,25 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 ### Bill Manager（`src/tools/bill-manager/`）
 
-固定費（家賃・光熱費など）とクレジットカードの月額を合わせた「支払月の合計」を出すツール。細かい家計管理はしない。ページは `/`（既定）のみで、不明パスはリダイレクトする。
+固定費・特殊費用・収入・クレジットカードの月額を合わせて「その月の現金残（収入−支出）」を見るツール。細かい家計簿ではない。ページは `/`（年間ビュー・既定）・`/year/:year`・`/month`（当月へ `Navigate`）・`/month/:month`（月ビュー）で、不明パスは `/` へリダイレクトする。
 
-- `shared/types.ts` — react 非依存の型（`LedgerEntry = {id,name,amount,variable,carryOver}`／`LedgerState = {months: Record<支払月YYYYMM, LedgerEntry[]>}`）と構造的な上限（`MAX_MONTHS`／`MAX_ENTRIES_PER_MONTH`／`MAX_ENTRY_NAME_LENGTH`／`MAX_ENTRY_AMOUNT`）・`isMonthKey`。**サーバー route からも import する**ため JSX を含めない。
-- **データの持ち方**: 支払月ごとに `LedgerEntry[]` のスナップショットを独立して保存する（マスター無し）。ある月を編集しても他の月には波及しない。
-- **月の初期化（`lib/initMonth.ts` の `resolveMonthEntries`、純粋関数）**: 記録の無い月を開いたら、「その月より前で記録がある最新の月」から行をコピーして表示する。コピー時、`variable: true` の行は `amount: null`（未入力）にし、`carryOver: false` の行は除外する。`id` はそのまま引き継ぐ。前の記録が無ければ空。**表示のための初期化はクライアント計算のみ**（state は書き換えない）で、その月で最初の編集（`addEntry`／`updateEntry`／`removeEntry`）が発生したときに初めて `LedgerContext` が state に書き込み（materialize）て PUT する。
-- **クレカ額（`lib/creditAmount.ts`／`creditCsvApi.ts`）**: 支払月 M のクレカ額 = 利用月 M-1（`CREDIT_PAYMENT_OFFSET_MONTHS = 1`、`creditUsageMonth`）の credit-csv ファイル `YYYYMM.csv` の合計（`sumCreditCsv` が `src/lib/credit-csv/csv.ts` の `parseUploadedCsv` を使って集計）。`creditCsvApi.ts` の `fetchCreditCsvBytes` が credit-csv の API（`GET /tools/credit-csv/api/files/<YYYYMM>.csv`、URL のベースは `registry.ts` の `TOOLS` から引く）を同一オリジンで fetch する（200 → 集計、404 → 未取込 = `null`）。**KV には保存せず、表示のたびに毎回計算する**（修正不可）。`src/tools/credit-csv/` 配下は直接 import しない（`src/tools/tool-boundary.test.ts` が検出する）。
-- `lib/monthKey.ts` — 支払月キー（YYYYMM）の加減算・整形の純粋関数（`shiftMonth`／`currentMonthKey`／`formatMonthLabel`）。
-- `lib/summary.ts` — 行の集計（`summarizeEntries`：`amount` が `null` の行を除いた `fixedTotal` と、その件数 `missingCount`）。
-- `state/LedgerContext.tsx` — 支払月ごとの固定費スナップショットを1箇所に持ち上げ、ページを切り替えても保持する（`useLedger`）。保存は `TodoContext` と同じ「変更ごと即時 PUT＋1秒ゲート（`MIN_WRITE_INTERVAL_MS = 1000`）＋in-flight 直列化・失敗時は自動リトライしない」。選択中の支払月（`month`、既定は当月）・その月の行（`entries`／`entriesSource`）・操作（`addEntry`／`updateEntry`／`removeEntry`）を提供する。
-- UI: `index.tsx` が default export `BillManagerApp`（`bill-manager.css` を import、`<ToolLayout toolId="bill-manager" appClassName="bill-manager-app">` でラップ）。`LedgerPage` が 前月／翌月ナビ・集計カード（固定費合計／クレカ額／合計）・行一覧（共通 `RowMenu` で名前編集・「毎月変わる」切替・「この月で終了」⇄「翌月へ引き継ぐ」・削除）・追加フォームを提供する。`entriesSource === 'derived'` の月はコピー内容である旨を注記する。テーマ切替は共通 `useTheme`/`ThemeToggle`（`.bill-manager-app[data-theme]` にスコープ）。
+- `shared/types.ts` — react 非依存の型・定数。**サーバー route からも import する**ため JSX を含めない。
+  - `EntryCategory`（`rent`／`insurance`／`telecom`／`loan`／`investment`／`utility`／`other`。表示は `ENTRY_CATEGORY_LABELS`＝家賃／保険／通信／ローン・残債／投資／光熱費／その他）
+  - `LedgerEntry = {id,name,amount,category,variable,carryOver,excluded}`（`variable`＝「変動」＝翌月コピー時に `amount` を `null` にする。`excluded`＝「計上しない」＝記録は残すが固定費合計に含めない）
+  - `SpecialExpense = {id,amount,memo}`（特殊費用。翌月へコピーしない）
+  - `LedgerMonth = {entries,income,extraIncome,specials}`（`income`＝給与、翌月へ引き継ぐ。`extraIncome`＝臨時収入〈賞与など〉、翌月へコピーしない）
+  - `LedgerState = {months: Record<支払月YYYYMM, LedgerMonth>}`、構造的な上限（`MAX_MONTHS`／`MAX_ENTRIES_PER_MONTH`／`MAX_SPECIALS_PER_MONTH`／`MAX_ENTRY_NAME_LENGTH`／`MAX_MEMO_LENGTH`／`MAX_ENTRY_AMOUNT`）・`isMonthKey`。
+- **データの持ち方**: 支払月ごとに `LedgerMonth` のスナップショットを独立して保存する（マスター無し）。ある月を編集しても他の月には波及しない。
+- **月の初期化（`lib/initMonth.ts` の `resolveMonth`、純粋関数）**: 記録の無い月を開いたら、「その月より前で記録がある最新の月」から派生させて表示する。entries は `carryOver:false` を除外・`variable:true` は `amount:null`（`excluded` はそのまま引き継ぐ）、`income` はそのまま引き継ぎ、`extraIncome` は `null`、`specials` は空にする。**表示のための初期化はクライアント計算のみ**（state は書き換えない）で、その月で最初の編集が発生したときに初めて `LedgerContext` が state に書き込み（materialize）て PUT する。
+- **集計（`lib/summary.ts` の `summarizeMonth(month, credit)`）**: 固定費合計＝`excluded:false` かつ `amount≠null` の entries の合計、特殊費用合計＝specials.amount の合計、支出合計＝固定費合計＋特殊費用合計＋(クレカ ?? 0)、収入＝(income ?? 0)＋(extraIncome ?? 0)、**現金残＝収入−支出合計**。未入力の行・クレカ未取込・収入未入力はそれぞれ `missingCount`／`creditMissing`／`incomeMissing` で返す。
+- **年間ビュー（`lib/yearGrid.ts` の `buildYearGrid(state, year, credits)`）**: 指定年の12か月分を `resolveMonth` で束ね、項目を name で束ねカテゴリ順（`ENTRY_CATEGORIES` 順）に並べた行（`excluded` はそのまま行に持つ。年内で category/excluded が変われば最新の月の値を採用）・月ごとの集計（`summarizeMonth` を年内12か月分）・年間合計（各月集計の単純合計）を返す。
+- **クレカ額（`lib/creditAmount.ts`／`creditCsvApi.ts`）**: 支払月 M のクレカ額 = 利用月 M-1（`CREDIT_PAYMENT_OFFSET_MONTHS = 1`、`creditUsageMonth`）の credit-csv ファイル `YYYYMM.csv` の合計（`sumCreditCsv` が `src/lib/credit-csv/csv.ts` の `parseUploadedCsv` を使って集計）。**手入力は禁止**。`creditCsvApi.ts` の `fetchCreditCsvBytes` が credit-csv の API（`GET /tools/credit-csv/api/files/<YYYYMM>.csv`、URL のベースは `registry.ts` の `TOOLS` から引く）を同一オリジンで fetch する（200 → 集計、404 → 未取込 = `null`）。**KV には保存せず、表示のたびに毎回計算する**。`src/tools/credit-csv/` 配下は直接 import しない（`src/tools/tool-boundary.test.ts` が検出する）。
+- `lib/monthKey.ts` — 支払月キー（YYYYMM）の加減算・整形の純粋関数（`shiftMonth`／`currentMonthKey`／`formatMonthLabel`／`yearOf`／`monthsOfYear`）。
+- `state/LedgerContext.tsx` — 支払月ごとのスナップショットを1箇所に持ち上げ、ページを切り替えても保持する（`useLedger`）。保存は `TodoContext` と同じ「変更ごと即時 PUT＋1秒ゲート（`MIN_WRITE_INTERVAL_MS = 1000`）＋in-flight 直列化・失敗時は自動リトライしない」。選択中の支払月（`month`／`setMonth`）・選択中の年（`year`／`setYear`）・その月の解決済み記録（`currentMonth`／`currentMonthSource`）・支払月ごとのクレカ額キャッシュ（`creditByMonth: Record<YYYYMM, number|null|undefined>`。`undefined`＝未取得、`null`＝未取込。選択月・選択年の12か月分を自動でまとめて取得する）・操作（`addEntry`／`updateEntry`／`removeEntry`＝選択中の支払月に対して、`setIncome`／`setExtraIncome`／`addSpecial`／`updateSpecial`／`removeSpecial`＝対象月を明示的に指定）を提供する。
+- UI: `index.tsx` が default export `BillManagerApp`（`bill-manager.css` を import、`<ToolLayout toolId="bill-manager" appClassName="bill-manager-app" tabs>` でラップ）。ナビタブは「年間」「月」（registry の `nav`）。
+  - `YearPage`（既定画面）: `.pt-table` ベースの表。行＝項目（カテゴリ順、`excluded` は打消し線＋薄く表示し合計には含めない）、列＝1〜12月＋年間合計。項目行の下に集計行（特殊費用／固定費合計／クレカ／支出合計／収入／**現金残**）。記録の無い月は列見出しに「見込」タグを付け、セルを薄い色で表示する。スマホでは項目名列を `position: sticky` で固定し横スクロールする。月見出しはその月の月ビューへのリンク。前年／翌年ボタン。
+  - `MonthPage`: 1項目1行のコンパクト表示（`components/MonthEntryRow.tsx`。名前・カテゴリバッジ・金額入力・`RowMenu`〈⋯〉を1行に収め、名前編集・カテゴリ変更は行を一時的に入力欄へ差し替える）。前月／翌月ナビ。集計カード（収入／支出合計＋内訳1行／**現金残**〈強調〉、注記は未入力・クレカ未取込・収入未入力があるときだけ1行）。収入行（給与の金額入力＋`RowMenu` で臨時収入〈賞与など〉を追加・編集、あれば行内に小さく併記）。項目一覧の `RowMenu`: 名前を編集／カテゴリ変更／**変動**（ON/OFF）／**計上しない**（ON/OFF）／この月で終了⇄翌月へ引き継ぐ／削除（`useConfirm`）。特殊費用（`components/SpecialRow.tsx`、金額＋メモの小さな行、追加・削除のみ）。追加フォームは名前・金額・カテゴリ（select）・「変動」チェック・追加を1行に（スマホは折り返し可）。`currentMonthSource === 'derived'` の注記あり。
+  - テーマ切替は共通 `useTheme`/`ThemeToggle`（`.bill-manager-app[data-theme]` にスコープ）。
 
 ### ストレージ共通骨格（`src/server/storage/shared/`）
 
@@ -174,7 +183,7 @@ Bill Manager 専用。`BillManagerStorage`（`getLedger/putLedger`、`LedgerStat
 
 ### Ledger API（`src/server/routes/bill-manager.ts`）
 
-`createBillManagerRoutes(storage?)` が Hono サブアプリを返す（`/tools/bill-manager/api` にマウント）。`GET /ledger`（現在の状態。未保存なら空状態）、`PUT /ledger`（JSON `{ state }` で丸ごと置換）。バリデーション: 非 JSON 415、payload 不正（月キー不正・行フィールド不正・`amount` が 0 以上の整数でない、を含む）400、ボディ 4MiB 超／月数 240 超（`MAX_MONTHS`）／1月あたりの行数 50 超（`MAX_ENTRIES_PER_MONTH`）413。
+`createBillManagerRoutes(storage?)` が Hono サブアプリを返す（`/tools/bill-manager/api` にマウント）。`GET /ledger`（現在の状態。未保存なら空状態）、`PUT /ledger`（JSON `{ state }` で丸ごと置換）。バリデーション: 非 JSON 415、payload 不正（月キー不正・`LedgerMonth` の形不正・entry フィールド不正〈`category` が一覧外・`excluded` が boolean でないを含む〉・`income`／`extraIncome` が `null` または 0 以上の整数でない・special の `amount` 不正／`memo` が `MAX_MEMO_LENGTH` 超）400、月数 240 超（`MAX_MONTHS`）／1月あたりの entries 50 超（`MAX_ENTRIES_PER_MONTH`）／1月あたりの specials 50 超（`MAX_SPECIALS_PER_MONTH`）／ボディ 4MiB 超 413。
 
 ### 静的資産の配信（dev と production で経路が違う）
 

@@ -1,78 +1,113 @@
 import { describe, expect, it } from 'vitest'
-import type { LedgerEntry, LedgerState } from '../shared/types'
-import { resolveMonthEntries } from './initMonth'
+import { createEmptyLedgerMonth, type LedgerEntry, type LedgerMonth, type LedgerState } from '../shared/types'
+import { resolveMonth } from './initMonth'
 
 const entry = (overrides: Partial<LedgerEntry> = {}): LedgerEntry => ({
   id: 'e1',
   name: '家賃',
   amount: 80000,
+  category: 'rent',
   variable: false,
   carryOver: true,
+  excluded: false,
   ...overrides,
 })
 
-describe('resolveMonthEntries', () => {
+const month = (overrides: Partial<LedgerMonth> = {}): LedgerMonth => ({
+  ...createEmptyLedgerMonth(),
+  ...overrides,
+})
+
+describe('resolveMonth', () => {
   it('returns a stored month as-is', () => {
-    const state: LedgerState = { months: { 202609: [entry()] } }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result).toEqual({ entries: [entry()], source: 'stored' })
+    const stored = month({ entries: [entry()], income: 300000 })
+    const state: LedgerState = { months: { 202609: stored } }
+    expect(resolveMonth(state, '202609')).toEqual({ month: stored, source: 'stored' })
   })
 
   it('returns an empty stored month as-is (does not fall back further)', () => {
     const state: LedgerState = {
-      months: { 202608: [entry()], 202609: [] },
+      months: { 202608: month({ entries: [entry()] }), 202609: month() },
     }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result).toEqual({ entries: [], source: 'stored' })
+    expect(resolveMonth(state, '202609')).toEqual({ month: month(), source: 'stored' })
   })
 
-  it('copies from the most recent prior month when the requested month has no record', () => {
-    const state: LedgerState = { months: { 202608: [entry()] } }
-    const result = resolveMonthEntries(state, '202609')
+  it('copies entries from the most recent prior month when the requested month has no record', () => {
+    const state: LedgerState = { months: { 202608: month({ entries: [entry()] }) } }
+    const result = resolveMonth(state, '202609')
     expect(result.source).toBe('derived')
-    expect(result.entries).toEqual([entry()])
+    expect(result.month.entries).toEqual([entry()])
   })
 
   it('nulls out the amount of variable entries when copying forward', () => {
     const state: LedgerState = {
-      months: { 202608: [entry({ id: 'e2', name: '電気代', amount: 5000, variable: true })] },
+      months: {
+        202608: month({
+          entries: [entry({ id: 'e2', name: '電気代', category: 'utility', amount: 5000, variable: true })],
+        }),
+      },
     }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result.entries).toEqual([entry({ id: 'e2', name: '電気代', amount: null, variable: true })])
+    const result = resolveMonth(state, '202609')
+    expect(result.month.entries).toEqual([
+      entry({ id: 'e2', name: '電気代', category: 'utility', amount: null, variable: true }),
+    ])
   })
 
   it('excludes entries with carryOver: false when copying forward', () => {
     const state: LedgerState = {
       months: {
-        202608: [entry(), entry({ id: 'e3', name: '解約したサブスク', carryOver: false })],
+        202608: month({ entries: [entry(), entry({ id: 'e3', name: '解約したサブスク', carryOver: false })] }),
       },
     }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result.entries).toEqual([entry()])
+    const result = resolveMonth(state, '202609')
+    expect(result.month.entries).toEqual([entry()])
+  })
+
+  it('keeps the excluded flag as-is when copying forward', () => {
+    const state: LedgerState = {
+      months: { 202608: month({ entries: [entry({ id: 'e4', name: '通信費', category: 'telecom', excluded: true })] }) },
+    }
+    const result = resolveMonth(state, '202609')
+    expect(result.month.entries).toEqual([entry({ id: 'e4', name: '通信費', category: 'telecom', excluded: true })])
   })
 
   it('keeps the id when copying forward', () => {
-    const state: LedgerState = { months: { 202608: [entry({ id: 'keep-me' })] } }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result.entries[0].id).toBe('keep-me')
+    const state: LedgerState = { months: { 202608: month({ entries: [entry({ id: 'keep-me' })] }) } }
+    const result = resolveMonth(state, '202609')
+    expect(result.month.entries[0].id).toBe('keep-me')
+  })
+
+  it('carries income forward, resets extraIncome to null, and clears specials', () => {
+    const state: LedgerState = {
+      months: {
+        202608: month({
+          income: 280000,
+          extraIncome: 50000,
+          specials: [{ id: 's1', amount: 1000, memo: 'x' }],
+        }),
+      },
+    }
+    const result = resolveMonth(state, '202609')
+    expect(result.month.income).toBe(280000)
+    expect(result.month.extraIncome).toBeNull()
+    expect(result.month.specials).toEqual([])
   })
 
   it('uses the latest recorded month even when there is a gap in between', () => {
     const state: LedgerState = {
       months: {
-        202601: [entry({ id: 'old' })],
-        202603: [entry({ id: 'latest', name: 'ガス代' })],
+        202601: month({ entries: [entry({ id: 'old' })] }),
+        202603: month({ entries: [entry({ id: 'latest', name: 'ガス代', category: 'utility' })] }),
         // 202602 は記録なし
       },
     }
-    const result = resolveMonthEntries(state, '202605')
+    const result = resolveMonth(state, '202605')
     expect(result.source).toBe('derived')
-    expect(result.entries).toEqual([entry({ id: 'latest', name: 'ガス代' })])
+    expect(result.month.entries).toEqual([entry({ id: 'latest', name: 'ガス代', category: 'utility' })])
   })
 
-  it('returns an empty list when there is no prior record', () => {
+  it('returns an empty month when there is no prior record', () => {
     const state: LedgerState = { months: {} }
-    const result = resolveMonthEntries(state, '202609')
-    expect(result).toEqual({ entries: [], source: 'empty' })
+    expect(resolveMonth(state, '202609')).toEqual({ month: createEmptyLedgerMonth(), source: 'empty' })
   })
 })

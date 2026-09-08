@@ -13,3 +13,9 @@ export const currentMonthKey = (date = new Date()): string =>
   `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
 
 export const formatMonthLabel = (key: string): string => `${Number(key.slice(0, 4))}年${Number(key.slice(4, 6))}月`
+
+export const yearOf = (key: string): number => Number(key.slice(0, 4))
+
+// 指定年の支払月キー12件（YYYYMM01〜YYYYMM12）を1月始まりで返す。
+export const monthsOfYear = (year: number): string[] =>
+  Array.from({ length: 12 }, (_, index) => `${year}${String(index + 1).padStart(2, '0')}`)

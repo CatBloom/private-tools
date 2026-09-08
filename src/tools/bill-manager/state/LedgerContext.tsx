@@ -1,13 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAlert } from '../../../components/feedback'
 import { getLedger, putLedger } from '../api'
-import { resolveMonthEntries, type MonthEntriesSource } from '../lib/initMonth'
-import { currentMonthKey, shiftMonth } from '../lib/monthKey'
+import { fetchCreditCsvBytes } from '../creditCsvApi'
+import { creditUsageMonth, sumCreditCsv } from '../lib/creditAmount'
+import { resolveMonth, type MonthSource } from '../lib/initMonth'
+import { currentMonthKey, monthsOfYear, yearOf } from '../lib/monthKey'
 import {
   createEmptyLedgerState,
   MAX_ENTRIES_PER_MONTH,
+  MAX_SPECIALS_PER_MONTH,
+  type EntryCategory,
   type LedgerEntry,
+  type LedgerMonth,
   type LedgerState,
+  type SpecialExpense,
 } from '../shared/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
@@ -16,18 +22,30 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 // KV の「同一キー1秒1回」制約を守るための書き込み最小間隔（TodoContext と同じゲート）。
 const MIN_WRITE_INTERVAL_MS = 1000
 
-const createEntry = (name: string, amount: number | null, variable: boolean): LedgerEntry => ({
+const createEntry = (name: string, amount: number | null, category: EntryCategory, variable: boolean): LedgerEntry => ({
   id: crypto.randomUUID(),
   name: name.trim(),
   amount,
+  category,
   variable,
   carryOver: true,
+  excluded: false,
 })
+
+// derived/empty な月に初めて変更が入った時点で state に書き込む（materialize）ための基点。
+const materializeMonth = (state: LedgerState, month: string): LedgerMonth =>
+  state.months[month] ?? resolveMonth(state, month).month
 
 export type AddEntryInput = {
   name: string
   amount: number | null
+  category: EntryCategory
   variable: boolean
+}
+
+export type AddSpecialInput = {
+  amount: number
+  memo: string
 }
 
 type LedgerContextValue = {
@@ -37,20 +55,32 @@ type LedgerContextValue = {
   reload: () => void
   saveStatus: SaveStatus
   saveError: string | null
+
   month: string
   setMonth: (month: string) => void
-  goPrevMonth: () => void
-  goNextMonth: () => void
-  entries: LedgerEntry[]
-  entriesSource: MonthEntriesSource
+  currentMonth: LedgerMonth
+  currentMonthSource: MonthSource
+
+  year: number
+  setYear: (year: number) => void
+
+  // 支払月（YYYYMM）→ クレカ額。未取得は undefined、未取込は null。credit-csv から取得のたびにキャッシュする。
+  creditByMonth: Record<string, number | null | undefined>
+
   addEntry: (input: AddEntryInput) => boolean
   updateEntry: (id: string, patch: Partial<Omit<LedgerEntry, 'id'>>) => void
   removeEntry: (id: string) => void
+
+  setIncome: (month: string, value: number | null) => void
+  setExtraIncome: (month: string, value: number | null) => void
+  addSpecial: (month: string, input: AddSpecialInput) => boolean
+  updateSpecial: (month: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => void
+  removeSpecial: (month: string, id: string) => void
 }
 
 const LedgerContext = createContext<LedgerContextValue | null>(null)
 
-// 支払月ごとの固定費スナップショットを1箇所に持ち上げ、ページを切り替えても保持する。保存は
+// 支払月ごとのスナップショットを1箇所に持ち上げ、ページを切り替えても保持する。保存は
 // TodoContext と同じ「変更ごと即時 PUT＋1秒ゲート＋in-flight 直列化・失敗時は自動リトライしない」。
 export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const { showAlert } = useAlert()
@@ -61,6 +91,8 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
   const [month, setMonth] = useState<string>(() => currentMonthKey())
+  const [year, setYear] = useState<number>(() => yearOf(currentMonthKey()))
+  const [creditByMonth, setCreditByMonth] = useState<Record<string, number | null | undefined>>({})
 
   // stale closure 対策（保存判定が常に最新値を読めるようにする）。
   const stateRef = useRef(state)
@@ -72,6 +104,8 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // scheduleSave は runSave より後に定義されるため useCallback の依存配列に直接書けない（TDZ）。ref 経由で呼ぶ。
   const scheduleSaveRef = useRef<() => void>(() => {})
+  // クレカ額の取得は支払月単位でキャッシュし、同じ月への二重フェッチを防ぐ（state 反映前の一瞬も含めて）。
+  const requestedCreditMonthsRef = useRef<Set<string>>(new Set())
 
   const runSave = useCallback(
     (snapshot: LedgerState) => {
@@ -162,8 +196,37 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     scheduleSave()
   }, [state, loadStatus, scheduleSave])
 
-  // 表示のための初期化（記録が無い月のコピー）はここでのみ計算する。state には書き込まない。
-  const { entries, source: entriesSource } = useMemo(() => resolveMonthEntries(state, month), [state, month])
+  // 表示のための初期化（記録が無い月の派生）はここでのみ計算する。state には書き込まない。
+  const { month: currentMonth, source: currentMonthSource } = useMemo(() => resolveMonth(state, month), [state, month])
+
+  // クレカ額は KV に保存せず、支払月ごとに毎回 credit-csv の CSV から算出してキャッシュする。
+  const ensureCredit = useCallback(
+    (paymentMonth: string) => {
+      if (requestedCreditMonthsRef.current.has(paymentMonth)) return
+      requestedCreditMonthsRef.current.add(paymentMonth)
+      const usageMonth = creditUsageMonth(paymentMonth)
+
+      fetchCreditCsvBytes(usageMonth)
+        .then((bytes) => {
+          const amount = bytes === null ? null : sumCreditCsv(`${usageMonth}.csv`, bytes)
+          setCreditByMonth((current) => ({ ...current, [paymentMonth]: amount }))
+        })
+        .catch((error: unknown) => {
+          // 失敗時は再フェッチできるよう要求済みマークを外す（自動リトライはしない）。
+          requestedCreditMonthsRef.current.delete(paymentMonth)
+          showAlert('error', error instanceof Error ? error.message : 'クレカ明細の取得に失敗しました。')
+        })
+    },
+    [showAlert],
+  )
+
+  useEffect(() => {
+    ensureCredit(month)
+  }, [month, ensureCredit])
+
+  useEffect(() => {
+    for (const key of monthsOfYear(year)) ensureCredit(key)
+  }, [year, ensureCredit])
 
   const addEntry = useCallback(
     (input: AddEntryInput): boolean => {
@@ -172,42 +235,95 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
 
       let added = false
       setState((current) => {
-        const baseEntries = current.months[month] ?? entries
-        if (baseEntries.length >= MAX_ENTRIES_PER_MONTH) return current
+        const base = materializeMonth(current, month)
+        if (base.entries.length >= MAX_ENTRIES_PER_MONTH) return current
         added = true
-        const nextEntries = [...baseEntries, createEntry(trimmed, input.amount, input.variable)]
-        return { ...current, months: { ...current.months, [month]: nextEntries } }
+        const nextMonth: LedgerMonth = {
+          ...base,
+          entries: [...base.entries, createEntry(trimmed, input.amount, input.category, input.variable)],
+        }
+        return { ...current, months: { ...current.months, [month]: nextMonth } }
       })
       return added
     },
-    [month, entries, loadStatus],
+    [month, loadStatus],
   )
 
-  // derived/empty な月に初めて変更が入った時点で state に書き込む（materialize）。
   const updateEntry = useCallback(
     (id: string, patch: Partial<Omit<LedgerEntry, 'id'>>) => {
       setState((current) => {
-        const baseEntries = current.months[month] ?? entries
-        const nextEntries = baseEntries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
-        return { ...current, months: { ...current.months, [month]: nextEntries } }
+        const base = materializeMonth(current, month)
+        const nextMonth: LedgerMonth = {
+          ...base,
+          entries: base.entries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+        }
+        return { ...current, months: { ...current.months, [month]: nextMonth } }
       })
     },
-    [month, entries],
+    [month],
   )
 
   const removeEntry = useCallback(
     (id: string) => {
       setState((current) => {
-        const baseEntries = current.months[month] ?? entries
-        const nextEntries = baseEntries.filter((entry) => entry.id !== id)
-        return { ...current, months: { ...current.months, [month]: nextEntries } }
+        const base = materializeMonth(current, month)
+        const nextMonth: LedgerMonth = { ...base, entries: base.entries.filter((entry) => entry.id !== id) }
+        return { ...current, months: { ...current.months, [month]: nextMonth } }
       })
     },
-    [month, entries],
+    [month],
   )
 
-  const goPrevMonth = useCallback(() => setMonth((current) => shiftMonth(current, -1)), [])
-  const goNextMonth = useCallback(() => setMonth((current) => shiftMonth(current, 1)), [])
+  const setIncome = useCallback((targetMonth: string, value: number | null) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      return { ...current, months: { ...current.months, [targetMonth]: { ...base, income: value } } }
+    })
+  }, [])
+
+  const setExtraIncome = useCallback((targetMonth: string, value: number | null) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      return { ...current, months: { ...current.months, [targetMonth]: { ...base, extraIncome: value } } }
+    })
+  }, [])
+
+  const addSpecial = useCallback(
+    (targetMonth: string, input: AddSpecialInput): boolean => {
+      if (loadStatus !== 'ready') return false
+
+      let added = false
+      setState((current) => {
+        const base = materializeMonth(current, targetMonth)
+        if (base.specials.length >= MAX_SPECIALS_PER_MONTH) return current
+        added = true
+        const special: SpecialExpense = { id: crypto.randomUUID(), amount: input.amount, memo: input.memo.trim() }
+        const nextMonth: LedgerMonth = { ...base, specials: [...base.specials, special] }
+        return { ...current, months: { ...current.months, [targetMonth]: nextMonth } }
+      })
+      return added
+    },
+    [loadStatus],
+  )
+
+  const updateSpecial = useCallback((targetMonth: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      const nextMonth: LedgerMonth = {
+        ...base,
+        specials: base.specials.map((special) => (special.id === id ? { ...special, ...patch } : special)),
+      }
+      return { ...current, months: { ...current.months, [targetMonth]: nextMonth } }
+    })
+  }, [])
+
+  const removeSpecial = useCallback((targetMonth: string, id: string) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      const nextMonth: LedgerMonth = { ...base, specials: base.specials.filter((special) => special.id !== id) }
+      return { ...current, months: { ...current.months, [targetMonth]: nextMonth } }
+    })
+  }, [])
 
   const value: LedgerContextValue = {
     state,
@@ -218,13 +334,19 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     saveError,
     month,
     setMonth,
-    goPrevMonth,
-    goNextMonth,
-    entries,
-    entriesSource,
+    currentMonth,
+    currentMonthSource,
+    year,
+    setYear,
+    creditByMonth,
     addEntry,
     updateEntry,
     removeEntry,
+    setIncome,
+    setExtraIncome,
+    addSpecial,
+    updateSpecial,
+    removeSpecial,
   }
 
   return <LedgerContext.Provider value={value}>{children}</LedgerContext.Provider>
