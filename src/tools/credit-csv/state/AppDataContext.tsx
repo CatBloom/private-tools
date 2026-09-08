@@ -8,8 +8,8 @@ import {
   type ReactNode
 } from 'react'
 import { deleteFile, fetchFileBytes, listFiles, uploadFile, type FileMeta } from '../api'
-import { buildAppData } from '../lib/csv'
-import type { AppData } from '../lib/types'
+import { buildAppData } from '../../../lib/credit-csv/csv'
+import type { AppData } from '../../../lib/credit-csv/types'
 
 export type DataStatus =
   | { kind: 'loading' }

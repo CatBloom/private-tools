@@ -1,4 +1,4 @@
-import type { ViewMode } from '../lib/types'
+import type { ViewMode } from '../../../lib/credit-csv/types'
 
 type ViewModeToggleProps = {
   viewMode: ViewMode

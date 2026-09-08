@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { formatCurrency } from '../lib/format'
+import { formatCurrency } from '../../../lib/credit-csv/format'
 import { collapseTopN } from '../lib/selectors'
 import { useIsMobile } from '../hooks/useIsMobile'
 

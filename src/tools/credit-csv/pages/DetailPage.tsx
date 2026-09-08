@@ -7,7 +7,7 @@ import { SummaryStats } from '../components/SummaryStats'
 import { TransactionsTable } from '../components/TransactionsTable'
 import { usePersistedState } from '../../../hooks/usePersistedState'
 import { buildPieData, filterTransactions, summarizeMerchants, summarizePeriod } from '../lib/selectors'
-import type { AppData, ViewMode } from '../lib/types'
+import type { AppData, ViewMode } from '../../../lib/credit-csv/types'
 import { useAppDataContext } from '../state/AppDataContext'
 
 const DetailView = ({ data }: { data: AppData }) => {

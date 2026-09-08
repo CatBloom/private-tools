@@ -1,6 +1,6 @@
 import { useSortableRows } from '../hooks/useSortableRows'
-import { formatCurrency } from '../lib/format'
-import type { MerchantMonthlySummary } from '../lib/types'
+import { formatCurrency } from '../../../lib/credit-csv/format'
+import type { MerchantMonthlySummary } from '../../../lib/credit-csv/types'
 import { Pagination, usePaginatedRows } from './Pagination'
 
 type SortKey = 'period' | 'totalAmount'
