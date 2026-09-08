@@ -177,7 +177,7 @@
 }
 
 /* 編集モードは名前 input＋カテゴリ select＋保存＋キャンセルを 375px で1行に収める
-   （カテゴリはラベルが2〜3文字のため select 幅を詰め、名前 input が残りを取る）。 */
+   （名前 input は 11rem を上限に縮み、カテゴリ select は 3 文字ラベル＋矢印が収まる 5.5rem）。 */
 .bill-manager-entry-row-edit-fields {
   display: flex;
   flex: 1;
@@ -186,13 +186,13 @@
 }
 
 .bill-manager-entry-row-edit-fields input[type="text"] {
-  flex: 1 1 auto;
+  flex: 0 1 11rem;
   min-width: 0;
 }
 
 .bill-manager-entry-row-edit-fields select {
   flex: none;
-  width: 4rem;
+  width: 5.5rem;
   padding-inline: 0.3rem;
 }
 
