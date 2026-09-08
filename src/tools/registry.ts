@@ -9,7 +9,7 @@ export type ToolNavItem = {
   shortLabel?: string
 }
 
-export type ToolId = 'my-todo' | 'credit-csv' | 'prompt-builder'
+export type ToolId = 'my-todo' | 'credit-csv' | 'prompt-builder' | 'bill-manager'
 
 export type ToolDefinition = {
   id: ToolId
@@ -79,6 +79,17 @@ export const TOOLS: readonly ToolDefinition[] = [
       { label: '登録', to: '/register' },
       { label: '出力', to: '/output' },
     ],
+    inlineStyle: true,
+  },
+  {
+    id: 'bill-manager',
+    name: 'Bill Manager',
+    path: '/tools/bill-manager',
+    description: '毎月の支払い合計',
+    entry: { name: 'client-bill-manager', src: 'src/client-bill-manager.tsx' },
+    clientScript: { dev: '/src/client-bill-manager.tsx', prod: '/assets/client-bill-manager.js' },
+    css: { prod: '/assets/client-bill-manager.css' },
+    nav: [{ label: '毎月の支払い', to: '/' }],
     inlineStyle: true,
   },
 ]

@@ -102,6 +102,7 @@ export const createApp = (options: AppOptions = {}) => {
   const clientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'credit-csv')!)
   const promptBuilderClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'prompt-builder')!)
   const myTodoClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'my-todo')!)
+  const billManagerClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'bill-manager')!)
   const themeScript = process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts'
 
   const defaultSecureHeaders = buildSecureHeaders(["'self'"])
@@ -161,6 +162,7 @@ export const createApp = (options: AppOptions = {}) => {
     'credit-csv': clientScript,
     'prompt-builder': promptBuilderClientScript,
     'my-todo': myTodoClientScript,
+    'bill-manager': billManagerClientScript,
   }
 
   for (const tool of TOOLS) {
