@@ -316,6 +316,12 @@
   min-width: 46rem;
 }
 
+/* 数値列（sticky の行見出し以外）は右揃え。月見出しも数値に合わせて右寄せ。 */
+.bill-manager-year-table td:not(.bill-manager-year-sticky-col),
+.bill-manager-year-table th:not(.bill-manager-year-sticky-col) {
+  text-align: right;
+}
+
 .bill-manager-year-sticky-col {
   position: sticky;
   left: 0;
@@ -335,7 +341,7 @@
 .bill-manager-year-month-link {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   min-height: 40px;
   padding: 0.3rem 0.4rem;
@@ -354,9 +360,23 @@
   font-weight: 700;
 }
 
-/* 支出合計／収入／現金残高: 上に太い罫線＋薄い面色で「集計結果」と分かるようにする。 */
+/* 支出合計／収入／現金残高: 上に太い罫線＋薄い面色で「集計結果」と分かるようにする。
+   ライトは青みの無いグレー（--pt-info-bg は青すぎる）、ダークは --pt-info-bg。ダークの判定は styles.css と同じ
+   「prefers-color-scheme + data-theme 属性」の2系統。 */
 .bill-manager-year-result-row td,
 .bill-manager-year-result-row .bill-manager-year-sticky-col {
+  background: #eceff3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bill-manager-app:not([data-theme="light"]) .bill-manager-year-result-row td,
+  .bill-manager-app:not([data-theme="light"]) .bill-manager-year-result-row .bill-manager-year-sticky-col {
+    background: var(--pt-info-bg);
+  }
+}
+
+.bill-manager-app[data-theme="dark"] .bill-manager-year-result-row td,
+.bill-manager-app[data-theme="dark"] .bill-manager-year-result-row .bill-manager-year-sticky-col {
   background: var(--pt-info-bg);
 }
 
@@ -367,7 +387,6 @@
 
 .bill-manager-year-cash-row td,
 .bill-manager-year-cash-row .bill-manager-year-sticky-col {
-  font-size: 1.05rem;
   font-weight: 700;
 }
 
