@@ -100,7 +100,7 @@ export const MonthEntryRow = ({
       <input
         type="number"
         inputMode="numeric"
-        className="pt-input bill-manager-entry-amount"
+        className="pt-input bill-manager-entry-amount bill-manager-amount"
         aria-label={`${entry.name}の金額`}
         defaultValue={entry.amount ?? ''}
         placeholder="未入力"

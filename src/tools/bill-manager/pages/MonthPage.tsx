@@ -199,7 +199,7 @@ export const MonthPage = () => {
               <input
                 type="number"
                 inputMode="numeric"
-                className="pt-input bill-manager-income-amount"
+                className="pt-input bill-manager-income-amount bill-manager-amount"
                 aria-label="給与"
                 defaultValue={currentMonth.income ?? ''}
                 placeholder="未入力"
@@ -220,7 +220,7 @@ export const MonthPage = () => {
                 <input
                   type="number"
                   inputMode="numeric"
-                  className="pt-input"
+                  className="pt-input bill-manager-amount"
                   aria-label="臨時収入（賞与など）"
                   placeholder="臨時収入"
                   value={extraIncomeDraft}
@@ -272,7 +272,7 @@ export const MonthPage = () => {
               <input
                 type="number"
                 inputMode="numeric"
-                className="pt-input"
+                className="pt-input bill-manager-amount"
                 placeholder="金額（任意）"
                 aria-label="金額"
                 value={addAmount}
@@ -322,7 +322,7 @@ export const MonthPage = () => {
               <input
                 type="number"
                 inputMode="numeric"
-                className="pt-input"
+                className="pt-input bill-manager-amount"
                 placeholder="金額"
                 aria-label="特殊費用の金額"
                 value={specialAmount}

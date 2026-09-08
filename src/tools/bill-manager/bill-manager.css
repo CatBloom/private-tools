@@ -327,3 +327,15 @@
 .bill-manager-year-cash-row .bill-manager-year-sticky-col {
   font-size: 1.05rem;
 }
+
+/* 金額入力: 数値 input のスピンボタン（上下矢印）を出さない。スマホでは inputMode="numeric" で数字キーボードが出る。 */
+.bill-manager-amount {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.bill-manager-amount::-webkit-outer-spin-button,
+.bill-manager-amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
