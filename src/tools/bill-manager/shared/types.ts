@@ -22,10 +22,10 @@ export type LedgerEntry = {
   id: string
   /** 家賃・かんぽ生命・Nisa など。 */
   name: string
-  /** null = 未入力（variable な行を翌月へコピーした直後など）。 */
+  /** null = 未入力（ユーザーが金額を空にした場合）。variable な行の翌月コピー直後は 0 になる。 */
   amount: number | null
   category: EntryCategory
-  /** 「変動」。true なら翌月へコピーする際に amount を null にする。 */
+  /** 「変動費」。true なら翌月へコピーする際に amount を 0 にする。 */
   variable: boolean
   /** false = 翌月へコピーしない（この月で終了）。過去月には残る。 */
   carryOver: boolean

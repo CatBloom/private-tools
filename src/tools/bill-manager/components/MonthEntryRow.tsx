@@ -80,10 +80,9 @@ export const MonthEntryRow = ({ entry, onEdit, onAmountCommit, onToggleVariable,
         <span className="bill-manager-entry-name" title={entry.name}>
           {entry.name}
         </span>
-        <span className="pt-badge bill-manager-entry-category">{ENTRY_CATEGORY_LABELS[entry.category]}</span>
-        {entry.variable ? <span className="pt-badge bill-manager-entry-status">変動</span> : null}
+        {entry.variable ? <span className="pt-badge bill-manager-entry-status">変動費</span> : null}
         {!entry.carryOver ? <span className="pt-badge bill-manager-entry-status">終了</span> : null}
-        {entry.excluded ? <span className="pt-badge bill-manager-entry-status">除外</span> : null}
+        <span className="pt-badge bill-manager-entry-category">{ENTRY_CATEGORY_LABELS[entry.category]}</span>
         <input
           type="number"
           inputMode="numeric"
@@ -98,9 +97,14 @@ export const MonthEntryRow = ({ entry, onEdit, onAmountCommit, onToggleVariable,
       <RowMenu
         items={[
           { key: 'edit', label: '編集', onClick: startEdit },
-          { key: 'toggle-variable', label: entry.variable ? '変動 OFF' : '変動 ON', onClick: onToggleVariable },
-          { key: 'toggle-excluded', label: entry.excluded ? '計上 ON' : '計上 OFF', onClick: onToggleExcluded },
-          { key: 'toggle-carry-over', label: entry.carryOver ? '今月終了' : '引き継ぐ', onClick: onToggleCarryOver },
+          { key: 'toggle-variable', label: '変動費', onClick: onToggleVariable },
+          {
+            key: 'toggle-excluded',
+            label: 'クレカ払い',
+            title: 'クレカ明細に含まれているため支出合計から除外します',
+            onClick: onToggleExcluded,
+          },
+          { key: 'toggle-carry-over', label: '今月終了', onClick: onToggleCarryOver },
           { key: 'delete', label: '削除', onClick: onDelete, danger: true },
         ]}
       />

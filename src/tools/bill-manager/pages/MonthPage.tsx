@@ -59,7 +59,6 @@ export const MonthPage = () => {
   const [addName, setAddName] = useState('')
   const [addAmount, setAddAmount] = useState('')
   const [addCategory, setAddCategory] = useState<EntryCategory>('other')
-  const [addVariable, setAddVariable] = useState(false)
   const [extraIncomeEditing, setExtraIncomeEditing] = useState(false)
   const [extraIncomeDraft, setExtraIncomeDraft] = useState('')
   const [specialAmount, setSpecialAmount] = useState('')
@@ -81,7 +80,7 @@ export const MonthPage = () => {
     const trimmed = addName.trim()
     if (!trimmed || loadStatus !== 'ready') return
 
-    const added = addEntry({ name: trimmed, amount: parseAmountInput(addAmount), category: addCategory, variable: addVariable })
+    const added = addEntry({ name: trimmed, amount: parseAmountInput(addAmount), category: addCategory, variable: false })
     if (!added) {
       showAlert('info', `1か月あたり${MAX_ENTRIES_PER_MONTH}件までです`)
       return
@@ -89,7 +88,6 @@ export const MonthPage = () => {
     setAddName('')
     setAddAmount('')
     setAddCategory('other')
-    setAddVariable(false)
   }
 
   const handleDeleteEntry = async (entry: LedgerEntry) => {
@@ -281,10 +279,6 @@ export const MonthPage = () => {
                   </option>
                 ))}
               </select>
-              <label className="bill-manager-add-form-variable">
-                <input type="checkbox" checked={addVariable} onChange={(event) => setAddVariable(event.target.checked)} />
-                変動
-              </label>
               <button
                 type="submit"
                 className="pt-button pt-button-accent"
