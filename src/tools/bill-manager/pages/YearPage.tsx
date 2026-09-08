@@ -34,7 +34,13 @@ const summaryRowClassName = ({ resultRow, firstResultRow, emphasize }: SummaryRo
   return className
 }
 
-const monthCellClassName = (month: YearGridMonth): string | undefined => (month.source !== 'stored' ? 'is-derived' : undefined)
+// 記録の無い月は is-derived（見込）、クレカ未取込の月は is-credit-missing（列全体に斜線のハッチングを掛け、集計外と分かるようにする）。
+const monthCellClassName = (month: YearGridMonth): string | undefined => {
+  const classes: string[] = []
+  if (month.source !== 'stored') classes.push('is-derived')
+  if (month.summary.creditMissing) classes.push('is-credit-missing')
+  return classes.length > 0 ? classes.join(' ') : undefined
+}
 
 // クレカ／収入は summary から、支出合計・現金残高は月ごとに null 化されたフィールドから読む
 // （クレカ未取込の月は summary 側の値ではなく expenseTotal／cashRemaining が null になっている）。
@@ -85,7 +91,7 @@ export const YearPage = () => {
                   <tr>
                     <th className="bill-manager-year-sticky-col">項目</th>
                     {grid.months.map((monthColumn, index) => (
-                      <th key={monthColumn.month}>
+                      <th key={monthColumn.month} className={monthCellClassName(monthColumn)}>
                         <Link to={`/month/${monthColumn.month}`} className="bill-manager-year-month-link">
                           {index + 1}月
                           {monthColumn.source !== 'stored' ? (
@@ -150,11 +156,6 @@ export const YearPage = () => {
                 </tbody>
               </table>
             </div>
-            {grid.months.some((monthColumn) => monthColumn.summary.creditMissing) ? (
-              <p className="bill-manager-note">
-                クレカ／支出合計／収入／現金残高の年間合計は、クレカ未取込の月を除いています。
-              </p>
-            ) : null}
           </section>
         </>
       ) : null}

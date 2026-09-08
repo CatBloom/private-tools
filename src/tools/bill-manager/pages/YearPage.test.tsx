@@ -152,7 +152,7 @@ describe('YearPage', () => {
     expect(within(incomeRow).getAllByRole('cell')[0]).toHaveTextContent(fmt(280000))
   })
 
-  it('excludes 未取込 months from the 支出合計／収入／現金残高 year totals and shows the exclusion note', async () => {
+  it('excludes 未取込 months from the 支出合計／収入／現金残高 year totals and hatches their cells', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: { 202601: { ...createEmptyLedgerMonth(), income: 280000 } },
     })
@@ -162,7 +162,10 @@ describe('YearPage', () => {
     const cashRow = (await screen.findByText('現金残高')).closest('tr')!
     const cells = within(cashRow).getAllByRole('cell')
     expect(cells[12]).toHaveTextContent('0')
-    expect(screen.getByText(/クレカ未取込の月を除いています/)).toBeInTheDocument()
+    // 注記は出さず、未取込月の列（見出しとセル）に is-credit-missing を付けて斜線で示す
+    expect(screen.queryByText(/クレカ未取込の月を除いています/)).not.toBeInTheDocument()
+    expect(cells[0]).toHaveClass('is-credit-missing')
+    expect((await screen.findByText('1月')).closest('th')).toHaveClass('is-credit-missing')
   })
 
   it('links each month header to its month page', async () => {

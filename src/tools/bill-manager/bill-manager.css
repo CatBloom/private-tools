@@ -338,6 +338,16 @@
   color: var(--pt-muted);
 }
 
+/* クレカ未取込の月: 列全体に薄い斜線のハッチングを掛け、その月が集計外であることを示す（数値は読めるまま）。 */
+.bill-manager-year-table td.is-credit-missing,
+.bill-manager-year-table th.is-credit-missing {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--pt-muted) 22%, transparent) 5px 6px
+  );
+}
+
 .bill-manager-year-month-link {
   display: flex;
   flex-direction: column;
