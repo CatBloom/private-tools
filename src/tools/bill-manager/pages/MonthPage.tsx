@@ -175,7 +175,7 @@ export const MonthPage = () => {
               {summary.creditMissing ? '未取込' : formatYen(summary.credit ?? 0)}
             </p>
             <div className="bill-manager-summary-row bill-manager-summary-cash">
-              <span>現金残</span>
+              <span>現金残高</span>
               <strong>{formatYen(summary.cashRemaining)}</strong>
             </div>
             {notes.length > 0 ? <p className="bill-manager-note">{notes.join('／')}</p> : null}

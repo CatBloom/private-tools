@@ -53,7 +53,7 @@ describe('YearPage', () => {
     expect(screen.getByText('年間合計')).toBeInTheDocument()
   })
 
-  it('shows an item row that carries its amount across derived months', async () => {
+  it('shows a category row that sums its amount and carries it across derived months', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: {
         202601: {
@@ -73,6 +73,54 @@ describe('YearPage', () => {
     expect(cells[12]).toHaveTextContent(fmt(47000 * 12))
   })
 
+  it('does not show a category row with no entries in the year', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202601: {
+          ...createEmptyLedgerMonth(),
+          entries: [{ id: 'e1', name: '家賃', amount: 47000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+        },
+      },
+    })
+    renderPage('2026')
+
+    await screen.findByText('家賃')
+    expect(screen.queryByText('保険')).not.toBeInTheDocument()
+  })
+
+  it('shows a special expense row summing specials per month', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202601: { ...createEmptyLedgerMonth(), specials: [{ id: 's1', amount: 825, memo: 'メモ' }] },
+      },
+    })
+    renderPage('2026')
+
+    const row = (await screen.findByText('特殊費用')).closest('tr')!
+    const cells = within(row).getAllByRole('cell')
+    expect(cells[0]).toHaveTextContent(fmt(825))
+  })
+
+  it('does not show a 固定費合計 row', async () => {
+    renderPage('2026')
+    await screen.findByText('1月')
+    expect(screen.queryByText('固定費合計')).not.toBeInTheDocument()
+  })
+
+  it('marks 支出合計／収入／現金残高 as result rows with the summary classes', async () => {
+    renderPage('2026')
+    const expenseRow = (await screen.findByText('支出合計')).closest('tr')!
+    const incomeRow = screen.getByText('収入').closest('tr')!
+    const cashRow = screen.getByText('現金残高').closest('tr')!
+
+    expect(expenseRow.className).toContain('bill-manager-year-result-row')
+    expect(expenseRow.className).toContain('bill-manager-year-result-row-first')
+    expect(incomeRow.className).toContain('bill-manager-year-result-row')
+    expect(incomeRow.className).not.toContain('bill-manager-year-result-row-first')
+    expect(cashRow.className).toContain('bill-manager-year-result-row')
+    expect(cashRow.className).toContain('bill-manager-year-cash-row')
+  })
+
   it('marks a month header as 見込 when the month has no stored record', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: { 202601: { ...createEmptyLedgerMonth(), entries: [] } },
@@ -89,15 +137,32 @@ describe('YearPage', () => {
     expect(within(row).getAllByText('未取込').length).toBeGreaterThan(0)
   })
 
-  it('shows the cash remaining total across the year', async () => {
+  it('shows — in 支出合計・現金残高 cells for a 未取込 month, while 収入 keeps its own value', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: { 202601: { ...createEmptyLedgerMonth(), income: 280000 } },
     })
     renderPage('2026')
 
-    const row = (await screen.findByText('現金残')).closest('tr')!
-    const cells = within(row).getAllByRole('cell')
-    expect(cells[12]).toHaveTextContent(fmt(280000 * 12))
+    const expenseRow = (await screen.findByText('支出合計')).closest('tr')!
+    const incomeRow = screen.getByText('収入').closest('tr')!
+    const cashRow = screen.getByText('現金残高').closest('tr')!
+
+    expect(within(expenseRow).getAllByRole('cell')[0]).toHaveTextContent('—')
+    expect(within(cashRow).getAllByRole('cell')[0]).toHaveTextContent('—')
+    expect(within(incomeRow).getAllByRole('cell')[0]).toHaveTextContent(fmt(280000))
+  })
+
+  it('excludes 未取込 months from the 支出合計／収入／現金残高 year totals and shows the exclusion note', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: { 202601: { ...createEmptyLedgerMonth(), income: 280000 } },
+    })
+    renderPage('2026')
+
+    // 全12か月がクレカ未取込（fetchCreditCsvBytes は常に null）なので年間合計は0になる。
+    const cashRow = (await screen.findByText('現金残高')).closest('tr')!
+    const cells = within(cashRow).getAllByRole('cell')
+    expect(cells[12]).toHaveTextContent('0')
+    expect(screen.getByText(/クレカ未取込の月を除いています/)).toBeInTheDocument()
   })
 
   it('links each month header to its month page', async () => {

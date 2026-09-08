@@ -303,6 +303,10 @@
   padding: 0.75rem;
 }
 
+.bill-manager-year-card .bill-manager-note {
+  margin-top: 0.6rem;
+}
+
 .bill-manager-year-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -321,11 +325,6 @@
   background: var(--pt-surface);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.bill-manager-year-table tr.is-excluded .bill-manager-year-sticky-col {
-  color: var(--pt-muted);
-  text-decoration: line-through;
 }
 
 .bill-manager-year-table td.is-derived,
@@ -355,9 +354,21 @@
   font-weight: 700;
 }
 
+/* 支出合計／収入／現金残高: 上に太い罫線＋薄い面色で「集計結果」と分かるようにする。 */
+.bill-manager-year-result-row td,
+.bill-manager-year-result-row .bill-manager-year-sticky-col {
+  background: var(--pt-info-bg);
+}
+
+.bill-manager-year-result-row-first td,
+.bill-manager-year-result-row-first .bill-manager-year-sticky-col {
+  border-top: 2px solid var(--pt-border);
+}
+
 .bill-manager-year-cash-row td,
 .bill-manager-year-cash-row .bill-manager-year-sticky-col {
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
 /* 金額入力: 数値 input のスピンボタン（上下矢印）を出さない。スマホでは inputMode="numeric" で数字キーボードが出る。 */
