@@ -209,4 +209,62 @@ describe('SectionPage', () => {
     expect(screen.getByLabelText('タスク')).toHaveValue('water the plants')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
+
+  describe('revalidate on tab return', () => {
+    it('replaces state on window focus when the fetched todos differ, without saving it back', async () => {
+      renderSection()
+      expect(await screen.findByPlaceholderText('タスクを追加')).toBeInTheDocument()
+
+      vi.mocked(getTodos).mockResolvedValue({
+        today: [{ id: 't1', text: 'water the plants', completed: false, createdAt: '2026-09-01T00:00:00.000Z' }],
+        someday: [],
+        lastRolloverDate: toLocalDateString(new Date()),
+      })
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await screen.findByText('water the plants')).toBeInTheDocument()
+      expect(putTodos).not.toHaveBeenCalled()
+    })
+
+    it('does not re-fetch while a save is still in flight', async () => {
+      let resolvePut: (state: TodoState) => void = () => {}
+      vi.mocked(putTodos).mockImplementationOnce(() => new Promise((resolve) => { resolvePut = resolve }))
+      renderSection()
+      await screen.findByPlaceholderText('タスクを追加')
+
+      const input = screen.getByPlaceholderText('タスクを追加')
+      fireEvent.change(input, { target: { value: 'buy milk' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+      await screen.findByText('buy milk')
+
+      expect(getTodos).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getTodos).toHaveBeenCalledTimes(1)
+
+      resolvePut({ today: [], someday: [], lastRolloverDate: toLocalDateString(new Date()) })
+    })
+
+    it('applies rollover to the revalidated data and saves the rolled result via the normal save path', async () => {
+      vi.mocked(putTodos).mockImplementation(async (state) => state)
+      renderSection()
+      expect(await screen.findByPlaceholderText('タスクを追加')).toBeInTheDocument()
+
+      const yesterday = toLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000))
+      vi.mocked(getTodos).mockResolvedValue({
+        today: [{ id: 't1', text: 'leftover task', completed: false, createdAt: '2026-09-01T00:00:00.000Z' }],
+        someday: [],
+        lastRolloverDate: yesterday,
+      })
+
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() => expect(putTodos).toHaveBeenCalledTimes(1))
+      const saved = vi.mocked(putTodos).mock.calls[0][0]
+      expect(saved.today).toEqual([])
+      expect(saved.someday.map((item) => item.text)).toContain('leftover task')
+      expect(saved.lastRolloverDate).toBe(toLocalDateString(new Date()))
+    })
+  })
 })

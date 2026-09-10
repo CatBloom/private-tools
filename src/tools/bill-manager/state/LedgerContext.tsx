@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAlert } from '../../../components/feedback'
+import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getLedger, putLedger } from '../api'
 import { fetchCreditCsvBytes } from '../creditCsvApi'
 import { creditUsageMonth, sumCreditCsv } from '../lib/creditAmount'
@@ -72,8 +73,8 @@ type LedgerContextValue = {
   removeEntry: (id: string) => void
 
   setIncome: (month: string, value: number | null) => void
-  setExtraIncome: (month: string, value: number | null) => void
   setBonus: (month: string, value: number | null) => void
+  setExtraIncome: (month: string, value: number | null) => void
   addSpecial: (month: string, input: AddSpecialInput) => boolean
   updateSpecial: (month: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => void
   removeSpecial: (month: string, id: string) => void
@@ -197,6 +198,29 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     scheduleSave()
   }, [state, loadStatus, scheduleSave])
 
+  // タブに戻ったときの再取得。未保存の変更（in-flight・保存待ちタイマー・送信済みと不一致）が
+  // あれば何もしない。取得結果が現在と等価なら何もせず、異なれば state を差し替えつつ
+  // lastSentRef も同じ参照に揃えて、差し替え自体が PUT を発火させないようにする。
+  const revalidate = useCallback(() => {
+    if (loadStatus !== 'ready') return
+    if (inFlightRef.current) return
+    if (pendingTimerRef.current !== null) return
+    const snapshotBefore = stateRef.current
+    if (snapshotBefore !== lastSentRef.current) return
+
+    getLedger()
+      .then((fetched) => {
+        // 取得中に編集が始まっていたら破棄する。
+        if (stateRef.current !== snapshotBefore) return
+        if (JSON.stringify(fetched) === JSON.stringify(snapshotBefore)) return
+        setState(fetched)
+        lastSentRef.current = fetched
+      })
+      .catch(() => {})
+  }, [loadStatus])
+
+  useRevalidateOnReturn(revalidate)
+
   // 表示のための初期化（記録が無い月の派生）はここでのみ計算する。state には書き込まない。
   const { month: currentMonth, source: currentMonthSource } = useMemo(() => resolveMonth(state, month), [state, month])
 
@@ -282,6 +306,13 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     })
   }, [])
 
+  const setBonus = useCallback((targetMonth: string, value: number | null) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      return { ...current, months: { ...current.months, [targetMonth]: { ...base, bonus: value } } }
+    })
+  }, [])
+
   const setExtraIncome = useCallback((targetMonth: string, value: number | null) => {
     setState((current) => {
       const base = materializeMonth(current, targetMonth)
@@ -306,13 +337,6 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     },
     [loadStatus],
   )
-  const setBonus = useCallback((targetMonth: string, value: number | null) => {
-    setState((current) => {
-      const base = materializeMonth(current, targetMonth)
-      return { ...current, months: { ...current.months, [targetMonth]: { ...base, bonus: value } } }
-    })
-  }, [])
-
 
   const updateSpecial = useCallback((targetMonth: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => {
     setState((current) => {
@@ -351,6 +375,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     updateEntry,
     removeEntry,
     setIncome,
+    setBonus,
     setExtraIncome,
     addSpecial,
     updateSpecial,
@@ -367,4 +392,3 @@ export const useLedger = (): LedgerContextValue => {
   }
   return context
 }
-    setBonus,

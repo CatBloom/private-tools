@@ -13,6 +13,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { RowMenu } from '../../../components/RowMenu'
 import { copyText } from '../../../lib/copyText'
+import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getHistory, putHistory } from '../api'
 import { SortableOutputItem } from '../components/SortableOutputItem'
 import { useGroupedFilter } from '../hooks/useGroupedFilter'
@@ -75,6 +76,10 @@ export const OutputPage = () => {
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
   const [editHistoryName, setEditHistoryName] = useState('')
   const [editHistoryTarget, setEditHistoryTarget] = useState<PromptTargetId>(PROMPT_TARGET_IDS[0])
+  const editingHistoryIdRef = useRef(editingHistoryId)
+  editingHistoryIdRef.current = editingHistoryId
+  const historyEntriesRef = useRef(historyEntries)
+  historyEntriesRef.current = historyEntries
 
   const [historyFilterTarget, setHistoryFilterTarget] = useState<TargetFilter>('ALL')
 
@@ -97,6 +102,28 @@ export const OutputPage = () => {
   useEffect(() => {
     loadHistory()
   }, [loadHistory])
+
+  // タブに戻ったときの再取得。保存/削除/更新が進行中、または名前・ターゲットを編集中のときは
+  // 何もしない（履歴は明示操作でしか保存しないため、置き換えで PUT が発火することはない）。
+  // 取得結果が現在と等価なら何もしない。
+  useRevalidateOnReturn(() => {
+    if (historyLoadStatus !== 'ready') return
+    if (historySaveStatusRef.current === 'saving') return
+    if (editingHistoryIdRef.current !== null) return
+    const snapshotBefore = historyEntriesRef.current
+
+    getHistory()
+      .then((entries) => {
+        // 取得中に保存/削除/編集が始まっていたら破棄する（フラグが取得中に一往復して元に
+        // 戻っている場合があるため、historyEntries 自体が変わっていないかも見る）。
+        if (historySaveStatusRef.current === 'saving') return
+        if (editingHistoryIdRef.current !== null) return
+        if (historyEntriesRef.current !== snapshotBefore) return
+        if (JSON.stringify(entries) === JSON.stringify(snapshotBefore)) return
+        setHistoryEntries(entries)
+      })
+      .catch(() => {})
+  })
 
   useEffect(() => {
     writeOutputItems(outputItems)

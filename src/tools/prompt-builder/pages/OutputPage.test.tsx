@@ -457,4 +457,115 @@ describe('OutputPage', () => {
     expect(screen.getByText('saved set', { exact: false })).toBeInTheDocument()
     expect(screen.queryByText('renamed set', { exact: false })).not.toBeInTheDocument()
   })
+
+  describe('revalidate on tab return', () => {
+    it('replaces history on window focus when the fetched list differs, without saving it back', async () => {
+      renderPage()
+      await screen.findByText('（出力はまだありません）')
+
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
+      expect(putHistory).not.toHaveBeenCalled()
+    })
+
+    it('does not re-fetch while a history entry is being edited', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
+
+      expect(getHistory).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-fetch while a history save (delete) is in flight', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+      let resolvePut: (entries: HistoryEntry[]) => void = () => {}
+      vi.mocked(putHistory).mockImplementation(
+        () => new Promise<HistoryEntry[]>((resolve) => { resolvePut = resolve }),
+      )
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
+
+      // deleteHistoryEntry の setHistorySaveStatus('saving') が確実に反映されてから focus する
+      // （confirm の resolve から先の続きは非同期なため、即座には反映されていないことがある）。
+      openRowMenu(row)
+      await waitFor(() => expect(within(row).getByRole('menuitem', { name: '削除' })).toBeDisabled())
+
+      expect(getHistory).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getHistory).toHaveBeenCalledTimes(1)
+
+      resolvePut([])
+    })
+
+    it('does not resurrect a history entry deleted while a stale revalidate GET is still in flight', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValueOnce([entry])
+      vi.mocked(putHistory).mockImplementation(async (entries) => entries)
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+
+      // タブ復帰の再取得を pending のままにしておく（フラグは削除完了後に元へ戻ってしまう）。
+      let resolveRevalidate: (entries: HistoryEntry[]) => void = () => {}
+      vi.mocked(getHistory).mockImplementationOnce(
+        () => new Promise<HistoryEntry[]>((resolve) => { resolveRevalidate = resolve }),
+      )
+      window.dispatchEvent(new Event('focus'))
+      await Promise.resolve()
+
+      // GET が pending の間に削除操作を完了させる。
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
+      await waitFor(() => expect(putHistory).toHaveBeenCalledWith([]))
+      await waitFor(() => expect(screen.queryByText('saved set', { exact: false })).not.toBeInTheDocument())
+
+      // 削除完了後に、pending だった GET が削除前の古いデータで解決する。
+      resolveRevalidate([entry])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(screen.queryByText('saved set', { exact: false })).not.toBeInTheDocument()
+    })
+  })
 })

@@ -309,4 +309,44 @@ describe('MonthPage', () => {
     await waitFor(() => expect(screen.getByLabelText('家賃の金額')).toHaveValue(76000))
     expect(screen.getByLabelText('給与')).toHaveValue(292218)
   })
+
+  describe('revalidate on tab return', () => {
+    it('replaces state on window focus when the fetched ledger differs, without saving it back', async () => {
+      renderPage('202609')
+      expect(await screen.findByText('支払い項目がありません。')).toBeInTheDocument()
+
+      vi.mocked(getLedger).mockResolvedValue({
+        months: {
+          202609: {
+            ...createEmptyLedgerMonth(),
+            entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+          },
+        },
+      })
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await findEntryRow('家賃')).toBeInTheDocument()
+      expect(putLedger).not.toHaveBeenCalled()
+    })
+
+    it('does not re-fetch while a save is still in flight', async () => {
+      let resolvePut: (state: LedgerState) => void = () => {}
+      vi.mocked(putLedger).mockImplementationOnce(() => new Promise((resolve) => { resolvePut = resolve }))
+      renderPage('202609')
+      await screen.findByText('支払い項目がありません。')
+
+      const nameInput = await screen.findByPlaceholderText('項目名')
+      fireEvent.change(nameInput, { target: { value: '電気代' } })
+      fireEvent.click(within(nameInput.closest('form')!).getByRole('button', { name: '追加' }))
+      await findEntryRow('電気代')
+
+      expect(getLedger).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getLedger).toHaveBeenCalledTimes(1)
+
+      resolvePut({ months: {} })
+    })
+  })
 })

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAlert, useConfirm } from '../../../components/feedback'
+import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getTodos, putTodos } from '../api'
 import { canPlaceInToday, moveItem } from '../lib/move'
 import { reorder } from '../lib/reorder'
@@ -158,6 +159,32 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
     if (loadStatus !== 'ready') return
     scheduleSave()
   }, [todoState, loadStatus, scheduleSave])
+
+  // タブに戻ったときの再取得。未保存の変更（in-flight・保存待ちタイマー・送信済みと不一致）が
+  // あれば何もしない。取得結果に初回読み込みと同じ経路で rollover を適用し、現在の state と
+  // 等価なら何もしない。異なる場合は state を差し替える：rollover 自体が変化を生んでいなければ
+  // 「取得しただけ」なので lastSentRef も揃えて PUT を発火させず、rollover が変化を生んだ場合は
+  // 初回読み込みと同様に通常どおり保存させる（lastSentRef は更新しない）。
+  const revalidate = useCallback(() => {
+    if (loadStatus !== 'ready') return
+    if (inFlightRef.current) return
+    if (pendingTimerRef.current !== null) return
+    const snapshotBefore = todoStateRef.current
+    if (snapshotBefore !== lastSentRef.current) return
+
+    getTodos()
+      .then((fetched) => {
+        // 取得中に編集が始まっていたら破棄する。
+        if (todoStateRef.current !== snapshotBefore) return
+        const rolled = rollover(fetched, toLocalDateString(new Date()))
+        if (JSON.stringify(rolled) === JSON.stringify(snapshotBefore)) return
+        setTodoState(rolled)
+        if (rolled === fetched) lastSentRef.current = rolled
+      })
+      .catch(() => {})
+  }, [loadStatus])
+
+  useRevalidateOnReturn(revalidate)
 
   const addItem = useCallback(
     (section: TodoSectionId, text: string) => {

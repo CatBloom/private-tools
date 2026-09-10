@@ -337,4 +337,59 @@ describe('WordsProvider', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('revalidate on tab return', () => {
+    it('replaces words on window focus when the fetched list differs, without saving it back or marking dirty', async () => {
+      renderHarness()
+      await screen.findByText('cat girl')
+
+      vi.mocked(getWords).mockResolvedValue([
+        ...sampleWords,
+        { id: 'w3', text: 'red hair', description: '', tag: 'quality' },
+      ])
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await screen.findByText('red hair')).toBeInTheDocument()
+      expect(putWords).not.toHaveBeenCalled()
+      expect(screen.queryByText('未保存の変更あり')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-save the revalidated words even after the debounce delay elapses', async () => {
+      const AUTO_SAVE_DELAY_MS = 30_000
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderHarness()
+        await screen.findByText('cat girl')
+
+        vi.mocked(getWords).mockResolvedValue([
+          ...sampleWords,
+          { id: 'w3', text: 'red hair', description: '', tag: 'quality' },
+        ])
+
+        window.dispatchEvent(new Event('focus'))
+        await screen.findByText('red hair')
+        expect(screen.queryByText('未保存の変更あり')).not.toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+        expect(putWords).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('does not re-fetch while there is an unsaved (dirty) change', async () => {
+      renderHarness()
+      await screen.findByText('cat girl')
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'unsaved word' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+      expect(screen.getByText('未保存の変更あり')).toBeInTheDocument()
+
+      expect(getWords).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getWords).toHaveBeenCalledTimes(1)
+    })
+  })
 })
