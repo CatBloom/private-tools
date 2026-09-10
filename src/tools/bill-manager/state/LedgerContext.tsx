@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAlert } from '../../../components/feedback'
+import { useGatedSave, type SaveStatus } from '../../../hooks/useGatedSave'
 import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getLedger, putLedger } from '../api'
 import { fetchCreditCsvBytes } from '../creditCsvApi'
@@ -18,10 +19,6 @@ import {
 } from '../shared/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
-
-// KV の「同一キー1秒1回」制約を守るための書き込み最小間隔（TodoContext と同じゲート）。
-const MIN_WRITE_INTERVAL_MS = 1000
 
 const createEntry = (name: string, amount: number | null, category: EntryCategory, variable: boolean): LedgerEntry => ({
   id: crypto.randomUUID(),
@@ -90,8 +87,6 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<LedgerState>(createEmptyLedgerState())
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [saveError, setSaveError] = useState<string | null>(null)
   const [month, setMonth] = useState<string>(() => currentMonthKey())
   const [year, setYear] = useState<number>(() => yearOf(currentMonthKey()))
   const [creditByMonth, setCreditByMonth] = useState<Record<string, number | null | undefined>>({})
@@ -99,80 +94,21 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   // stale closure 対策（保存判定が常に最新値を読めるようにする）。
   const stateRef = useRef(state)
   stateRef.current = state
-  // 直近で putLedger に成功したスナップショット参照。同一参照なら差分無しとみなす（失敗時は更新しない）。
-  const lastSentRef = useRef<LedgerState | null>(null)
-  const inFlightRef = useRef<Promise<unknown> | null>(null)
-  const lastWriteStartedAtRef = useRef<number | null>(null)
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // scheduleSave は runSave より後に定義されるため useCallback の依存配列に直接書けない（TDZ）。ref 経由で呼ぶ。
-  const scheduleSaveRef = useRef<() => void>(() => {})
   // クレカ額の取得は支払月単位でキャッシュし、同じ月への二重フェッチを防ぐ（state 反映前の一瞬も含めて）。
   const requestedCreditMonthsRef = useRef<Set<string>>(new Set())
 
-  const runSave = useCallback(
-    (snapshot: LedgerState) => {
-      setSaveStatus('saving')
-      setSaveError(null)
-      lastWriteStartedAtRef.current = Date.now()
-      const request = putLedger(snapshot)
-      inFlightRef.current = request
-      request.then(
-        () => {
-          lastSentRef.current = snapshot
-          inFlightRef.current = null
-          if (stateRef.current !== snapshot) {
-            // 通信中にさらに変更があった。scheduleSave 経由でもう一度だけ送る。
-            scheduleSaveRef.current()
-          } else {
-            setSaveStatus('saved')
-          }
-        },
-        (error: unknown) => {
-          inFlightRef.current = null
-          const message = error instanceof Error ? error.message : '保存に失敗しました。'
-          setSaveError(message)
-          setSaveStatus('error')
-          showAlert('error', message)
-        },
-      )
-    },
-    [showAlert],
-  )
-
-  // 保存の唯一のエントリポイント。in-flight 中・差分無しなら何もしない。
-  const scheduleSave = useCallback(() => {
-    if (inFlightRef.current) return
-    const snapshot = stateRef.current
-    if (snapshot === lastSentRef.current) return
-
-    if (pendingTimerRef.current !== null) {
-      clearTimeout(pendingTimerRef.current)
-      pendingTimerRef.current = null
-    }
-
-    const elapsed = lastWriteStartedAtRef.current === null ? Infinity : Date.now() - lastWriteStartedAtRef.current
-    const delay = Math.max(0, MIN_WRITE_INTERVAL_MS - elapsed)
-
-    if (delay <= 0) {
-      runSave(snapshot)
-      return
-    }
-
-    pendingTimerRef.current = setTimeout(() => {
-      pendingTimerRef.current = null
-      scheduleSave()
-    }, delay)
-  }, [runSave])
-  scheduleSaveRef.current = scheduleSave
-
-  useEffect(() => {
-    return () => {
-      if (pendingTimerRef.current !== null) {
-        clearTimeout(pendingTimerRef.current)
-        pendingTimerRef.current = null
-      }
-    }
-  }, [])
+  const {
+    saveStatus,
+    saveError,
+    hasPendingChanges,
+    markSynced,
+  } = useGatedSave<LedgerState>({
+    state,
+    stateRef,
+    ready: loadStatus === 'ready',
+    save: putLedger,
+    onError: (message) => showAlert('error', message),
+  })
 
   const loadLedger = useCallback(async () => {
     setLoadStatus('loading')
@@ -181,32 +117,25 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
       const loaded = await getLedger()
       setState(loaded)
       // 読み込み直後の空撃ち保存を防ぐため送信済み扱いにする。
-      lastSentRef.current = loaded
+      markSynced(loaded)
       setLoadStatus('ready')
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : '読み込みに失敗しました。')
       setLoadStatus('error')
     }
-  }, [])
+  }, [markSynced])
 
   useEffect(() => {
     loadLedger()
   }, [loadLedger])
 
-  useEffect(() => {
-    if (loadStatus !== 'ready') return
-    scheduleSave()
-  }, [state, loadStatus, scheduleSave])
-
   // タブに戻ったときの再取得。未保存の変更（in-flight・保存待ちタイマー・送信済みと不一致）が
   // あれば何もしない。取得結果が現在と等価なら何もせず、異なれば state を差し替えつつ
-  // lastSentRef も同じ参照に揃えて、差し替え自体が PUT を発火させないようにする。
+  // markSynced も同じ値に揃えて、差し替え自体が PUT を発火させないようにする。
   const revalidate = useCallback(() => {
     if (loadStatus !== 'ready') return
-    if (inFlightRef.current) return
-    if (pendingTimerRef.current !== null) return
+    if (hasPendingChanges()) return
     const snapshotBefore = stateRef.current
-    if (snapshotBefore !== lastSentRef.current) return
 
     getLedger()
       .then((fetched) => {
@@ -214,10 +143,10 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
         if (stateRef.current !== snapshotBefore) return
         if (JSON.stringify(fetched) === JSON.stringify(snapshotBefore)) return
         setState(fetched)
-        lastSentRef.current = fetched
+        markSynced(fetched)
       })
       .catch(() => {})
-  }, [loadStatus])
+  }, [loadStatus, hasPendingChanges, markSynced])
 
   useRevalidateOnReturn(revalidate)
 

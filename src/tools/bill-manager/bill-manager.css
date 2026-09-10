@@ -23,23 +23,6 @@
   gap: 0.85rem;
 }
 
-.bill-manager-status-message {
-  margin: 0;
-  padding: 0.85rem 1rem;
-  background: var(--pt-bg);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.75rem;
-}
-
-.bill-manager-status-message-error {
-  color: var(--pt-danger);
-  border-color: var(--pt-danger);
-}
-
-.bill-manager-status-message-error button {
-  margin-left: 0.6rem;
-}
-
 /* 月ビュー・年間ビュー共通の前後ナビ（前月/翌月、前年/翌年）。 */
 .bill-manager-nav {
   display: flex;
@@ -58,14 +41,6 @@
   margin: 0;
   color: var(--pt-muted);
   font-size: var(--pt-text-sm);
-}
-
-.bill-manager-empty {
-  margin: 0;
-  padding: 0.6rem 0;
-  color: var(--pt-muted);
-  font-size: 0.9rem;
-  list-style: none;
 }
 
 /* 集計カード（月ビュー）: 3〜4行に収める。 */

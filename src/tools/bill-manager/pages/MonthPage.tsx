@@ -4,6 +4,8 @@ import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { RowMenu } from '../../../components/RowMenu'
 import { MonthEntryRow } from '../components/MonthEntryRow'
 import { SpecialRow } from '../components/SpecialRow'
+import { parseAmountInput } from '../lib/amount'
+import { formatYen } from '../lib/format'
 import { currentMonthKey, formatMonthLabel, isMonthEditable, shiftMonth } from '../lib/monthKey'
 import { summarizeMonth } from '../lib/summary'
 import {
@@ -18,16 +20,6 @@ import {
   type LedgerEntry,
 } from '../shared/types'
 import { useLedger } from '../state/LedgerContext'
-
-const yenFormatter = new Intl.NumberFormat('ja-JP')
-const formatYen = (value: number) => `${yenFormatter.format(value)}円`
-
-const parseAmountInput = (raw: string): number | null => {
-  const trimmed = raw.trim()
-  if (trimmed === '') return null
-  const parsed = Number(trimmed)
-  return Number.isFinite(parsed) ? Math.trunc(parsed) : null
-}
 
 // 給与に併記する臨時の収入2種。RowMenu・表示ともにこの順（賞与→臨時収入）で並べる。
 type IncomeField = 'bonus' | 'extraIncome'
@@ -152,14 +144,14 @@ export const MonthPage = () => {
   return (
     <div className="bill-manager-page-stack">
       {saveStatus === 'error' ? (
-        <p className="bill-manager-status-message bill-manager-status-message-error" role="alert">
+        <p className="pt-status-message pt-status-message-error" role="alert">
           {saveError}
         </p>
       ) : null}
 
       {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
       {loadStatus === 'error' ? (
-        <p className="bill-manager-status-message bill-manager-status-message-error" role="alert">
+        <p className="pt-status-message pt-status-message-error" role="alert">
           {loadError}
           <button type="button" className="pt-button" onClick={reload}>
             再読み込み
@@ -266,7 +258,7 @@ export const MonthPage = () => {
                 URL 由来の month は currentMonth より1描画早く変わるため key には使わない。給与 input も同様。 */}
             <ul className="bill-manager-entry-list">
               {currentMonth.entries.length === 0 ? (
-                <li className="bill-manager-empty">支払い項目がありません。</li>
+                <li className="pt-empty">支払い項目がありません。</li>
               ) : (
                 currentMonth.entries.map((entry) => (
                   <MonthEntryRow
@@ -336,7 +328,7 @@ export const MonthPage = () => {
             <h2 className="bill-manager-section-title">特殊費用</h2>
             <ul className="bill-manager-special-list">
               {currentMonth.specials.length === 0 ? (
-                <li className="bill-manager-empty">特殊費用はありません。</li>
+                <li className="pt-empty">特殊費用はありません。</li>
               ) : (
                 currentMonth.specials.map((special) => (
                   <SpecialRow

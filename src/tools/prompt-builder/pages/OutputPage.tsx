@@ -445,14 +445,14 @@ export const OutputPage = () => {
           </form>
 
           {historySaveStatus === 'error' ? (
-            <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+            <p className="pt-status-message pt-status-message-error prompt-builder-status-message" role="alert">
               {historySaveError}
             </p>
           ) : null}
 
           {historyLoadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
           {historyLoadStatus === 'error' ? (
-            <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+            <p className="pt-status-message pt-status-message-error prompt-builder-status-message" role="alert">
               {historyLoadError}
               <button type="button" className="pt-button" onClick={loadHistory}>
                 再読み込み

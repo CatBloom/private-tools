@@ -1,6 +1,5 @@
+import { formatYen } from '../lib/format'
 import type { SpecialExpense } from '../shared/types'
-
-const yenFormatter = new Intl.NumberFormat('ja-JP')
 
 type SpecialRowProps = {
   special: SpecialExpense
@@ -12,7 +11,7 @@ type SpecialRowProps = {
 // editable=false（翌々月以降）は削除ボタン自体を出さない。
 export const SpecialRow = ({ special, editable, onDelete }: SpecialRowProps) => (
   <li className="bill-manager-special-row">
-    <span className="bill-manager-special-amount">{yenFormatter.format(special.amount)}円</span>
+    <span className="bill-manager-special-amount">{formatYen(special.amount)}</span>
     <span className="bill-manager-special-memo">{special.memo}</span>
     {editable ? (
       <button

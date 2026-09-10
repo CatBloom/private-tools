@@ -663,6 +663,31 @@ button, input, select, textarea { font: inherit; color: inherit; }
   box-shadow: var(--pt-shadow);
 }
 
+.pt-status-message {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.75rem;
+}
+
+.pt-status-message-error {
+  color: var(--pt-danger);
+  border-color: var(--pt-danger);
+}
+
+.pt-status-message-error button {
+  margin-left: 0.6rem;
+}
+
+.pt-empty {
+  margin: 0;
+  padding: 0.6rem 0;
+  color: var(--pt-muted);
+  font-size: 0.9rem;
+  list-style: none;
+}
+
 .pt-badge {
   color: var(--pt-muted);
   font-size: var(--pt-text-sm);

@@ -23,7 +23,7 @@ type WordSaveErrorProps = {
 
 export const WordSaveError = ({ saveStatus, saveError }: WordSaveErrorProps) =>
   saveStatus === 'error' ? (
-    <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+    <p className="pt-status-message pt-status-message-error prompt-builder-status-message" role="alert">
       {saveError}
     </p>
   ) : null
@@ -36,7 +36,7 @@ type WordLoadErrorProps = {
 
 export const WordLoadError = ({ loadStatus, loadError, onReload }: WordLoadErrorProps) =>
   loadStatus === 'error' ? (
-    <p className="prompt-builder-status-message prompt-builder-status-message-error" role="alert">
+    <p className="pt-status-message pt-status-message-error prompt-builder-status-message" role="alert">
       {loadError}
       <button type="button" className="pt-button" onClick={onReload}>
         再読み込み

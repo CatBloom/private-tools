@@ -1,12 +1,11 @@
 import { useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Spinner } from '../../../components/feedback'
+import { formatAmountOrDash as formatAmount } from '../lib/format'
 import { buildYearGrid, type YearGridMonth, type YearGridTotals } from '../lib/yearGrid'
 import { ENTRY_CATEGORY_LABELS } from '../shared/types'
 import { useLedger } from '../state/LedgerContext'
 
-const yenFormatter = new Intl.NumberFormat('ja-JP')
-const formatAmount = (value: number | null): string => (value === null ? '–' : yenFormatter.format(value))
 /** クレカ未取込の月で null になった値（支出合計・現金残高）の代替表示。 */
 const CREDIT_MISSING_CELL = '—'
 
@@ -64,7 +63,7 @@ export const YearPage = () => {
     <div className="bill-manager-page-stack">
       {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
       {loadStatus === 'error' ? (
-        <p className="bill-manager-status-message bill-manager-status-message-error" role="alert">
+        <p className="pt-status-message pt-status-message-error" role="alert">
           {loadError}
           <button type="button" className="pt-button" onClick={reload}>
             再読み込み
