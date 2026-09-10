@@ -87,15 +87,24 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<LedgerState>(createEmptyLedgerState())
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [month, setMonth] = useState<string>(() => currentMonthKey())
+  const [month, setMonthState] = useState<string>(() => currentMonthKey())
   const [year, setYear] = useState<number>(() => yearOf(currentMonthKey()))
   const [creditByMonth, setCreditByMonth] = useState<Record<string, number | null | undefined>>({})
 
   // stale closure 対策（保存判定が常に最新値を読めるようにする）。
   const stateRef = useRef(state)
   stateRef.current = state
-  // クレカ額の取得は支払月単位でキャッシュし、同じ月への二重フェッチを防ぐ（state 反映前の一瞬も含めて）。
-  const requestedCreditMonthsRef = useRef<Set<string>>(new Set())
+  // 支払月ごとの「クレカ額の要求世代」。単調増加の通し番号で、要求が失敗しても削除しない
+  // （削除すると次の要求が若い番号から再開し、まだ in-flight の古い要求と世代が一致してしまうため）。
+  // 応答到着時にこの Map の値が発行時の世代と一致しなければ、追い越されている（新しい要求が別に
+  // 走っている）ので古い応答は破棄する。
+  const creditGenerationRef = useRef<Map<string, number>>(new Map())
+  // 支払月ごとの「要求済み（in-flight または取得済み）」フラグ。ensureCredit の二重フェッチ防止に
+  // 使う（世代とは別軸）。失敗時はここから外して再フェッチできるようにする。
+  const creditRequestedRef = useRef<Set<string>>(new Set())
+  // タブ復帰（revalidate）の発火ごとに進める通し番号。応答到着時にこの値と一致しなければ
+  // （後から発火した別の revalidate に追い越されていたら）古い応答として破棄する。
+  const revalidateGenerationRef = useRef(0)
 
   const {
     saveStatus,
@@ -129,50 +138,100 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     loadLedger()
   }, [loadLedger])
 
-  // タブに戻ったときの再取得。未保存の変更（in-flight・保存待ちタイマー・送信済みと不一致）が
-  // あれば何もしない。取得結果が現在と等価なら何もせず、異なれば state を差し替えつつ
-  // markSynced も同じ値に揃えて、差し替え自体が PUT を発火させないようにする。
-  const revalidate = useCallback(() => {
-    if (loadStatus !== 'ready') return
-    if (hasPendingChanges()) return
-    const snapshotBefore = stateRef.current
-
-    getLedger()
-      .then((fetched) => {
-        // 取得中に編集が始まっていたら破棄する。
-        if (stateRef.current !== snapshotBefore) return
-        if (JSON.stringify(fetched) === JSON.stringify(snapshotBefore)) return
-        setState(fetched)
-        markSynced(fetched)
-      })
-      .catch(() => {})
-  }, [loadStatus, hasPendingChanges, markSynced])
-
-  useRevalidateOnReturn(revalidate)
-
-  // 表示のための初期化（記録が無い月の派生）はここでのみ計算する。state には書き込まない。
-  const { month: currentMonth, source: currentMonthSource } = useMemo(() => resolveMonth(state, month), [state, month])
+  // 月ビューでの月移動（202512→202601 等）や /month/:month の直接オープン後に年間タブへ戻ると
+  // 選択中の年が古いままになるため、選択月が変わったら年も追従させる。/year/:year で明示された
+  // 年（YearPage が setYear を直接呼ぶ）はこの同期の対象外で、従来どおり優先される。
+  const setMonth = useCallback((nextMonth: string) => {
+    setMonthState(nextMonth)
+    setYear(yearOf(nextMonth))
+  }, [])
 
   // クレカ額は KV に保存せず、支払月ごとに毎回 credit-csv の CSV から算出してキャッシュする。
-  const ensureCredit = useCallback(
-    (paymentMonth: string) => {
-      if (requestedCreditMonthsRef.current.has(paymentMonth)) return
-      requestedCreditMonthsRef.current.add(paymentMonth)
+  // generation は要求発行のたびに進める通し番号。応答到着時に Map の現在値と一致する（＝追い越されて
+  // いない）ときだけ state に反映する。
+  const fetchCredit = useCallback(
+    (paymentMonth: string, generation: number) => {
       const usageMonth = creditUsageMonth(paymentMonth)
 
       fetchCreditCsvBytes(usageMonth)
         .then((bytes) => {
+          if (creditGenerationRef.current.get(paymentMonth) !== generation) return
           const amount = bytes === null ? null : sumCreditCsv(`${usageMonth}.csv`, bytes)
           setCreditByMonth((current) => ({ ...current, [paymentMonth]: amount }))
         })
         .catch((error: unknown) => {
-          // 失敗時は再フェッチできるよう要求済みマークを外す（自動リトライはしない）。
-          requestedCreditMonthsRef.current.delete(paymentMonth)
+          // 世代が最新でない（追い越された）要求の失敗は、通知も要求済み解除もせず黙って破棄する。
+          if (creditGenerationRef.current.get(paymentMonth) !== generation) return
+          // 失敗時は再フェッチできるよう要求済み扱いを外す（世代は据え置き、自動リトライはしない）。
+          creditRequestedRef.current.delete(paymentMonth)
           showAlert('error', error instanceof Error ? error.message : 'クレカ明細の取得に失敗しました。')
         })
     },
     [showAlert],
   )
+
+  // 未要求（または前回失敗で要求済み扱いが外れた）の月だけ取得する（初回表示用）。
+  const ensureCredit = useCallback(
+    (paymentMonth: string) => {
+      if (creditRequestedRef.current.has(paymentMonth)) return
+      creditRequestedRef.current.add(paymentMonth)
+      const generation = (creditGenerationRef.current.get(paymentMonth) ?? 0) + 1
+      creditGenerationRef.current.set(paymentMonth, generation)
+      fetchCredit(paymentMonth, generation)
+    },
+    [fetchCredit],
+  )
+
+  // 既に要求済み（in-flight・取得済みいずれも）でも世代を進めて強制的に再取得する（タブ復帰用）。
+  // 先行する要求は世代が古くなるため、後から解決しても破棄される。
+  const refreshCredit = useCallback(
+    (paymentMonth: string) => {
+      creditRequestedRef.current.add(paymentMonth)
+      const generation = (creditGenerationRef.current.get(paymentMonth) ?? 0) + 1
+      creditGenerationRef.current.set(paymentMonth, generation)
+      fetchCredit(paymentMonth, generation)
+    },
+    [fetchCredit],
+  )
+
+  // タブに戻ったときの再取得。ledger は未保存の変更（in-flight・保存待ちタイマー・送信済みと
+  // 不一致）があれば何もしない。取得結果が現在と等価なら何もせず、異なれば state を差し替えつつ
+  // markSynced も同じ値に揃えて、差し替え自体が PUT を発火させないようにする。クレカ額は別タブでの
+  // 取込を拾うため、ledger の未保存変更の有無に関わらず選択中の月・年の分を再取得する（取得済みの
+  // 値は新しい結果が届くまで保持し、一瞬「未取込」に戻さない）。
+  const revalidate = useCallback(() => {
+    if (loadStatus !== 'ready') return
+
+    for (const key of new Set([month, ...monthsOfYear(year)])) {
+      refreshCredit(key)
+    }
+
+    if (hasPendingChanges()) return
+    revalidateGenerationRef.current += 1
+    const generation = revalidateGenerationRef.current
+    const snapshotBefore = stateRef.current
+
+    getLedger()
+      .then((fetched) => {
+        // 取得中に編集が始まっていたら破棄する。
+        if (hasPendingChanges()) return
+        // 後から発火した別の revalidate に追い越されていたら（この応答は古い）破棄する。
+        if (revalidateGenerationRef.current !== generation) return
+        // 世代が最新でも、GET が in-flight の間に編集して保存まで完了していたら hasPendingChanges()
+        // は false に戻る。古いスナップショットで保存済みの変更を巻き戻さないよう、state の参照が
+        // 変わっていた場合も破棄する。
+        if (stateRef.current !== snapshotBefore) return
+        if (JSON.stringify(fetched) === JSON.stringify(stateRef.current)) return
+        setState(fetched)
+        markSynced(fetched)
+      })
+      .catch(() => {})
+  }, [loadStatus, hasPendingChanges, markSynced, month, year, refreshCredit])
+
+  useRevalidateOnReturn(revalidate)
+
+  // 表示のための初期化（記録が無い月の派生）はここでのみ計算する。state には書き込まない。
+  const { month: currentMonth, source: currentMonthSource } = useMemo(() => resolveMonth(state, month), [state, month])
 
   useEffect(() => {
     ensureCredit(month)

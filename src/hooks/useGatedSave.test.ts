@@ -134,7 +134,7 @@ describe('useGatedSave', () => {
     expect(result.current.saveStatus).toBe('saved')
   })
 
-  it('clears the pending save timer on unmount', async () => {
+  it('flushes a pending gated change immediately (with keepalive) on unmount instead of losing it', async () => {
     vi.useFakeTimers()
     const save = vi.fn().mockResolvedValue(undefined)
     const { result, unmount } = renderHook(() => useHarness(0, save))
@@ -148,13 +148,131 @@ describe('useGatedSave', () => {
     expect(save).toHaveBeenCalledTimes(1)
 
     act(() => result.current.setState(2))
+    // まだ1秒ゲート中（pendingTimer 待ち）でアンマウントする。
     unmount()
+
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save).toHaveBeenLastCalledWith(2, { keepalive: true })
 
     await act(async () => {
       vi.advanceTimersByTime(5000)
     })
+    // flush 済みなので、消したはずのゲートタイマーから重複送信されない。
+    expect(save).toHaveBeenCalledTimes(2)
+  })
 
+  it('flushes a pending gated change immediately (with keepalive) on pagehide', async () => {
+    vi.useFakeTimers()
+    const save = vi.fn().mockResolvedValue(undefined)
+    const { result } = renderHook(() => useHarness(0, save))
+
+    act(() => {
+      result.current.markSynced(0)
+      result.current.setReady(true)
+    })
+    act(() => result.current.setState(1))
+    await act(async () => {})
     expect(save).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.setState(2))
+    // まだ1秒ゲート中（pendingTimer 待ち）
+    expect(save).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save).toHaveBeenLastCalledWith(2, { keepalive: true })
+
+    await act(async () => {})
+    expect(result.current.saveStatus).toBe('saved')
+  })
+
+  it('sends the flushed keepalive save only once even when pagehide and unmount both flush while a save is in-flight', async () => {
+    vi.useFakeTimers()
+    let resolveFirst!: () => void
+    const save = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
+      .mockResolvedValue(undefined)
+
+    const { result, unmount } = renderHook(() => useHarness(0, save))
+
+    act(() => {
+      result.current.markSynced(0)
+      result.current.setReady(true)
+    })
+    act(() => result.current.setState(1))
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(result.current.saveStatus).toBe('saving')
+
+    act(() => result.current.setState(2))
+    // 1回目がまだ in-flight の間に pagehide → 続けてアンマウント、と flush が重なる。
+    // どちらも同じ in-flight の完了を待ってから送ろうとするため、二重送信になり得る箇所。
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    unmount()
+
+    await act(async () => {
+      resolveFirst()
+    })
+
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save).toHaveBeenLastCalledWith(2, { keepalive: true })
+  })
+
+  it('clears a pending-timer created while waiting for an in-flight save before sending the pagehide flush, so a failed keepalive does not trigger an extra retry PUT', async () => {
+    vi.useFakeTimers()
+    let resolveFirst!: () => void
+    const save = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useHarness(0, save))
+
+    act(() => {
+      result.current.markSynced(0)
+      result.current.setReady(true)
+    })
+    act(() => result.current.setState(1))
+    expect(save).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.setState(2))
+    // 1回目がまだ in-flight の間に pagehide が発火する（flush は完了を待つ）。
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    expect(save).toHaveBeenCalledTimes(1)
+
+    // 1回目が完了する。完了処理（stateRef との差分を見た再送）が pendingTimer を作るが、
+    // flush の send はそれより後に走るため、送る前にそのタイマーを消す。
+    await act(async () => {
+      resolveFirst()
+    })
+
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save).toHaveBeenLastCalledWith(2, { keepalive: true })
+
+    // keepalive 送信（2回目）が失敗しても、消えているはずのタイマーから通常 PUT の
+    // 再送は起きない（自動リトライしない契約）。
+    await act(async () => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(save).toHaveBeenCalledTimes(2)
   })
 
   it('hasPendingChanges reflects unsaved edits and markSynced clears them', () => {

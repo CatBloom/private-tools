@@ -8,7 +8,7 @@ export type UseGatedSaveOptions<T> = {
   state: T
   stateRef: MutableRefObject<T>
   ready: boolean
-  save: (state: T) => Promise<unknown>
+  save: (state: T, options?: { keepalive?: boolean }) => Promise<unknown>
   minIntervalMs?: number
   onError?: (message: string) => void
 }
@@ -48,13 +48,16 @@ export const useGatedSave = <T,>({
   saveRef.current = save
   const onErrorRef = useRef(onError)
   onErrorRef.current = onError
+  const readyRef = useRef(ready)
+  readyRef.current = ready
 
   const runSave = useCallback(
-    (snapshot: T) => {
+    (snapshot: T, options?: { keepalive?: boolean }) => {
       setSaveStatus('saving')
       setSaveError(null)
       lastWriteStartedAtRef.current = Date.now()
-      const request = saveRef.current(snapshot)
+      // 通常経路（options 無し）は従来どおり1引数で呼ぶ。keepalive flush のときだけ第2引数を渡す。
+      const request = options ? saveRef.current(snapshot, options) : saveRef.current(snapshot)
       inFlightRef.current = request
       request.then(
         () => {
@@ -105,14 +108,44 @@ export const useGatedSave = <T,>({
   }, [runSave, stateRef, minIntervalMs])
   scheduleSaveRef.current = scheduleSave
 
-  useEffect(() => {
-    return () => {
+  // ゲート待ち（pendingTimer）の変更は、タイマー発火前にタブを閉じる・別ページへ遷移すると
+  // 送られず失われるため、pagehide とアンマウント時に即時 keepalive 送信する（best-effort）。
+  // in-flight 中なら完了を待ってから送る（useAutoSave.ts の flush と同じ直列化）。pagehide と
+  // アンマウントが続けて起きるなど flush が重なった場合、両方とも同じ in-flight の完了を待って
+  // send を呼ぶことがあるため、send の冒頭で in-flight の有無を再確認する：先に走った send が
+  // 新しい送信を開始していれば、後の send は何もしない（その後の差分は runSave 自身の
+  // 「完了後に stateRef と差分があれば再送する」仕組みに任せる）。
+  const flush = useCallback(() => {
+    const previous = inFlightRef.current
+    const send = () => {
+      if (!readyRef.current) return
+      if (inFlightRef.current) return
+      // in-flight の完了処理（成功時、stateRef との差分を見た再送）が新しい pendingTimer を
+      // 作っていることがある（send はその完了を待ってから走るため）。消さずに keepalive 送信
+      // すると、それが失敗した場合にこのタイマーが後から通常 PUT を再送してしまい、自動リトライ
+      // しない契約に反する（アンマウント後にも走り得る）ため、送る前に必ず消す。
       if (pendingTimerRef.current !== null) {
         clearTimeout(pendingTimerRef.current)
         pendingTimerRef.current = null
       }
+      const snapshot = stateRef.current
+      if (snapshot === lastSentRef.current) return
+      runSave(snapshot, { keepalive: true })
     }
-  }, [])
+    if (previous) {
+      previous.catch(() => {}).then(send)
+    } else {
+      send()
+    }
+  }, [runSave, stateRef])
+
+  useEffect(() => {
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+  }, [flush])
 
   useEffect(() => {
     if (!ready) return

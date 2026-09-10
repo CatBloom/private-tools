@@ -159,7 +159,7 @@ describe('SectionPage', () => {
     vi.useRealTimers()
   })
 
-  it('clears the pending write timer on unmount so a delayed follow-up never fires', async () => {
+  it('flushes a pending write immediately (with keepalive) on unmount instead of losing it', async () => {
     const resolvers: Array<(state: TodoState) => void> = []
     vi.mocked(putTodos).mockImplementation(
       (state) =>
@@ -185,10 +185,16 @@ describe('SectionPage', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(putTodos).toHaveBeenCalledTimes(1)
 
+    // 1秒ゲート中（pendingTimer 待ち）でアンマウントすると、消したはずのタイマーで失うのではなく
+    // 即時 keepalive で flush される。
     unmount()
 
+    expect(putTodos).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(putTodos).mock.calls[1][1]).toEqual({ keepalive: true })
+    expect(vi.mocked(putTodos).mock.calls[1][0].today.map((item) => item.text)).toEqual(['first', 'second'])
+
     await vi.advanceTimersByTimeAsync(2000)
-    expect(putTodos).toHaveBeenCalledTimes(1)
+    expect(putTodos).toHaveBeenCalledTimes(2)
 
     vi.useRealTimers()
   })
@@ -265,6 +271,37 @@ describe('SectionPage', () => {
       expect(saved.today).toEqual([])
       expect(saved.someday.map((item) => item.text)).toContain('leftover task')
       expect(saved.lastRolloverDate).toBe(toLocalDateString(new Date()))
+    })
+
+    it('applies the newest todos response even when an older overlapping revalidation resolves first', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderSection()
+        expect(await screen.findByPlaceholderText('タスクを追加')).toBeInTheDocument()
+
+        let resolveFirst: (state: TodoState) => void = () => {}
+        vi.mocked(getTodos).mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
+        window.dispatchEvent(new Event('focus'))
+
+        // useRevalidateOnReturn の1秒デバウンスを越えてから2回目の再取得を発火する。
+        await vi.advanceTimersByTimeAsync(1000)
+        vi.mocked(getTodos).mockResolvedValueOnce({
+          today: [{ id: 't1', text: 'water the plants', completed: false, createdAt: '2026-09-01T00:00:00.000Z' }],
+          someday: [],
+          lastRolloverDate: toLocalDateString(new Date()),
+        })
+        window.dispatchEvent(new Event('focus'))
+        expect(await screen.findByText('water the plants')).toBeInTheDocument()
+
+        // 1回目（古い状態）が2回目より後に解決しても、2回目の結果を上書きしない。
+        resolveFirst({ today: [], someday: [], lastRolloverDate: toLocalDateString(new Date()) })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(screen.getByText('water the plants')).toBeInTheDocument()
+        expect(putTodos).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

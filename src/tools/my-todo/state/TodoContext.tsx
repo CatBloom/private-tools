@@ -50,6 +50,9 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
   // stale closure 対策（保存判定・rollover が常に最新値を読めるようにする）。
   const todoStateRef = useRef(todoState)
   todoStateRef.current = todoState
+  // タブ復帰（revalidate）の発火ごとに進める通し番号。応答到着時にこの値と一致しなければ
+  // （後から発火した別の revalidate に追い越されていたら）古い応答として破棄する。
+  const revalidateGenerationRef = useRef(0)
 
   const {
     saveStatus,
@@ -99,14 +102,22 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
   const revalidate = useCallback(() => {
     if (loadStatus !== 'ready') return
     if (hasPendingChanges()) return
+    revalidateGenerationRef.current += 1
+    const generation = revalidateGenerationRef.current
     const snapshotBefore = todoStateRef.current
 
     getTodos()
       .then((fetched) => {
         // 取得中に編集が始まっていたら破棄する。
+        if (hasPendingChanges()) return
+        // 後から発火した別の revalidate に追い越されていたら（この応答は古い）破棄する。
+        if (revalidateGenerationRef.current !== generation) return
+        // 世代が最新でも、GET が in-flight の間に編集して保存まで完了していたら
+        // hasPendingChanges() は false に戻る。古いスナップショットで保存済みの変更を
+        // 巻き戻さないよう、state の参照が変わっていた場合も破棄する。
         if (todoStateRef.current !== snapshotBefore) return
         const rolled = rollover(fetched, toLocalDateString(new Date()))
-        if (JSON.stringify(rolled) === JSON.stringify(snapshotBefore)) return
+        if (JSON.stringify(rolled) === JSON.stringify(todoStateRef.current)) return
         setTodoState(rolled)
         if (rolled === fetched) markSynced(rolled)
       })

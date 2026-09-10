@@ -73,6 +73,9 @@ export const WordsProvider = ({ children }: { children: ReactNode }) => {
   })
   const saveStatusRef = useRef(saveStatus)
   saveStatusRef.current = saveStatus
+  // タブ復帰（revalidateWords）の発火ごとに進める通し番号。応答到着時にこの値と一致しなければ
+  // （後から発火した別の revalidate に追い越されていたら）古い応答として破棄する。
+  const revalidateGenerationRef = useRef(0)
 
   const loadWords = useCallback(async () => {
     setLoadStatus('loading')
@@ -102,11 +105,20 @@ export const WordsProvider = ({ children }: { children: ReactNode }) => {
     if (loadStatusRef.current !== 'ready') return
     if (dirtyRef.current) return
     if (saveStatusRef.current === 'saving') return
+    revalidateGenerationRef.current += 1
+    const generation = revalidateGenerationRef.current
+    const snapshotBefore = wordsRef.current
 
     getWords()
       .then((data) => {
         // 取得中に編集が始まっていたら破棄する。
         if (dirtyRef.current) return
+        // 後から発火した別の revalidate に追い越されていたら（この応答は古い）破棄する。
+        if (revalidateGenerationRef.current !== generation) return
+        // 世代が最新でも、GET が in-flight の間に編集して保存まで完了していたら（dirty が
+        // 一度 true→false を経ている）words の参照が変わっている。古いスナップショットで
+        // 保存済みの変更を巻き戻さないよう、その場合も破棄する。
+        if (wordsRef.current !== snapshotBefore) return
         const normalized = data.map((word) => ({ ...word, tag: normalizeTag(word.tag) }))
         if (JSON.stringify(normalized) === JSON.stringify(wordsRef.current)) return
         setWords(normalized)

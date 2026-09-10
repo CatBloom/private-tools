@@ -21,6 +21,15 @@ vi.mock('../creditCsvApi', () => ({
 
 const emptyState = (): LedgerState => ({ months: {} })
 
+// 実カード明細は使わない。合成データのみ（CLAUDE.md「テスト」節）。
+const toBytes = (text: string): ArrayBuffer => {
+  const buffer = new Uint8Array(text.length)
+  for (let index = 0; index < text.length; index += 1) {
+    buffer[index] = text.charCodeAt(index)
+  }
+  return buffer.buffer
+}
+
 const renderPage = (month = '202609') =>
   render(
     <MemoryRouter initialEntries={[`/month/${month}`]}>
@@ -452,6 +461,182 @@ describe('MonthPage', () => {
       expect(getLedger).toHaveBeenCalledTimes(1)
 
       resolvePut({ months: {} })
+    })
+
+    it('re-fetches the credit amount on window focus and reflects it once another tab has uploaded the CSV', async () => {
+      renderPage('202609')
+      await screen.findByText('支払い項目がありません。')
+
+      const initialNote = await screen.findByText(
+        (_, element) => element?.className === 'bill-manager-note' && !!element.textContent?.includes('クレカ未取込'),
+      )
+      expect(initialNote).toBeInTheDocument()
+
+      vi.mocked(fetchCreditCsvBytes).mockResolvedValue(toBytes("2026/8/1,Store A,x,x,,'26/09,1000,1000"))
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() => {
+        const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+        expect(breakdown.textContent).toContain('クレカ 1,000円')
+      })
+    })
+
+    it('does not let a stale in-flight credit fetch overwrite the newer response from a focus revalidate', async () => {
+      let resolveInitial: (bytes: ArrayBuffer | null) => void = () => {}
+      vi.mocked(fetchCreditCsvBytes).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveInitial = resolve }),
+      )
+
+      renderPage('202609')
+      await screen.findByText('支払い項目がありません。')
+      // 初回のクレカ取得はまだ保留中（未解決）。
+
+      let resolveRevalidate: (bytes: ArrayBuffer | null) => void = () => {}
+      vi.mocked(fetchCreditCsvBytes).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveRevalidate = resolve }),
+      )
+      window.dispatchEvent(new Event('focus'))
+
+      // タブ復帰による再取得（新しい要求）を先に解決する。
+      resolveRevalidate(toBytes("2026/8/1,Store A,x,x,,'26/09,1000,1000"))
+      await waitFor(() => {
+        const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+        expect(breakdown.textContent).toContain('クレカ 1,000円')
+      })
+
+      // 初回の（古い）保留中リクエストが後から解決しても、新しい結果を上書きしない。
+      resolveInitial(null)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+      expect(breakdown.textContent).toContain('クレカ 1,000円')
+    })
+
+    it('does not show an error toast when a stale (superseded) credit fetch fails', async () => {
+      let rejectInitial: (error: unknown) => void = () => {}
+      vi.mocked(fetchCreditCsvBytes).mockImplementationOnce(
+        () => new Promise((_resolve, reject) => { rejectInitial = reject }),
+      )
+
+      renderPage('202609')
+      await screen.findByText('支払い項目がありません。')
+      // 初回のクレカ取得はまだ保留中（未解決）。
+
+      vi.mocked(fetchCreditCsvBytes).mockResolvedValueOnce(toBytes("2026/8/1,Store A,x,x,,'26/09,1000,1000"))
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() => {
+        const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+        expect(breakdown.textContent).toContain('クレカ 1,000円')
+      })
+
+      // 追い越された（古い世代の）要求が失敗しても、トーストは出さず新しい額のままにする。
+      rejectInitial(new Error('boom'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+      expect(breakdown.textContent).toContain('クレカ 1,000円')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('applies the newest ledger response even when an older overlapping revalidation resolves first', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderPage('202609')
+        await screen.findByText('支払い項目がありません。')
+
+        let resolveFirst: (state: LedgerState) => void = () => {}
+        vi.mocked(getLedger).mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
+        window.dispatchEvent(new Event('focus'))
+
+        // useRevalidateOnReturn の1秒デバウンスを越えてから2回目の再取得を発火する。
+        await vi.advanceTimersByTimeAsync(1000)
+        vi.mocked(getLedger).mockResolvedValueOnce({
+          months: {
+            202609: {
+              ...createEmptyLedgerMonth(),
+              entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+            },
+          },
+        })
+        window.dispatchEvent(new Event('focus'))
+        expect(await findEntryRow('家賃')).toBeInTheDocument()
+
+        // 1回目（古い一覧）が2回目より後に解決しても、2回目の結果を上書きしない。
+        resolveFirst({ months: {} })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(await findEntryRow('家賃')).toBeInTheDocument()
+        expect(putLedger).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('does not roll back a ledger save that completed while a revalidate GET is still pending', async () => {
+      vi.mocked(putLedger).mockImplementation(async (state) => state)
+      renderPage('202609')
+      await screen.findByText('支払い項目がありません。')
+
+      // タブ復帰の再取得（GET はまだ保留中）。
+      let resolveGet: (state: LedgerState) => void = () => {}
+      vi.mocked(getLedger).mockImplementationOnce(() => new Promise((resolve) => { resolveGet = resolve }))
+      window.dispatchEvent(new Event('focus'))
+
+      // GET が解決する前に、項目を追加して保存を完了させる（hasPendingChanges は一度 true→false に戻る）。
+      const nameInput = await screen.findByPlaceholderText('項目名')
+      fireEvent.change(nameInput, { target: { value: '電気代' } })
+      fireEvent.click(within(nameInput.closest('form')!).getByRole('button', { name: '追加' }))
+      await waitFor(() => expect(putLedger).toHaveBeenCalledTimes(1))
+      await findEntryRow('電気代')
+
+      // 保留中だった GET が、保存前の古い内容（項目なし）で解決する。
+      resolveGet({ months: {} })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      // 保存済みの「電気代」が消えず、巻き戻らない。
+      expect(await findEntryRow('電気代')).toBeInTheDocument()
+      expect(putLedger).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps credit generations monotonic across a failed refresh, so a stale still-pending response is ignored', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        let resolveGen1: (bytes: ArrayBuffer | null) => void = () => {}
+        vi.mocked(fetchCreditCsvBytes).mockImplementationOnce(
+          () => new Promise((resolve) => { resolveGen1 = resolve }),
+        )
+
+        renderPage('202609')
+        await screen.findByText('支払い項目がありません。')
+        // 初回（世代1）のクレカ取得はまだ保留中。
+
+        let rejectGen2: (error: unknown) => void = () => {}
+        vi.mocked(fetchCreditCsvBytes).mockImplementationOnce(
+          () => new Promise((_resolve, reject) => { rejectGen2 = reject }),
+        )
+        window.dispatchEvent(new Event('focus'))
+        rejectGen2(new Error('boom'))
+        await vi.advanceTimersByTimeAsync(0)
+
+        // useRevalidateOnReturn の1秒デバウンスを越えてから世代3の要求を発火する。
+        await vi.advanceTimersByTimeAsync(1000)
+        vi.mocked(fetchCreditCsvBytes).mockResolvedValueOnce(toBytes("2026/8/1,Store A,x,x,,'26/09,1000,1000"))
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() => {
+          const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+          expect(breakdown.textContent).toContain('クレカ 1,000円')
+        })
+
+        // 世代1の（ずっと保留中だった）応答が遅れて解決しても、世代3の結果を上書きしない
+        // （失敗した世代2の後も世代番号は据え置かれず単調増加するため、世代1と衝突しない）。
+        resolveGen1(null)
+        await vi.advanceTimersByTimeAsync(0)
+        const breakdown = screen.getByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+        expect(breakdown.textContent).toContain('クレカ 1,000円')
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

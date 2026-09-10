@@ -1,11 +1,12 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AlertProvider, ConfirmProvider } from '../../../components/feedback'
 import { getLedger } from '../api'
 import { fetchCreditCsvBytes } from '../creditCsvApi'
 import { createEmptyLedgerMonth, type LedgerState } from '../shared/types'
 import { LedgerProvider } from '../state/LedgerContext'
+import { MonthPage } from './MonthPage'
 import { YearPage } from './YearPage'
 
 vi.mock('../api', () => ({
@@ -175,5 +176,39 @@ describe('YearPage', () => {
     renderPage('2026')
     const link = (await screen.findByText('1月')).closest('a')!
     expect(link).toHaveAttribute('href', '/month/202601')
+  })
+
+  it('syncs the selected year to the currently selected month, so returning to /year (no explicit year) shows it', async () => {
+    // /year/:year のように年が明示されない年間タブ（既定画面 `/`）を模した経路。
+    const NavToYear = () => {
+      const navigate = useNavigate()
+      return (
+        <button type="button" onClick={() => navigate('/year')}>
+          年間へ
+        </button>
+      )
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/month/202512']}>
+        <AlertProvider>
+          <ConfirmProvider>
+            <LedgerProvider>
+              <NavToYear />
+              <Routes>
+                <Route path="/month/:month" element={<MonthPage />} />
+                <Route path="/year" element={<YearPage />} />
+              </Routes>
+            </LedgerProvider>
+          </ConfirmProvider>
+        </AlertProvider>
+      </MemoryRouter>,
+    )
+
+    await screen.findByText('2025年12月')
+
+    fireEvent.click(screen.getByRole('button', { name: '年間へ' }))
+
+    expect(await screen.findByText('2025年')).toBeInTheDocument()
   })
 })
