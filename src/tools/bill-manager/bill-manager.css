@@ -63,6 +63,12 @@
   font-size: var(--pt-text-sm);
 }
 
+/* 「固定費 1,234円」のようなまとまりの途中（数字と「円」の間など）で折り返さないようにする。
+   折り返しはまとまり間の区切り（／）でのみ起こる。 */
+.bill-manager-summary-breakdown-item {
+  white-space: nowrap;
+}
+
 .bill-manager-summary-cash {
   padding-top: 0.4rem;
   border-top: 1px solid var(--pt-border);

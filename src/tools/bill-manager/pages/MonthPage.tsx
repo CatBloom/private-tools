@@ -181,8 +181,12 @@ export const MonthPage = () => {
               <strong>{formatYen(summary.expenseTotal)}</strong>
             </div>
             <p className="bill-manager-summary-breakdown">
-              固定費 {formatYen(summary.fixedTotal)}／特殊 {formatYen(summary.specialTotal)}／クレカ{' '}
-              {summary.creditMissing ? '未取込' : formatYen(summary.credit ?? 0)}
+              <span className="bill-manager-summary-breakdown-item">固定費 {formatYen(summary.fixedTotal)}</span>
+              ／<span className="bill-manager-summary-breakdown-item">特殊 {formatYen(summary.specialTotal)}</span>
+              ／<span className="bill-manager-summary-breakdown-item">
+                クレカ{' '}
+                {summary.creditMissing ? '未取込' : formatYen(summary.credit ?? 0)}
+              </span>
             </p>
             <div className="bill-manager-summary-row bill-manager-summary-cash">
               <span>現金残高</span>

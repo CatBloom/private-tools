@@ -103,6 +103,26 @@ describe('MonthPage', () => {
     expect(breakdown.textContent?.replace(/\s+/g, ' ')).toBe('固定費 47,000円／特殊 0円／クレカ 未取込')
   })
 
+  it('wraps each breakdown group (固定費/特殊/クレカ) in its own nowrap span so 円 cannot fall to the next line alone', async () => {
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202609: {
+          ...createEmptyLedgerMonth(),
+          entries: [{ id: 'e1', name: '家賃', amount: 47000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+        },
+      },
+    })
+    renderPage('202609')
+
+    await findEntryRow('家賃')
+    const breakdown = await screen.findByText((_, element) => element?.className === 'bill-manager-summary-breakdown')
+    const items = breakdown.querySelectorAll('.bill-manager-summary-breakdown-item')
+    expect(items).toHaveLength(3)
+    expect(items[0].textContent).toBe('固定費 47,000円')
+    expect(items[1].textContent).toBe('特殊 0円')
+    expect(items[2].textContent).toBe('クレカ 未取込')
+  })
+
   it('shows 未取込 for a missing credit CSV and reflects it in the note', async () => {
     renderPage('202609')
     const note = await screen.findByText((_, element) => element?.className === 'bill-manager-note' && !!element.textContent?.includes('クレカ未取込'))
