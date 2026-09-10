@@ -31,6 +31,7 @@ describe('LocalBillManagerStorage', () => {
             { id: '1', name: '家賃', amount: 80000, category: 'rent', variable: false, carryOver: true, excluded: false },
           ],
           income: 300000,
+          bonus: null,
           extraIncome: null,
           specials: [],
         },

@@ -4,7 +4,10 @@
    デスクトップ切替のブレークポイントはカスタムプロパティを @media 条件式に使えないため直書き: 48rem。 */
 :root {
   color-scheme: light;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* 縦スクロールバーの有無でビューポート幅が変わり、中央寄せの本文が横に動く（年間⇔月、prompt-builder のページ切替など）のを防ぐ。
+     Windows の Chrome/Edge のみ影響（オーバーレイ式スクロールバーの環境では幅を取らない）。 */
+  scrollbar-gutter: stable;
   color: var(--pt-text);
   background: var(--pt-bg);
 

@@ -73,6 +73,7 @@ type LedgerContextValue = {
 
   setIncome: (month: string, value: number | null) => void
   setExtraIncome: (month: string, value: number | null) => void
+  setBonus: (month: string, value: number | null) => void
   addSpecial: (month: string, input: AddSpecialInput) => boolean
   updateSpecial: (month: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => void
   removeSpecial: (month: string, id: string) => void
@@ -305,6 +306,13 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     },
     [loadStatus],
   )
+  const setBonus = useCallback((targetMonth: string, value: number | null) => {
+    setState((current) => {
+      const base = materializeMonth(current, targetMonth)
+      return { ...current, months: { ...current.months, [targetMonth]: { ...base, bonus: value } } }
+    })
+  }, [])
+
 
   const updateSpecial = useCallback((targetMonth: string, id: string, patch: Partial<Omit<SpecialExpense, 'id'>>) => {
     setState((current) => {
@@ -359,3 +367,4 @@ export const useLedger = (): LedgerContextValue => {
   }
   return context
 }
+    setBonus,

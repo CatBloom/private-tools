@@ -25,6 +25,9 @@ const isValidAmount = (amount: unknown): amount is number | null =>
 const isRequiredAmount = (amount: unknown): amount is number =>
   typeof amount === 'number' && Number.isInteger(amount) && amount >= 0 && amount <= MAX_ENTRY_AMOUNT
 
+// bonus は後から追加したフィールドのため、未指定（旧データ・旧クライアント）も許容し null 相当として扱う。
+const isValidOptionalAmount = (amount: unknown): boolean => amount === undefined || isValidAmount(amount)
+
 const isLedgerEntry = (value: unknown): value is LedgerEntry =>
   typeof value === 'object' &&
   value !== null &&
@@ -61,8 +64,15 @@ const isLedgerMonth = (value: unknown): value is LedgerMonth =>
   isPlainObject(value) &&
   isLedgerEntryArray(value.entries) &&
   isValidAmount(value.income) &&
+  isValidOptionalAmount(value.bonus) &&
   isValidAmount(value.extraIncome) &&
   isSpecialExpenseArray(value.specials)
+
+// bonus が未指定（旧データ・旧クライアント）の月を null に正規化する。
+const normalizeLedgerMonth = (month: LedgerMonth): LedgerMonth => ({ ...month, bonus: month.bonus ?? null })
+const normalizeLedgerState = (state: LedgerState): LedgerState => ({
+  months: Object.fromEntries(Object.entries(state.months).map(([key, month]) => [key, normalizeLedgerMonth(month)])),
+})
 
 const isLedgerState = (value: unknown): value is LedgerState => {
   if (typeof value !== 'object' || value === null) return false
@@ -94,7 +104,7 @@ export const createBillManagerRoutes = (storage: BillManagerStorage = selectBill
   const app = new Hono()
 
   app.get('/ledger', async (c) => {
-    const state = (await storage.getLedger()) ?? createEmptyLedgerState()
+    const state = normalizeLedgerState((await storage.getLedger()) ?? createEmptyLedgerState())
     return apiOk(c, { state })
   })
 
@@ -110,8 +120,9 @@ export const createBillManagerRoutes = (storage: BillManagerStorage = selectBill
       return apiError(c, 400, 'Invalid state payload.')
     }
 
-    await storage.putLedger(state)
-    return apiOk(c, { state })
+    const normalized = normalizeLedgerState(state)
+    await storage.putLedger(normalized)
+    return apiOk(c, { state: normalized })
   })
 
   app.notFound(notFoundJson)

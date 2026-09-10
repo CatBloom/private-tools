@@ -11,7 +11,10 @@
   overflow-x: clip; /* iOS Safari の横ラバーバンド対策 */
   background: var(--pt-bg);
   color: var(--pt-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* 数字の幅を揃える: iOS の SF Pro は既定で可変幅のため tabular-nums を指定。Windows の system-ui は太字の面が別書体に解決され
+     tnum も効かず桁幅が崩れるため、font-family は "Segoe UI" を system-ui より先に置く（styles.css・他ツール CSS も同じ順）。 */
+  font-variant-numeric: tabular-nums;
 }
 
 .bill-manager-page-stack {
@@ -360,12 +363,6 @@
   font-weight: 700;
 }
 
-.bill-manager-year-derived-tag {
-  color: var(--pt-muted);
-  font-size: 0.65rem;
-  font-weight: 400;
-}
-
 .bill-manager-year-summary-row .bill-manager-year-sticky-col {
   font-weight: 700;
 }
@@ -400,10 +397,16 @@
   font-weight: 700;
 }
 
+/* td が 700 のため中の strong が既定の bolder で 900（Segoe UI Black）に解決され、数字が可変幅になって桁幅が崩れる。行と同じ 700 に固定する。 */
+.bill-manager-year-cash-row strong {
+  font-weight: inherit;
+}
+
 /* 金額入力: 数値 input のスピンボタン（上下矢印）を出さない。スマホでは inputMode="numeric" で数字キーボードが出る。 */
 .bill-manager-amount {
   appearance: textfield;
   -moz-appearance: textfield;
+  font-variant-numeric: tabular-nums; /* input は UA の font 指定で継承が切れるため個別に指定 */
 }
 
 .bill-manager-amount::-webkit-outer-spin-button,

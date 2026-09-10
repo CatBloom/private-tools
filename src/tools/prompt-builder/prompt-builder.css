@@ -6,7 +6,7 @@
   overflow-x: clip;
   background: var(--pt-bg);
   color: var(--pt-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 .prompt-builder-page-stack {

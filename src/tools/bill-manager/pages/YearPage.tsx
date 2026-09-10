@@ -34,7 +34,7 @@ const summaryRowClassName = ({ resultRow, firstResultRow, emphasize }: SummaryRo
   return className
 }
 
-// 記録の無い月は is-derived（見込）、クレカ未取込の月は is-credit-missing（列全体に斜線のハッチングを掛け、集計外と分かるようにする）。
+// 記録の無い月は is-derived（薄い表示のみ、タグは出さない）、クレカ未取込の月は is-credit-missing（列全体に斜線のハッチングを掛け、集計外と分かるようにする）。
 const monthCellClassName = (month: YearGridMonth): string | undefined => {
   const classes: string[] = []
   if (month.source !== 'stored') classes.push('is-derived')
@@ -94,9 +94,6 @@ export const YearPage = () => {
                       <th key={monthColumn.month} className={monthCellClassName(monthColumn)}>
                         <Link to={`/month/${monthColumn.month}`} className="bill-manager-year-month-link">
                           {index + 1}月
-                          {monthColumn.source !== 'stored' ? (
-                            <span className="bill-manager-year-derived-tag">見込</span>
-                          ) : null}
                         </Link>
                       </th>
                     ))}

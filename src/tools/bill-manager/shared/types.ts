@@ -45,7 +45,9 @@ export type LedgerMonth = {
   entries: LedgerEntry[]
   /** 給与。翌月へコピーする。 */
   income: number | null
-  /** 臨時収入（賞与など）。細かく分けない1つの塊。翌月へコピーしない。 */
+  /** 賞与。翌月へコピーしない。 */
+  bonus: number | null
+  /** 臨時収入。細かく分けない1つの塊。翌月へコピーしない。 */
   extraIncome: number | null
   specials: SpecialExpense[]
 }
@@ -59,7 +61,13 @@ export type LedgerState = {
   months: Record<string, LedgerMonth>
 }
 
-export const createEmptyLedgerMonth = (): LedgerMonth => ({ entries: [], income: null, extraIncome: null, specials: [] })
+export const createEmptyLedgerMonth = (): LedgerMonth => ({
+  entries: [],
+  income: null,
+  bonus: null,
+  extraIncome: null,
+  specials: [],
+})
 export const createEmptyLedgerState = (): LedgerState => ({ months: {} })
 
 /** 支払月キー（YYYYMM、月は 01〜12）。 */

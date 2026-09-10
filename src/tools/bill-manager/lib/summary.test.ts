@@ -16,6 +16,7 @@ const entry = (overrides: Partial<LedgerEntry> = {}): LedgerEntry => ({
 const month = (overrides: Partial<LedgerMonth> = {}): LedgerMonth => ({
   entries: [],
   income: null,
+  bonus: null,
   extraIncome: null,
   specials: [],
   ...overrides,
@@ -76,9 +77,9 @@ describe('summarizeMonth', () => {
     expect(result.creditMissing).toBe(false)
   })
 
-  it('sums income and extraIncome', () => {
-    const result = summarizeMonth(month({ income: 280000, extraIncome: 50000 }), null)
-    expect(result.income).toBe(330000)
+  it('sums income, bonus, and extraIncome', () => {
+    const result = summarizeMonth(month({ income: 280000, bonus: 200000, extraIncome: 50000 }), null)
+    expect(result.income).toBe(530000)
     expect(result.incomeMissing).toBe(false)
   })
 

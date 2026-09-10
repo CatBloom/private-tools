@@ -77,11 +77,12 @@ describe('resolveMonth', () => {
     expect(result.month.entries[0].id).toBe('keep-me')
   })
 
-  it('carries income forward, resets extraIncome to null, and clears specials', () => {
+  it('carries income forward, resets bonus and extraIncome to null, and clears specials', () => {
     const state: LedgerState = {
       months: {
         202608: month({
           income: 280000,
+          bonus: 200000,
           extraIncome: 50000,
           specials: [{ id: 's1', amount: 1000, memo: 'x' }],
         }),
@@ -89,6 +90,7 @@ describe('resolveMonth', () => {
     }
     const result = resolveMonth(state, '202609')
     expect(result.month.income).toBe(280000)
+    expect(result.month.bonus).toBeNull()
     expect(result.month.extraIncome).toBeNull()
     expect(result.month.specials).toEqual([])
   })

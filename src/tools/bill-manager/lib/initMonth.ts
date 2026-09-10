@@ -18,7 +18,7 @@ const findLatestPriorMonth = (state: LedgerState, month: string): string | null 
 /**
  * 支払月の記録を解決する。保存済みならそのまま、無ければ直前の記録月から派生させる：
  * entries は carryOver:false を除外・variable:true は amount を 0 に（excluded はそのまま引き継ぐ）、
- * income はそのまま引き継ぎ、extraIncome は null、specials は空にする。表示専用の計算で state は書き換えない。
+ * income はそのまま引き継ぎ、bonus・extraIncome は null、specials は空にする。表示専用の計算で state は書き換えない。
  */
 export const resolveMonth = (state: LedgerState, month: string): ResolvedMonth => {
   const stored = state.months[month]
@@ -33,6 +33,7 @@ export const resolveMonth = (state: LedgerState, month: string): ResolvedMonth =
       .filter((entry) => entry.carryOver)
       .map((entry) => (entry.variable ? { ...entry, amount: 0 } : entry)),
     income: prior.income,
+    bonus: null,
     extraIncome: null,
     specials: [],
   }

@@ -109,18 +109,40 @@ describe('MonthPage', () => {
     expect(note).toBeInTheDocument()
   })
 
-  it('reflects extra income in the summary card income line', async () => {
+  it('reflects bonus and extra income, in that order, in the income label and summary card total', async () => {
     vi.mocked(getLedger).mockResolvedValue({
-      months: { 202609: { ...createEmptyLedgerMonth(), income: 280000, extraIncome: 50000 } },
+      months: { 202609: { ...createEmptyLedgerMonth(), income: 280000, bonus: 200000, extraIncome: 50000 } },
     })
+    const { container } = renderPage('202609')
+
+    const bonusSpan = await screen.findByText('＋賞与 200,000円')
+    const extraIncomeSpan = screen.getByText('＋臨時収入 50,000円')
+    const incomeLabel = container.querySelector('.bill-manager-income-label')!
+    expect(Array.from(incomeLabel.children)).toEqual([bonusSpan, extraIncomeSpan])
+
+    const incomeSummaryLabel = await screen.findByText(
+      (text, element) => text === '収入合計' && element?.parentElement?.className === 'bill-manager-summary-row',
+    )
+    const incomeRow = incomeSummaryLabel.closest<HTMLElement>('.bill-manager-summary-row')!
+    expect(within(incomeRow).getByText('530,000円')).toBeInTheDocument()
+  })
+
+  it('opens the bonus form from the row menu (⋯ → 賞与) and saves it separately from extra income', async () => {
+    vi.mocked(putLedger).mockImplementation(async (state) => state)
     renderPage('202609')
 
-    expect(await screen.findByText('＋臨時収入 50,000円')).toBeInTheDocument()
-    const incomeLabel = await screen.findByText(
-      (text, element) => text === '収入' && element?.parentElement?.className === 'bill-manager-summary-row',
-    )
-    const incomeRow = incomeLabel.closest<HTMLElement>('.bill-manager-summary-row')!
-    expect(within(incomeRow).getByText('330,000円')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: '操作メニュー' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '賞与' }))
+
+    const input = screen.getByLabelText('賞与')
+    fireEvent.change(input, { target: { value: '200000' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    expect(await screen.findByText('＋賞与 200,000円')).toBeInTheDocument()
+    expect(screen.queryByText('＋臨時収入', { exact: false })).not.toBeInTheDocument()
+    await waitFor(() => expect(putLedger).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(putLedger).mock.calls[0][0].months['202609'].bonus).toBe(200000)
+    expect(vi.mocked(putLedger).mock.calls[0][0].months['202609'].extraIncome).toBeNull()
   })
 
   it('saves immediately (no debounce) after adding an entry', async () => {
@@ -265,5 +287,26 @@ describe('MonthPage', () => {
     expect(vi.mocked(putLedger).mock.calls[0][0].months['202609'].specials).toEqual([
       { id: expect.any(String), amount: 825, memo: 'メロブ(paidy)' },
     ])
+  })
+
+  it('shows the amounts of the new month after moving to 翌月 even when entry ids are shared across months', async () => {
+    // 派生コピーや取込データでは同じ id の項目が月をまたいで並ぶ。非制御 input（defaultValue）が
+    // 同じ key で再利用されると前の月の値が残るため、月を切り替えたら入力欄も差し替わることを確認する。
+    vi.mocked(getLedger).mockResolvedValue({
+      months: {
+        202605: { ...createEmptyLedgerMonth(), income: 298664, entries: [{ id: 'e1', name: '家賃', amount: 47000, category: 'rent', variable: false, carryOver: true, excluded: false }] },
+        202606: { ...createEmptyLedgerMonth(), income: 292218, entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }] },
+      },
+    })
+    renderPage('202605')
+
+    expect(await screen.findByLabelText('家賃の金額')).toHaveValue(47000)
+    expect(screen.getByLabelText('給与')).toHaveValue(298664)
+
+    fireEvent.click(screen.getByRole('button', { name: '翌月' }))
+
+    await screen.findByText('2026年6月')
+    await waitFor(() => expect(screen.getByLabelText('家賃の金額')).toHaveValue(76000))
+    expect(screen.getByLabelText('給与')).toHaveValue(292218)
   })
 })

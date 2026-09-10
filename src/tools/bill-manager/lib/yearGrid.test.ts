@@ -16,6 +16,7 @@ const entry = (overrides: Partial<LedgerEntry> = {}): LedgerEntry => ({
 const month = (overrides: Partial<LedgerMonth> = {}): LedgerMonth => ({
   entries: [],
   income: null,
+  bonus: null,
   extraIncome: null,
   specials: [],
   ...overrides,

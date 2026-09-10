@@ -29,6 +29,10 @@ const parseAmountInput = (raw: string): number | null => {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null
 }
 
+// 給与に併記する臨時の収入2種。RowMenu・表示ともにこの順（賞与→臨時収入）で並べる。
+type IncomeField = 'bonus' | 'extraIncome'
+const INCOME_FIELD_LABELS: Record<IncomeField, string> = { bonus: '賞与', extraIncome: '臨時収入' }
+
 export const MonthPage = () => {
   const { month: monthParam } = useParams<{ month: string }>()
   const validMonth = monthParam !== undefined && isMonthKey(monthParam)
@@ -40,6 +44,7 @@ export const MonthPage = () => {
     reload,
     saveStatus,
     saveError,
+    month: selectedMonth,
     setMonth,
     currentMonth,
     currentMonthSource,
@@ -48,6 +53,7 @@ export const MonthPage = () => {
     updateEntry,
     removeEntry,
     setIncome,
+    setBonus,
     setExtraIncome,
     addSpecial,
     removeSpecial,
@@ -59,8 +65,8 @@ export const MonthPage = () => {
   const [addName, setAddName] = useState('')
   const [addAmount, setAddAmount] = useState('')
   const [addCategory, setAddCategory] = useState<EntryCategory>('other')
-  const [extraIncomeEditing, setExtraIncomeEditing] = useState(false)
-  const [extraIncomeDraft, setExtraIncomeDraft] = useState('')
+  const [editingIncomeField, setEditingIncomeField] = useState<IncomeField | null>(null)
+  const [incomeFieldDraft, setIncomeFieldDraft] = useState('')
   const [specialAmount, setSpecialAmount] = useState('')
   const [specialMemo, setSpecialMemo] = useState('')
 
@@ -97,14 +103,18 @@ export const MonthPage = () => {
     showAlert('success', '削除しました')
   }
 
-  const startEditExtraIncome = () => {
-    setExtraIncomeDraft(currentMonth.extraIncome === null ? '' : String(currentMonth.extraIncome))
-    setExtraIncomeEditing(true)
+  const startEditIncomeField = (field: IncomeField) => {
+    const current = field === 'bonus' ? currentMonth.bonus : currentMonth.extraIncome
+    setIncomeFieldDraft(current === null ? '' : String(current))
+    setEditingIncomeField(field)
   }
-  const commitExtraIncome = (event: FormEvent) => {
+  const commitIncomeField = (event: FormEvent) => {
     event.preventDefault()
-    setExtraIncome(month, parseAmountInput(extraIncomeDraft))
-    setExtraIncomeEditing(false)
+    if (editingIncomeField === null) return
+    const value = parseAmountInput(incomeFieldDraft)
+    if (editingIncomeField === 'bonus') setBonus(month, value)
+    else setExtraIncome(month, value)
+    setEditingIncomeField(null)
   }
 
   const handleAddSpecial = (event: FormEvent) => {
@@ -163,7 +173,7 @@ export const MonthPage = () => {
 
           <section className="pt-card bill-manager-summary">
             <div className="bill-manager-summary-row">
-              <span>収入</span>
+              <span>収入合計</span>
               <strong>{formatYen(summary.income)}</strong>
             </div>
             <div className="bill-manager-summary-row">
@@ -190,11 +200,15 @@ export const MonthPage = () => {
             <div className="bill-manager-income-row">
               <span className="bill-manager-income-label">
                 給与
+                {currentMonth.bonus !== null ? (
+                  <span className="bill-manager-income-extra">＋賞与 {formatYen(currentMonth.bonus)}</span>
+                ) : null}
                 {currentMonth.extraIncome !== null ? (
                   <span className="bill-manager-income-extra">＋臨時収入 {formatYen(currentMonth.extraIncome)}</span>
                 ) : null}
               </span>
               <input
+                key={selectedMonth}
                 type="number"
                 inputMode="numeric"
                 className="pt-input bill-manager-income-amount bill-manager-amount"
@@ -203,24 +217,29 @@ export const MonthPage = () => {
                 placeholder="未入力"
                 onBlur={(event) => setIncome(month, parseAmountInput(event.target.value))}
               />
-              <RowMenu items={[{ key: 'extra-income', label: '臨時収入', onClick: startEditExtraIncome }]} />
+              <RowMenu
+                items={[
+                  { key: 'bonus', label: '賞与', onClick: () => startEditIncomeField('bonus') },
+                  { key: 'extra-income', label: '臨時収入', onClick: () => startEditIncomeField('extraIncome') },
+                ]}
+              />
             </div>
-            {extraIncomeEditing ? (
-              <form className="bill-manager-extra-income-form" onSubmit={commitExtraIncome}>
+            {editingIncomeField !== null ? (
+              <form className="bill-manager-extra-income-form" onSubmit={commitIncomeField}>
                 <input
                   type="number"
                   inputMode="numeric"
                   className="pt-input bill-manager-amount"
-                  aria-label="臨時収入（賞与など）"
-                  placeholder="臨時収入"
-                  value={extraIncomeDraft}
-                  onChange={(event) => setExtraIncomeDraft(event.target.value)}
+                  aria-label={INCOME_FIELD_LABELS[editingIncomeField]}
+                  placeholder={INCOME_FIELD_LABELS[editingIncomeField]}
+                  value={incomeFieldDraft}
+                  onChange={(event) => setIncomeFieldDraft(event.target.value)}
                   autoFocus
                 />
                 <button type="submit" className="pt-button">
                   保存
                 </button>
-                <button type="button" className="pt-button" onClick={() => setExtraIncomeEditing(false)}>
+                <button type="button" className="pt-button" onClick={() => setEditingIncomeField(null)}>
                   キャンセル
                 </button>
               </form>
@@ -229,13 +248,16 @@ export const MonthPage = () => {
 
           <section className="pt-card bill-manager-panel">
             <h2 className="bill-manager-section-title">項目</h2>
+            {/* 金額 input は非制御（defaultValue・blur で確定）。派生コピーや取込データでは同じ id の項目が月をまたぐため、
+                key にコンテキストの選択月（selectedMonth。currentMonth と同じ描画で切り替わる）を含めて月の切替で必ず作り直す。
+                URL 由来の month は currentMonth より1描画早く変わるため key には使わない。給与 input も同様。 */}
             <ul className="bill-manager-entry-list">
               {currentMonth.entries.length === 0 ? (
                 <li className="bill-manager-empty">支払い項目がありません。</li>
               ) : (
                 currentMonth.entries.map((entry) => (
                   <MonthEntryRow
-                    key={entry.id}
+                    key={`${selectedMonth}:${entry.id}`}
                     entry={entry}
                     onEdit={(patch) => updateEntry(entry.id, patch)}
                     onAmountCommit={(raw) => updateEntry(entry.id, { amount: parseAmountInput(raw) })}

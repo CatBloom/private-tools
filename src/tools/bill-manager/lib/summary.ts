@@ -9,7 +9,7 @@ export type MonthSummary = {
   credit: number | null
   /** fixedTotal + specialTotal + (credit ?? 0)。 */
   expenseTotal: number
-  /** (income ?? 0) + (extraIncome ?? 0)。 */
+  /** (income ?? 0) + (bonus ?? 0) + (extraIncome ?? 0)。 */
   income: number
   /** income − expenseTotal。 */
   cashRemaining: number
@@ -33,7 +33,7 @@ export const summarizeMonth = (month: LedgerMonth, credit: number | null): Month
 
   const specialTotal = month.specials.reduce((total, special) => total + special.amount, 0)
   const expenseTotal = fixedTotal + specialTotal + (credit ?? 0)
-  const income = (month.income ?? 0) + (month.extraIncome ?? 0)
+  const income = (month.income ?? 0) + (month.bonus ?? 0) + (month.extraIncome ?? 0)
   const cashRemaining = income - expenseTotal
 
   return {

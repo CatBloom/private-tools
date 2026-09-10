@@ -121,14 +121,17 @@ describe('YearPage', () => {
     expect(cashRow.className).toContain('bill-manager-year-cash-row')
   })
 
-  it('marks a month header as 見込 when the month has no stored record', async () => {
+  it('marks derived month headers with is-derived and does not render a 見込 tag', async () => {
     vi.mocked(getLedger).mockResolvedValue({
       months: { 202601: { ...createEmptyLedgerMonth(), entries: [] } },
     })
     renderPage('2026')
 
-    await screen.findByText('1月')
-    expect(screen.getAllByText('見込')).toHaveLength(11)
+    const january = (await screen.findByText('1月')).closest('th')!
+    expect(january.className).not.toContain('is-derived')
+    const february = screen.getByText('2月').closest('th')!
+    expect(february.className).toContain('is-derived')
+    expect(screen.queryByText('見込')).not.toBeInTheDocument()
   })
 
   it('shows 未取込 in the クレカ row when the CSV has not been uploaded', async () => {

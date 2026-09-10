@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryBillManagerStorage } from '../../test/in-memory-storage.js'
+import type { LedgerState } from '../../tools/bill-manager/shared/types.js'
 import { createBillManagerRoutes } from './bill-manager.js'
 
 const validEntry = {
@@ -15,7 +16,7 @@ const validEntry = {
 
 const validSpecial = { id: 's1', amount: 825, memo: 'メロブ(paidy)' }
 
-const emptyMonth = { entries: [], income: null, extraIncome: null, specials: [] }
+const emptyMonth = { entries: [], income: null, bonus: null, extraIncome: null, specials: [] }
 
 describe('bill-manager routes', () => {
   let app: Hono
@@ -35,7 +36,7 @@ describe('bill-manager routes', () => {
   it('puts state and returns it from a subsequent get', async () => {
     const state = {
       months: {
-        '202401': { entries: [validEntry], income: 300000, extraIncome: 50000, specials: [validSpecial] },
+        '202401': { entries: [validEntry], income: 300000, bonus: 200000, extraIncome: 50000, specials: [validSpecial] },
       },
     }
     const putResponse = await request('/ledger', {
@@ -51,10 +52,16 @@ describe('bill-manager routes', () => {
     await expect(getResponse.json()).resolves.toEqual({ ok: true, data: { state } })
   })
 
-  it('accepts a null entry amount, income, and extraIncome', async () => {
+  it('accepts a null entry amount, income, bonus, and extraIncome', async () => {
     const state = {
       months: {
-        '202401': { entries: [{ ...validEntry, amount: null }], income: null, extraIncome: null, specials: [] },
+        '202401': {
+          entries: [{ ...validEntry, amount: null }],
+          income: null,
+          bonus: null,
+          extraIncome: null,
+          specials: [],
+        },
       },
     }
     const response = await request('/ledger', {
@@ -63,6 +70,29 @@ describe('bill-manager routes', () => {
       body: JSON.stringify({ state }),
     })
     expect(response.status).toBe(200)
+  })
+
+  it('treats a month with an unspecified bonus as null', async () => {
+    const monthWithoutBonus = { entries: [], income: null, extraIncome: null, specials: [] }
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': monthWithoutBonus } } }),
+    })
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { data: { state: LedgerState } }
+    expect(body.data.state.months['202401'].bonus).toBeNull()
+  })
+
+  it('normalizes a legacy stored month without a bonus field to null on get', async () => {
+    const storage = new InMemoryBillManagerStorage()
+    const legacyMonth = { entries: [], income: null, extraIncome: null, specials: [] }
+    await storage.putLedger({ months: { '202401': legacyMonth } } as unknown as LedgerState)
+    app = createBillManagerRoutes(storage)
+
+    const response = await request('/ledger')
+    const body = (await response.json()) as { data: { state: LedgerState } }
+    expect(body.data.state.months['202401'].bonus).toBeNull()
   })
 
   it('rejects a put without a JSON content type', async () => {
@@ -247,6 +277,24 @@ describe('bill-manager routes', () => {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, extraIncome: 100.5 } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a non-integer bonus', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, bonus: 100.5 } } } }),
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a negative bonus', async () => {
+    const response = await request('/ledger', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: { months: { '202401': { ...emptyMonth, bonus: -1 } } } }),
     })
     expect(response.status).toBe(400)
   })
