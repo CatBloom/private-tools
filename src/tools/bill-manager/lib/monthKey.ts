@@ -12,6 +12,10 @@ export const shiftMonth = (key: string, delta: number): string => {
 export const currentMonthKey = (date = new Date()): string =>
   `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
 
+// 編集可能かどうか: 今日の月（today）と翌月までが編集可、翌々月以降は不可。過去の月は常に編集可。
+// YYYYMM は辞書順＝時系列順なので文字列比較で足りる。
+export const isMonthEditable = (month: string, today: string): boolean => month <= shiftMonth(today, 1)
+
 export const formatMonthLabel = (key: string): string => `${Number(key.slice(0, 4))}年${Number(key.slice(4, 6))}月`
 
 export const yearOf = (key: string): number => Number(key.slice(0, 4))

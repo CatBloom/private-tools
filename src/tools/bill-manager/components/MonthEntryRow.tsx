@@ -1,9 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { RowMenu } from '../../../components/RowMenu'
 import { ENTRY_CATEGORIES, ENTRY_CATEGORY_LABELS, MAX_ENTRY_NAME_LENGTH, type EntryCategory, type LedgerEntry } from '../shared/types'
 
 type MonthEntryRowProps = {
   entry: LedgerEntry
+  editable: boolean
   onEdit: (patch: { name: string; category: EntryCategory }) => void
   onAmountCommit: (raw: string) => void
   onToggleVariable: () => void
@@ -15,10 +16,26 @@ type MonthEntryRowProps = {
 // 1項目1行のコンパクト表示。名前・カテゴリの編集はモバイルの横幅制約のため行全体を
 // 一時的に入力欄（名前 input＋カテゴリ select）に差し替える単一の「編集」モードにまとめる
 // （RowMenu はボタンの並びのみでセレクトを内包できないため）。
-export const MonthEntryRow = ({ entry, onEdit, onAmountCommit, onToggleVariable, onToggleExcluded, onToggleCarryOver, onDelete }: MonthEntryRowProps) => {
+// editable=false（翌々月以降）は金額 input を disabled にし、RowMenu 自体を描画しない。
+export const MonthEntryRow = ({
+  entry,
+  editable,
+  onEdit,
+  onAmountCommit,
+  onToggleVariable,
+  onToggleExcluded,
+  onToggleCarryOver,
+  onDelete,
+}: MonthEntryRowProps) => {
   const [editing, setEditing] = useState(false)
   const [nameDraft, setNameDraft] = useState(entry.name)
   const [categoryDraft, setCategoryDraft] = useState<EntryCategory>(entry.category)
+
+  // 編集モードを開いたまま月を切り替えて editable=false になったら閉じる（MonthPage の
+  // editingIncomeField と同じ防御。RowMenu は非描画になるが、開いていた編集モードは state が残るため）。
+  useEffect(() => {
+    if (!editable) setEditing(false)
+  }, [editable])
 
   const handleAmountKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') event.currentTarget.blur()
@@ -90,24 +107,27 @@ export const MonthEntryRow = ({ entry, onEdit, onAmountCommit, onToggleVariable,
           aria-label={`${entry.name}の金額`}
           defaultValue={entry.amount ?? ''}
           placeholder="未入力"
+          disabled={!editable}
           onBlur={(event) => onAmountCommit(event.target.value)}
           onKeyDown={handleAmountKeyDown}
         />
       </div>
-      <RowMenu
-        items={[
-          { key: 'edit', label: '編集', onClick: startEdit },
-          { key: 'toggle-variable', label: '変動費', onClick: onToggleVariable },
-          {
-            key: 'toggle-excluded',
-            label: 'クレカ払い',
-            title: 'クレカ明細に含まれているため支出合計から除外します',
-            onClick: onToggleExcluded,
-          },
-          { key: 'toggle-carry-over', label: '今月終了', onClick: onToggleCarryOver },
-          { key: 'delete', label: '削除', onClick: onDelete, danger: true },
-        ]}
-      />
+      {editable ? (
+        <RowMenu
+          items={[
+            { key: 'edit', label: '編集', onClick: startEdit },
+            { key: 'toggle-variable', label: '変動費', onClick: onToggleVariable },
+            {
+              key: 'toggle-excluded',
+              label: 'クレカ払い',
+              title: 'クレカ明細に含まれているため支出合計から除外します',
+              onClick: onToggleExcluded,
+            },
+            { key: 'toggle-carry-over', label: '今月終了', onClick: onToggleCarryOver },
+            { key: 'delete', label: '削除', onClick: onDelete, danger: true },
+          ]}
+        />
+      ) : null}
     </li>
   )
 }

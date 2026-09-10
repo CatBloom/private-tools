@@ -414,3 +414,15 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* 翌々月以降（編集不可）の金額 input。is-excluded の入力側と同じ薄さに揃える。 */
+.bill-manager-amount:disabled {
+  opacity: 0.55;
+}
+
+/* 「計上しない」かつ編集不可の行は、is-excluded 側の .bill-manager-entry-row-content
+   （opacity: 0.55）と disabled の金額 input（opacity: 0.55）が重なって二重に薄くなる（0.55 * 0.55 ≒ 0.30）。
+   is-excluded の入力側と同じ薄さに揃えたいだけなので、disabled 側の opacity をここで打ち消す。 */
+.bill-manager-entry-row.is-excluded .bill-manager-amount:disabled {
+  opacity: 1;
+}

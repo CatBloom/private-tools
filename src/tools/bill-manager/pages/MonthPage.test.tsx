@@ -310,6 +310,91 @@ describe('MonthPage', () => {
     expect(screen.getByLabelText('給与')).toHaveValue(292218)
   })
 
+  describe('editable months (翌々月以降は編集不可)', () => {
+    beforeEach(() => {
+      // Date だけを固定し setTimeout 等は実時間のまま進める（waitFor/findBy が内部で使う
+      // 実タイマーを止めるとテストがタイムアウトするため）。
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2026, 8, 15)) // 2026-09-15 → 今月=202609, 翌月=202610, 翌々月=202611
+    })
+
+    it('disables amount inputs and hides the ⋯ menu / add forms two months ahead (202611)', async () => {
+      vi.mocked(getLedger).mockResolvedValue({
+        months: {
+          202611: {
+            ...createEmptyLedgerMonth(),
+            entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+            specials: [{ id: 's1', amount: 825, memo: 'メロブ(paidy)' }],
+          },
+        },
+      })
+      renderPage('202611')
+
+      const row = await findEntryRow('家賃')
+      expect(within(row).getByLabelText('家賃の金額')).toBeDisabled()
+      expect(within(row).queryByRole('button', { name: '操作メニュー' })).not.toBeInTheDocument()
+      expect(screen.getByLabelText('給与')).toBeDisabled()
+      expect(screen.queryAllByRole('button', { name: '操作メニュー' })).toHaveLength(0)
+      expect(screen.queryByPlaceholderText('項目名')).not.toBeInTheDocument()
+      expect(screen.queryByPlaceholderText('金額（任意）')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('特殊費用の金額')).not.toBeInTheDocument()
+      expect(await screen.findByText('メロブ(paidy)')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'この特殊費用を削除' })).not.toBeInTheDocument()
+      expect(await screen.findByText('翌々月以降は編集できません。前の記録月からの見込みを表示しています。')).toBeInTheDocument()
+    })
+
+    it('keeps 202610 (next month) editable', async () => {
+      vi.mocked(getLedger).mockResolvedValue({
+        months: {
+          202610: {
+            ...createEmptyLedgerMonth(),
+            entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+          },
+        },
+      })
+      renderPage('202610')
+
+      const row = await findEntryRow('家賃')
+      expect(within(row).getByLabelText('家賃の金額')).not.toBeDisabled()
+      expect(within(row).getByRole('button', { name: '操作メニュー' })).toBeInTheDocument()
+      expect(screen.getByLabelText('給与')).not.toBeDisabled()
+      expect(screen.getByPlaceholderText('項目名')).toBeInTheDocument()
+      expect(screen.queryByText('翌々月以降は編集できません。前の記録月からの見込みを表示しています。')).not.toBeInTheDocument()
+    })
+
+    it('keeps a past month (202605) editable', async () => {
+      vi.mocked(getLedger).mockResolvedValue({
+        months: {
+          202605: {
+            ...createEmptyLedgerMonth(),
+            entries: [{ id: 'e1', name: '家賃', amount: 76000, category: 'rent', variable: false, carryOver: true, excluded: false }],
+          },
+        },
+      })
+      renderPage('202605')
+
+      const row = await findEntryRow('家賃')
+      expect(within(row).getByLabelText('家賃の金額')).not.toBeDisabled()
+      expect(within(row).getByRole('button', { name: '操作メニュー' })).toBeInTheDocument()
+    })
+
+    it('closes an open bonus form when navigating from an editable month into a non-editable one', async () => {
+      renderPage('202609')
+
+      fireEvent.click(await screen.findByRole('button', { name: '操作メニュー' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: '賞与' }))
+      expect(screen.getByLabelText('賞与')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '翌月' })) // 202609 -> 202610 (still editable)
+      await screen.findByText('2026年10月')
+      expect(screen.getByLabelText('賞与')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '翌月' })) // 202610 -> 202611 (not editable)
+      await screen.findByText('2026年11月')
+      expect(screen.queryByLabelText('賞与')).not.toBeInTheDocument()
+    })
+  })
+
   describe('revalidate on tab return', () => {
     it('replaces state on window focus when the fetched ledger differs, without saving it back', async () => {
       renderPage('202609')

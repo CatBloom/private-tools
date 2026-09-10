@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentMonthKey, formatMonthLabel, monthsOfYear, shiftMonth, yearOf } from './monthKey'
+import { currentMonthKey, formatMonthLabel, isMonthEditable, monthsOfYear, shiftMonth, yearOf } from './monthKey'
 
 describe('shiftMonth', () => {
   it('adds months within the same year', () => {
@@ -46,6 +46,32 @@ describe('formatMonthLabel', () => {
 describe('yearOf', () => {
   it('extracts the year from a month key', () => {
     expect(yearOf('202609')).toBe(2026)
+  })
+})
+
+describe('isMonthEditable', () => {
+  it('is editable for the current month', () => {
+    expect(isMonthEditable('202609', '202609')).toBe(true)
+  })
+
+  it('is editable for the next month', () => {
+    expect(isMonthEditable('202610', '202609')).toBe(true)
+  })
+
+  it('is not editable two months ahead', () => {
+    expect(isMonthEditable('202611', '202609')).toBe(false)
+  })
+
+  it('is editable for a past month', () => {
+    expect(isMonthEditable('202605', '202609')).toBe(true)
+  })
+
+  it('is editable for the next month across a year boundary', () => {
+    expect(isMonthEditable('202701', '202612')).toBe(true)
+  })
+
+  it('is not editable two months ahead across a year boundary', () => {
+    expect(isMonthEditable('202702', '202612')).toBe(false)
   })
 })
 

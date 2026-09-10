@@ -4,7 +4,7 @@ import { Spinner, useAlert, useConfirm } from '../../../components/feedback'
 import { RowMenu } from '../../../components/RowMenu'
 import { MonthEntryRow } from '../components/MonthEntryRow'
 import { SpecialRow } from '../components/SpecialRow'
-import { currentMonthKey, formatMonthLabel, shiftMonth } from '../lib/monthKey'
+import { currentMonthKey, formatMonthLabel, isMonthEditable, shiftMonth } from '../lib/monthKey'
 import { summarizeMonth } from '../lib/summary'
 import {
   ENTRY_CATEGORIES,
@@ -73,6 +73,14 @@ export const MonthPage = () => {
   useEffect(() => {
     setMonth(month)
   }, [month, setMonth])
+
+  const editable = isMonthEditable(month, currentMonthKey())
+
+  // 編集不可の月に入ったら、開いたままの賞与／臨時収入の編集フォームを閉じる
+  // （月を切り替えても editingIncomeField は保持されるため）。
+  useEffect(() => {
+    if (!editable) setEditingIncomeField(null)
+  }, [editable])
 
   const credit = creditByMonth[month] ?? null
   const summary = summarizeMonth(currentMonth, credit)
@@ -191,7 +199,9 @@ export const MonthPage = () => {
             {notes.length > 0 ? <p className="bill-manager-note">{notes.join('／')}</p> : null}
           </section>
 
-          {currentMonthSource === 'derived' ? (
+          {!editable ? (
+            <p className="bill-manager-note">翌々月以降は編集できません。前の記録月からの見込みを表示しています。</p>
+          ) : currentMonthSource === 'derived' ? (
             <p className="bill-manager-note">前の記録月からコピーした内容です。編集すると保存されます。</p>
           ) : null}
 
@@ -215,16 +225,19 @@ export const MonthPage = () => {
                 aria-label="給与"
                 defaultValue={currentMonth.income ?? ''}
                 placeholder="未入力"
+                disabled={!editable}
                 onBlur={(event) => setIncome(month, parseAmountInput(event.target.value))}
               />
-              <RowMenu
-                items={[
-                  { key: 'bonus', label: '賞与', onClick: () => startEditIncomeField('bonus') },
-                  { key: 'extra-income', label: '臨時収入', onClick: () => startEditIncomeField('extraIncome') },
-                ]}
-              />
+              {editable ? (
+                <RowMenu
+                  items={[
+                    { key: 'bonus', label: '賞与', onClick: () => startEditIncomeField('bonus') },
+                    { key: 'extra-income', label: '臨時収入', onClick: () => startEditIncomeField('extraIncome') },
+                  ]}
+                />
+              ) : null}
             </div>
-            {editingIncomeField !== null ? (
+            {editable && editingIncomeField !== null ? (
               <form className="bill-manager-extra-income-form" onSubmit={commitIncomeField}>
                 <input
                   type="number"
@@ -259,6 +272,7 @@ export const MonthPage = () => {
                   <MonthEntryRow
                     key={`${selectedMonth}:${entry.id}`}
                     entry={entry}
+                    editable={editable}
                     onEdit={(patch) => updateEntry(entry.id, patch)}
                     onAmountCommit={(raw) => updateEntry(entry.id, { amount: parseAmountInput(raw) })}
                     onToggleVariable={() => updateEntry(entry.id, { variable: !entry.variable })}
@@ -270,47 +284,51 @@ export const MonthPage = () => {
               )}
             </ul>
 
-            <form className="bill-manager-add-form" onSubmit={handleAddEntry}>
-              <input
-                type="text"
-                className="pt-input"
-                placeholder="項目名"
-                aria-label="項目名"
-                value={addName}
-                maxLength={MAX_ENTRY_NAME_LENGTH}
-                onChange={(event) => setAddName(event.target.value)}
-              />
-              <input
-                type="number"
-                inputMode="numeric"
-                className="pt-input bill-manager-amount"
-                placeholder="金額（任意）"
-                aria-label="金額"
-                value={addAmount}
-                onChange={(event) => setAddAmount(event.target.value)}
-              />
-              <select
-                className="pt-input"
-                aria-label="カテゴリ"
-                value={addCategory}
-                onChange={(event) => setAddCategory(event.target.value as EntryCategory)}
-              >
-                {ENTRY_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {ENTRY_CATEGORY_LABELS[category]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="pt-button pt-button-accent"
-                disabled={!addName.trim() || currentMonth.entries.length >= MAX_ENTRIES_PER_MONTH}
-              >
-                追加
-              </button>
-            </form>
-            {currentMonth.entries.length >= MAX_ENTRIES_PER_MONTH ? (
-              <p className="bill-manager-note">1か月あたり{MAX_ENTRIES_PER_MONTH}件までです。</p>
+            {editable ? (
+              <>
+                <form className="bill-manager-add-form" onSubmit={handleAddEntry}>
+                  <input
+                    type="text"
+                    className="pt-input"
+                    placeholder="項目名"
+                    aria-label="項目名"
+                    value={addName}
+                    maxLength={MAX_ENTRY_NAME_LENGTH}
+                    onChange={(event) => setAddName(event.target.value)}
+                  />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="pt-input bill-manager-amount"
+                    placeholder="金額（任意）"
+                    aria-label="金額"
+                    value={addAmount}
+                    onChange={(event) => setAddAmount(event.target.value)}
+                  />
+                  <select
+                    className="pt-input"
+                    aria-label="カテゴリ"
+                    value={addCategory}
+                    onChange={(event) => setAddCategory(event.target.value as EntryCategory)}
+                  >
+                    {ENTRY_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {ENTRY_CATEGORY_LABELS[category]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="pt-button pt-button-accent"
+                    disabled={!addName.trim() || currentMonth.entries.length >= MAX_ENTRIES_PER_MONTH}
+                  >
+                    追加
+                  </button>
+                </form>
+                {currentMonth.entries.length >= MAX_ENTRIES_PER_MONTH ? (
+                  <p className="bill-manager-note">1か月あたり{MAX_ENTRIES_PER_MONTH}件までです。</p>
+                ) : null}
+              </>
             ) : null}
           </section>
 
@@ -321,39 +339,48 @@ export const MonthPage = () => {
                 <li className="bill-manager-empty">特殊費用はありません。</li>
               ) : (
                 currentMonth.specials.map((special) => (
-                  <SpecialRow key={special.id} special={special} onDelete={() => handleDeleteSpecial(special.id, special.memo)} />
+                  <SpecialRow
+                    key={special.id}
+                    special={special}
+                    editable={editable}
+                    onDelete={() => handleDeleteSpecial(special.id, special.memo)}
+                  />
                 ))
               )}
             </ul>
-            <form className="bill-manager-add-form" onSubmit={handleAddSpecial}>
-              <input
-                type="number"
-                inputMode="numeric"
-                className="pt-input bill-manager-amount"
-                placeholder="金額"
-                aria-label="特殊費用の金額"
-                value={specialAmount}
-                onChange={(event) => setSpecialAmount(event.target.value)}
-              />
-              <input
-                type="text"
-                className="pt-input"
-                placeholder="メモ（任意）"
-                aria-label="特殊費用のメモ"
-                value={specialMemo}
-                maxLength={MAX_MEMO_LENGTH}
-                onChange={(event) => setSpecialMemo(event.target.value)}
-              />
-              <button
-                type="submit"
-                className="pt-button pt-button-accent"
-                disabled={parseAmountInput(specialAmount) === null || currentMonth.specials.length >= MAX_SPECIALS_PER_MONTH}
-              >
-                追加
-              </button>
-            </form>
-            {currentMonth.specials.length >= MAX_SPECIALS_PER_MONTH ? (
-              <p className="bill-manager-note">特殊費用は1か月あたり{MAX_SPECIALS_PER_MONTH}件までです。</p>
+            {editable ? (
+              <>
+                <form className="bill-manager-add-form" onSubmit={handleAddSpecial}>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="pt-input bill-manager-amount"
+                    placeholder="金額"
+                    aria-label="特殊費用の金額"
+                    value={specialAmount}
+                    onChange={(event) => setSpecialAmount(event.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="pt-input"
+                    placeholder="メモ（任意）"
+                    aria-label="特殊費用のメモ"
+                    value={specialMemo}
+                    maxLength={MAX_MEMO_LENGTH}
+                    onChange={(event) => setSpecialMemo(event.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="pt-button pt-button-accent"
+                    disabled={parseAmountInput(specialAmount) === null || currentMonth.specials.length >= MAX_SPECIALS_PER_MONTH}
+                  >
+                    追加
+                  </button>
+                </form>
+                {currentMonth.specials.length >= MAX_SPECIALS_PER_MONTH ? (
+                  <p className="bill-manager-note">特殊費用は1か月あたり{MAX_SPECIALS_PER_MONTH}件までです。</p>
+                ) : null}
+              </>
             ) : null}
           </section>
         </>
