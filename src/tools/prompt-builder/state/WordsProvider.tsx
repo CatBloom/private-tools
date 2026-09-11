@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAlert } from '../../../components/feedback'
+import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { useAutoSave, type SaveStatus } from '../hooks/useAutoSave'
 import { getWords, putWords } from '../api'
 import { MAX_WORDS } from '../shared/limits'
@@ -70,6 +71,11 @@ export const WordsProvider = ({ children }: { children: ReactNode }) => {
     onSaved,
     onSuccess,
   })
+  const saveStatusRef = useRef(saveStatus)
+  saveStatusRef.current = saveStatus
+  // タブ復帰（revalidateWords）の発火ごとに進める通し番号。応答到着時にこの値と一致しなければ
+  // （後から発火した別の revalidate に追い越されていたら）古い応答として破棄する。
+  const revalidateGenerationRef = useRef(0)
 
   const loadWords = useCallback(async () => {
     setLoadStatus('loading')
@@ -91,6 +97,36 @@ export const WordsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     loadWords()
   }, [loadWords])
+
+  // タブに戻ったときの再取得。未保存の変更（dirty）がある・保存が進行中のときは何もしない。
+  // 取得結果が現在と等価なら何もしない。異なれば words を差し替えるが、dirty は false のまま
+  // なので自動保存のデバウンス／flush はどちらも動かず、差し替え自体で PUT は発火しない。
+  const revalidateWords = useCallback(() => {
+    if (loadStatusRef.current !== 'ready') return
+    if (dirtyRef.current) return
+    if (saveStatusRef.current === 'saving') return
+    revalidateGenerationRef.current += 1
+    const generation = revalidateGenerationRef.current
+    const snapshotBefore = wordsRef.current
+
+    getWords()
+      .then((data) => {
+        // 取得中に編集が始まっていたら破棄する。
+        if (dirtyRef.current) return
+        // 後から発火した別の revalidate に追い越されていたら（この応答は古い）破棄する。
+        if (revalidateGenerationRef.current !== generation) return
+        // 世代が最新でも、GET が in-flight の間に編集して保存まで完了していたら（dirty が
+        // 一度 true→false を経ている）words の参照が変わっている。古いスナップショットで
+        // 保存済みの変更を巻き戻さないよう、その場合も破棄する。
+        if (wordsRef.current !== snapshotBefore) return
+        const normalized = data.map((word) => ({ ...word, tag: normalizeTag(word.tag) }))
+        if (JSON.stringify(normalized) === JSON.stringify(wordsRef.current)) return
+        setWords(normalized)
+      })
+      .catch(() => {})
+  }, [])
+
+  useRevalidateOnReturn(revalidateWords)
 
   const markWordsDirty = useCallback(() => {
     setDirty(true)

@@ -118,14 +118,14 @@ export const SectionPage = ({ section }: SectionPageProps) => {
   return (
     <div className="my-todo-page-stack">
       {saveStatus === 'error' ? (
-        <p className="my-todo-status-message my-todo-status-message-error" role="alert">
+        <p className="pt-status-message pt-status-message-error" role="alert">
           {saveError}
         </p>
       ) : null}
 
       {loadStatus === 'loading' ? <Spinner label="読み込み中…" /> : null}
       {loadStatus === 'error' ? (
-        <p className="my-todo-status-message my-todo-status-message-error" role="alert">
+        <p className="pt-status-message pt-status-message-error" role="alert">
           {loadError}
           <button type="button" className="pt-button" onClick={reloadTodos}>
             再読み込み
@@ -168,7 +168,7 @@ export const SectionPage = ({ section }: SectionPageProps) => {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
               <TodoSection id={SECTION_DROPPABLE_ID[section]}>
-                {items.length === 0 ? <li className="my-todo-empty">タスクがありません。</li> : items.map(renderRow)}
+                {items.length === 0 ? <li className="pt-empty">タスクがありません。</li> : items.map(renderRow)}
               </TodoSection>
             </SortableContext>
           </DndContext>

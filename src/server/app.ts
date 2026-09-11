@@ -10,9 +10,11 @@ import { TOOLS } from '../tools/registry.js'
 import { createCreditCsvRoutes } from './routes/credit-csv.js'
 import { createPromptBuilderRoutes } from './routes/prompt-builder.js'
 import { createMyTodoRoutes } from './routes/my-todo.js'
+import { createBillManagerRoutes } from './routes/bill-manager.js'
 import type { CreditCsvStorage } from './storage/credit-csv/index.js'
 import type { PromptHistoryStorage, PromptWordStorage } from './storage/prompt-builder/index.js'
 import type { MyTodoStorage } from './storage/my-todo/index.js'
+import type { BillManagerStorage } from './storage/bill-manager/index.js'
 
 type AppOptions = {
   stylesAsset?: string | null
@@ -21,11 +23,13 @@ type AppOptions = {
   promptWordStorage?: PromptWordStorage
   promptHistoryStorage?: PromptHistoryStorage
   myTodoStorage?: MyTodoStorage
+  billManagerStorage?: BillManagerStorage
 }
 
 const CREDIT_CSV_PREFIX = '/tools/credit-csv'
 const PROMPT_BUILDER_PREFIX = '/tools/prompt-builder'
 const MY_TODO_PREFIX = '/tools/my-todo'
+const BILL_MANAGER_PREFIX = '/tools/bill-manager'
 
 const inlineStylePrefixes = TOOLS.filter((tool) => tool.inlineStyle).map((tool) => tool.path)
 const isInlineStylePath = (path: string) =>
@@ -102,6 +106,7 @@ export const createApp = (options: AppOptions = {}) => {
   const clientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'credit-csv')!)
   const promptBuilderClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'prompt-builder')!)
   const myTodoClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'my-todo')!)
+  const billManagerClientScript = clientScriptFor(TOOLS.find((tool) => tool.id === 'bill-manager')!)
   const themeScript = process.env.NODE_ENV === 'production' ? '/assets/theme.js' : '/src/ui/theme.ts'
 
   const defaultSecureHeaders = buildSecureHeaders(["'self'"])
@@ -119,6 +124,7 @@ export const createApp = (options: AppOptions = {}) => {
     createPromptBuilderRoutes(options.promptWordStorage, options.promptHistoryStorage),
   )
   app.route(`${MY_TODO_PREFIX}/api`, createMyTodoRoutes(options.myTodoStorage))
+  app.route(`${BILL_MANAGER_PREFIX}/api`, createBillManagerRoutes(options.billManagerStorage))
 
   if (process.env.NODE_ENV === 'production') {
     app.get('/favicon.ico', (c) => {
@@ -161,6 +167,7 @@ export const createApp = (options: AppOptions = {}) => {
     'credit-csv': clientScript,
     'prompt-builder': promptBuilderClientScript,
     'my-todo': myTodoClientScript,
+    'bill-manager': billManagerClientScript,
   }
 
   for (const tool of TOOLS) {

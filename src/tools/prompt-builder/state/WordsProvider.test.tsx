@@ -337,4 +337,156 @@ describe('WordsProvider', () => {
       expect(putWords).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('revalidate on tab return', () => {
+    it('replaces words on window focus when the fetched list differs, without saving it back or marking dirty', async () => {
+      renderHarness()
+      await screen.findByText('cat girl')
+
+      vi.mocked(getWords).mockResolvedValue([
+        ...sampleWords,
+        { id: 'w3', text: 'red hair', description: '', tag: 'quality' },
+      ])
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await screen.findByText('red hair')).toBeInTheDocument()
+      expect(putWords).not.toHaveBeenCalled()
+      expect(screen.queryByText('未保存の変更あり')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-save the revalidated words even after the debounce delay elapses', async () => {
+      const AUTO_SAVE_DELAY_MS = 30_000
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderHarness()
+        await screen.findByText('cat girl')
+
+        vi.mocked(getWords).mockResolvedValue([
+          ...sampleWords,
+          { id: 'w3', text: 'red hair', description: '', tag: 'quality' },
+        ])
+
+        window.dispatchEvent(new Event('focus'))
+        await screen.findByText('red hair')
+        expect(screen.queryByText('未保存の変更あり')).not.toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(AUTO_SAVE_DELAY_MS)
+        expect(putWords).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('discards a stale response when two overlapping revalidations resolve out of order', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderHarness()
+        await screen.findByText('cat girl')
+
+        // 1回目の再取得を発火する（応答はまだ保留）。
+        let resolveFirst: (data: PromptWord[]) => void = () => {}
+        vi.mocked(getWords).mockImplementationOnce(
+          () => new Promise<PromptWord[]>((resolve) => { resolveFirst = resolve }),
+        )
+        window.dispatchEvent(new Event('focus'))
+
+        // useRevalidateOnReturn の1秒デバウンスを越えてから2回目の再取得を発火する。
+        await vi.advanceTimersByTimeAsync(1000)
+        vi.mocked(getWords).mockResolvedValueOnce([
+          ...sampleWords,
+          { id: 'w3', text: 'red hair', description: '', tag: 'quality' },
+        ])
+        window.dispatchEvent(new Event('focus'))
+        expect(await screen.findByText('red hair')).toBeInTheDocument()
+
+        // 1回目（古い一覧）が2回目より後に解決しても、2回目の結果を上書きしない。
+        resolveFirst(sampleWords)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(screen.getByText('red hair')).toBeInTheDocument()
+        expect(screen.getByTestId('word-count')).toHaveTextContent('3')
+        expect(putWords).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('applies the newest response even when an older overlapping revalidation resolves first', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderHarness()
+        await screen.findByText('cat girl')
+
+        // 1回目の再取得を発火する（応答はまだ保留）。
+        let resolveFirst: (data: PromptWord[]) => void = () => {}
+        vi.mocked(getWords).mockImplementationOnce(
+          () => new Promise<PromptWord[]>((resolve) => { resolveFirst = resolve }),
+        )
+        window.dispatchEvent(new Event('focus'))
+
+        // useRevalidateOnReturn の1秒デバウンスを越えてから2回目の再取得を発火する（応答も保留）。
+        await vi.advanceTimersByTimeAsync(1000)
+        let resolveSecond: (data: PromptWord[]) => void = () => {}
+        vi.mocked(getWords).mockImplementationOnce(
+          () => new Promise<PromptWord[]>((resolve) => { resolveSecond = resolve }),
+        )
+        window.dispatchEvent(new Event('focus'))
+
+        // 古い（1回目）の応答が先に解決する。
+        resolveFirst(sampleWords)
+        await vi.advanceTimersByTimeAsync(0)
+        expect(screen.queryByText('red hair')).not.toBeInTheDocument()
+
+        // 新しい（2回目）の応答が後から解決する。こちらが最終的に適用される。
+        resolveSecond([...sampleWords, { id: 'w3', text: 'red hair', description: '', tag: 'quality' }])
+        expect(await screen.findByText('red hair')).toBeInTheDocument()
+        expect(screen.getByTestId('word-count')).toHaveTextContent('3')
+        expect(putWords).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('does not re-fetch while there is an unsaved (dirty) change', async () => {
+      renderHarness()
+      await screen.findByText('cat girl')
+
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'unsaved word' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+      expect(screen.getByText('未保存の変更あり')).toBeInTheDocument()
+
+      expect(getWords).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getWords).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not roll back a save that completed while a revalidate GET is still pending', async () => {
+      renderHarness()
+      await screen.findByText('cat girl')
+
+      // タブ復帰の再取得（GET はまだ保留中）。
+      let resolveGet: (data: PromptWord[]) => void = () => {}
+      vi.mocked(getWords).mockImplementationOnce(
+        () => new Promise<PromptWord[]>((resolve) => { resolveGet = resolve }),
+      )
+      window.dispatchEvent(new Event('focus'))
+
+      // GET が解決する前に、ユーザーが編集して保存を完了させる（dirty は一度 true→false に戻る）。
+      fireEvent.change(screen.getByLabelText('ワード'), { target: { value: 'new word' } })
+      fireEvent.click(screen.getByRole('button', { name: '追加' }))
+      fireEvent.click(screen.getByRole('button', { name: '保存' }))
+      await waitFor(() => expect(putWords).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(screen.queryByText('未保存の変更あり')).not.toBeInTheDocument())
+
+      // 保留中だった GET が、保存前の古い一覧で解決する。
+      resolveGet(sampleWords)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      // 保存済みの 'new word' が消えず、巻き戻らない。
+      expect(screen.getByText('new word')).toBeInTheDocument()
+      expect(screen.getByTestId('word-count')).toHaveTextContent('3')
+    })
+  })
 })
