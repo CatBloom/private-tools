@@ -4,7 +4,7 @@ import { useGatedSave, type SaveStatus } from '../../../hooks/useGatedSave'
 import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getLedger, putLedger } from '../api'
 import { fetchCreditCsvBytes } from '../creditCsvApi'
-import { creditUsageMonth, sumCreditCsv } from '../lib/creditAmount'
+import { sumCreditCsv } from '../lib/creditAmount'
 import { resolveMonth, type MonthSource } from '../lib/initMonth'
 import { currentMonthKey, monthsOfYear, yearOf } from '../lib/monthKey'
 import {
@@ -151,12 +151,10 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   // いない）ときだけ state に反映する。
   const fetchCredit = useCallback(
     (paymentMonth: string, generation: number) => {
-      const usageMonth = creditUsageMonth(paymentMonth)
-
-      fetchCreditCsvBytes(usageMonth)
+      fetchCreditCsvBytes(paymentMonth)
         .then((bytes) => {
           if (creditGenerationRef.current.get(paymentMonth) !== generation) return
-          const amount = bytes === null ? null : sumCreditCsv(`${usageMonth}.csv`, bytes)
+          const amount = bytes === null ? null : sumCreditCsv(`${paymentMonth}.csv`, bytes)
           setCreditByMonth((current) => ({ ...current, [paymentMonth]: amount }))
         })
         .catch((error: unknown) => {

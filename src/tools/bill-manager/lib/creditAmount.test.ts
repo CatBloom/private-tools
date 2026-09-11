@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { creditUsageMonth, sumCreditCsv } from './creditAmount'
+import { sumCreditCsv } from './creditAmount'
 
 // 実カード明細は使わない。合成データのみ（CLAUDE.md「テスト」節）。
 const toBytes = (text: string): ArrayBuffer => {
@@ -9,16 +9,6 @@ const toBytes = (text: string): ArrayBuffer => {
   }
   return buffer.buffer
 }
-
-describe('creditUsageMonth', () => {
-  it('is one month before the payment month', () => {
-    expect(creditUsageMonth('202609')).toBe('202608')
-  })
-
-  it('rolls back across a year boundary', () => {
-    expect(creditUsageMonth('202601')).toBe('202512')
-  })
-})
 
 describe('sumCreditCsv', () => {
   it('sums the amount of every parsed transaction', () => {
