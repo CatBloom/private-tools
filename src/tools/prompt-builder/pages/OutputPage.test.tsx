@@ -68,6 +68,7 @@ describe('OutputPage', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   it('reflects weight changes in the output preview', async () => {
@@ -475,6 +476,32 @@ describe('OutputPage', () => {
       window.dispatchEvent(new Event('focus'))
 
       expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
+      expect(putHistory).not.toHaveBeenCalled()
+    })
+
+    it('applies the latest response when two revalidations overlap, even if the older one resolves first', async () => {
+      renderPage()
+      await screen.findByText('（出力はまだありません）')
+
+      const make = (id: string, name: string): HistoryEntry => ({ id, name, createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' })
+      const resolvers: Array<(entries: HistoryEntry[]) => void> = []
+      vi.mocked(getHistory).mockImplementation(() => new Promise<HistoryEntry[]>((resolve) => { resolvers.push(resolve) }))
+
+      // focus の間引き（1 秒）を越えるよう Date だけ進めて、再取得を 2 本重ねる。
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-15T00:00:00Z'))
+      window.dispatchEvent(new Event('focus'))
+      vi.setSystemTime(new Date('2026-09-15T00:00:05Z'))
+      window.dispatchEvent(new Event('focus'))
+      await waitFor(() => expect(resolvers).toHaveLength(2))
+
+      // 古い方（1 本目）が先に解決しても適用されず、後から届いた最新（2 本目）が適用される。
+      resolvers[0]([make('h1', 'older set')])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      resolvers[1]([make('h2', 'newest set')])
+
+      expect(await screen.findByText('newest set', { exact: false })).toBeInTheDocument()
+      expect(screen.queryByText('older set', { exact: false })).not.toBeInTheDocument()
       expect(putHistory).not.toHaveBeenCalled()
     })
 

@@ -79,6 +79,8 @@ export const OutputPage = () => {
   const editingHistoryIdRef = useRef(editingHistoryId)
   editingHistoryIdRef.current = editingHistoryId
   const historyEntriesRef = useRef(historyEntries)
+  // タブ復帰の再取得の通し番号。重なった再取得のうち最新の応答だけを適用する（他 Provider と同型）。
+  const historyRevalidateGenerationRef = useRef(0)
   historyEntriesRef.current = historyEntries
 
   const [historyFilterTarget, setHistoryFilterTarget] = useState<TargetFilter>('ALL')
@@ -110,6 +112,8 @@ export const OutputPage = () => {
     if (historyLoadStatus !== 'ready') return
     if (historySaveStatusRef.current === 'saving') return
     if (editingHistoryIdRef.current !== null) return
+    historyRevalidateGenerationRef.current += 1
+    const generation = historyRevalidateGenerationRef.current
     const snapshotBefore = historyEntriesRef.current
 
     getHistory()
@@ -118,6 +122,8 @@ export const OutputPage = () => {
         // 戻っている場合があるため、historyEntries 自体が変わっていないかも見る）。
         if (historySaveStatusRef.current === 'saving') return
         if (editingHistoryIdRef.current !== null) return
+        // 後から発火した別の再取得に追い越されていたら（この応答は古い）破棄する。
+        if (historyRevalidateGenerationRef.current !== generation) return
         if (historyEntriesRef.current !== snapshotBefore) return
         if (JSON.stringify(entries) === JSON.stringify(snapshotBefore)) return
         setHistoryEntries(entries)
