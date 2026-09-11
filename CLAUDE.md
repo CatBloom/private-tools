@@ -53,6 +53,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 3. `src/tools/<id>/` にツール本体を置く。`index.tsx` の default export で `<ToolLayout toolId="<id>" appClassName="<id>-app">` にラップし、状態 Provider（`AlertProvider`/`ConfirmProvider` 等）はその内側に置く。
 4. サーバー API が要るなら `src/server/routes/<id>.ts` を作り、`src/server/app.ts` に `app.route('/tools/<id>/api', create<Id>Routes(...))` を1行追加する（registry には持たせない）。
 5. KV 永続化が要るなら `src/server/storage/<id>/` に Local／KV 実装を作り、`src/server/storage/shared/kv-client.ts`・`select-storage.ts` の共通骨格に乗せる。Vercel 環境変数に `CLOUDFLARE_KV_<TOOL>_NAMESPACE_ID` を追加する（Account ID／API Token は既存ツールと共有）。
+6. 複数ツールで使う純粋ロジックは `src/lib/<domain>/`（例: `src/lib/credit-csv/`）に置き、他ツールのディレクトリから直接 import しない。`src/tools/tool-boundary.test.ts` がツール間の相対 import を検出して失敗させる。
 
 `vite.config.ts` の `rollupOptions.input` は registry から自動生成されるため、上記以外に触る箇所はない。
 
@@ -68,6 +69,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 - `src/components/feedback/` — 3ツール共通の UI フィードバック（`AlertProvider`/`useAlert` トースト、`ConfirmProvider`/`useConfirm` 確認ダイアログ、`Spinner`）。
 - `src/lib/mountTool.tsx` — 各クライアントエントリ共通の `createRoot(document.getElementById('root')!).render(app)` 定型（**hydrate ではなく createRoot**。ツールシェルは空 `#root` を返すため）。
 - `src/lib/copyText.ts` — iOS/WebKit 向けのクリップボードコピー（同期 `document.execCommand('copy')` を先に試し、失敗時のみ非同期 Clipboard API にフォールバック）。単一ツールでしか使わなくても「特定の処理」は分離してテストを付ける方針の一例。
+- `src/lib/credit-csv/` — CSV パース・店名正規化・型（`csv.ts`／`format.ts`／`types.ts`）。react 非依存の純粋ロジックで、credit-csv と Bill Manager（issue #18）の両方から import する横断モジュール。ツール間で `src/tools/<A>/` → `src/tools/<B>/` の import はしない（`src/tools/tool-boundary.test.ts` が検出する）。**`src/lib/` からは `src/tools/`（`registry.ts` を含む）を import しない**（同じく `tool-boundary.test.ts` が検出する。`src/lib` は完全にツール非依存を保つ）。
 - `src/public/` — 静的資産。`styles.css`（TOP・全ツールのシェルが常時 link）は Git 管理、`assets/`（ビルド生成物）は gitignore。**共有 UI の CSS（`.fbk-*`／`.tool-layout-*`／`.theme-toggle`／`.pt-*` 共通部品）は styles.css に置く**：コンポーネント側で `import './x.css'` すると Vite が共有チャンクの CSS（例 `assets/ConfirmProvider.css`）に分割し、シェルはツール別バンドルの CSS（`client-credit-csv.css`／`client-prompt-builder.css`／`client-my-todo.css`）しか link しないため**本番で無スタイル化**する（トースト/ダイアログ・ドロワーが素の状態で描画される）。常時 link される styles.css に置けば dev/prod とも確実に読み込まれる。
 
 ### デザイントークン（`src/public/styles.css`）
@@ -87,7 +89,7 @@ Hono SSR をシェルに、ツールはクライアント側でマウントす�
 
 クレジットカード明細 CSV（Shift_JIS の `YYYYMM.csv`）をアップロードして利用月ベースで集計・閲覧するツール。移植元は別リポジトリ `CatBloom/credit-csv-viewer`。
 
-- `lib/` — 純粋ロジック（`csv.ts` パース／日付補完、`format.ts` 店名正規化・類似度グルーピング・日本円表記、`selectors.ts` 絞り込み・集計、`types.ts`）。移植元からほぼそのまま移植。**CSV の読込は `buildAppData(files)`**（アップロード済みバイト列から構築。移植元の `loadAppData`/`import.meta.glob` は廃棄）。
+- CSV パース（`csv.ts`）・店名正規化（`format.ts`）・型（`types.ts`）は `src/lib/credit-csv/` に置く横断モジュール（後述「共有 UI・レイアウト」節）。移植元からほぼそのまま移植。**CSV の読込は `buildAppData(files)`**（アップロード済みバイト列から構築。移植元の `loadAppData`/`import.meta.glob` は廃棄）。`lib/selectors.ts` — チャート用の絞り込み・集計。credit-csv 専用のため `src/tools/credit-csv/lib/` に残す。
 - UI（`.tsx`、新規再設計）: `index.tsx` が default export `CreditCsvApp`（自己完結、`credit-csv.css` を import）。`CreditCsvRoutes.tsx` が `<ToolLayout toolId="credit-csv" appClassName="credit-csv-app" tabs>` でラップし、本文上に 明細／年間合計／ファイル管理 のタブを出す。画面は 明細／年間合計／ファイル管理＋店名別（`/merchant/:merchant`）。チャートは **recharts（クライアント専用・lazy）**。未知の内部パスは `/` にリダイレクト。
 - テーマ切替は共通 `useTheme`/`ThemeToggle`（`.credit-csv-app[data-theme]` にスコープ）。
 - CSV アップロード・アップロード済み一覧・一覧からの削除。
@@ -179,7 +181,7 @@ My Todo 専用。`MyTodoStorage`（`getTodos/putTodos`、`TodoState` を丸ご�
 
 ### テスト
 
-vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts・@dnd-kit は jsdom で完全描画/ドラッグ再現できないため UI テストではモックし、並べ替えロジックは `lib/reorder.ts`／`lib/notation.ts` の `reorder` など純粋関数を単体で検証する。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。`src/tools/css-scope.test.ts` は各ツール CSS を走査し、`.xxx-app a` のような「ラッパー＋素の要素セレクタ」だけのルールを失敗させる（共有 UI はラッパー内に描画されるためカスケードで漏れる）。ツール CSS で要素を指定するときはツール固有クラスか `.tool-layout-main` 配下に限定する。
+vitest + jsdom。サーバーテストは `app.request('http://localhost/...')` で HTTP を通さず検証。`NODE_ENV` を書き換えるテストは `finally` で復元。recharts・@dnd-kit は jsdom で完全描画/ドラッグ再現できないため UI テストではモックし、並べ替えロジックは `lib/reorder.ts`／`lib/notation.ts` の `reorder` など純粋関数を単体で検証する。**実際のカード明細（移植元 `data/*.csv`）はフィクスチャに使わない。合成データのみ**。`src/tools/css-scope.test.ts` は各ツール CSS を走査し、`.xxx-app a` のような「ラッパー＋素の要素セレクタ」だけのルールを失敗させる（共有 UI はラッパー内に描画されるためカスケードで漏れる）。ツール CSS で要素を指定するときはツール固有クラスか `.tool-layout-main` 配下に限定する。`src/tools/tool-boundary.test.ts` は各ツールディレクトリ配下の相対 import/export を走査し、他ツールのディレクトリを直接 import していないかを検証する。
 
 ## この構成で守ること
 

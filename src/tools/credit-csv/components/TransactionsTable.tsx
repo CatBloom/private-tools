@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useSortableRows } from '../hooks/useSortableRows'
-import { formatCurrency, formatDisplayDate } from '../lib/format'
-import type { Transaction, ViewMode } from '../lib/types'
+import { formatCurrency, formatDisplayDate } from '../../../lib/credit-csv/format'
+import type { Transaction, ViewMode } from '../../../lib/credit-csv/types'
 import { Pagination, usePaginatedRows } from './Pagination'
 import { ViewModeToggle } from './ViewModeToggle'
 

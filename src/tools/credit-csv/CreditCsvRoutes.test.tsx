@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { CreditCsvRoutes } from './CreditCsvRoutes'
-import { formatCurrency } from './lib/format'
+import { formatCurrency } from '../../lib/credit-csv/format'
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,

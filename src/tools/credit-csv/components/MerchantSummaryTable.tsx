@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useSortableRows } from '../hooks/useSortableRows'
-import { formatCurrency } from '../lib/format'
-import type { MerchantSummary, ViewMode } from '../lib/types'
+import { formatCurrency } from '../../../lib/credit-csv/format'
+import type { MerchantSummary, ViewMode } from '../../../lib/credit-csv/types'
 import { Pagination, usePaginatedRows } from './Pagination'
 import { ViewModeToggle } from './ViewModeToggle'
 

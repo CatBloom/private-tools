@@ -1,4 +1,4 @@
-import { formatMonthLabel } from '../lib/format'
+import { formatMonthLabel } from '../../../lib/credit-csv/format'
 
 type FilterBarProps = {
   years: string[]

@@ -12,7 +12,7 @@ import {
   summarizeMerchantByMonth,
   summarizePeriod
 } from '../lib/selectors'
-import type { AppData } from '../lib/types'
+import type { AppData } from '../../../lib/credit-csv/types'
 import { useAppDataContext } from '../state/AppDataContext'
 
 type MerchantMode = 'all' | 'year'

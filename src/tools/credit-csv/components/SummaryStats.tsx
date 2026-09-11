@@ -1,4 +1,4 @@
-import { formatCurrency } from '../lib/format'
+import { formatCurrency } from '../../../lib/credit-csv/format'
 
 type SummaryStatsProps = {
   totalAmount: number

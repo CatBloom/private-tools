@@ -5,7 +5,7 @@ import { StatusView } from '../components/StatusView'
 import { SummaryStats } from '../components/SummaryStats'
 import { usePersistedState } from '../../../hooks/usePersistedState'
 import { buildYearlyTrend, summarizeMerchants, summarizePeriod } from '../lib/selectors'
-import type { AppData } from '../lib/types'
+import type { AppData } from '../../../lib/credit-csv/types'
 import { useAppDataContext } from '../state/AppDataContext'
 
 const YearlyView = ({ data }: { data: AppData }) => {
