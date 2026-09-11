@@ -1,0 +1,409 @@
+/* Bill Manager 固有のレイアウト。共有 UI（.pt-* / .fbk-* / .tool-layout-* / .row-menu-*）は styles.css に置く。
+   デスクトップでの本文中央寄せ（max-width: 1040px）は .tool-layout-main に既にあるためここでは指定しない。
+   スマホ幅（375px 前後）を基準に設計し、デスクトップはその見た目をそのまま中央寄せする。 */
+
+.bill-manager-app {
+  display: flex;
+  flex-direction: column;
+  /* 親に高さ指定が無く min-height:100% はコンテンツ高さで止まる（ダーク時に地色が透ける）ため vh/dvh を使う。 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip; /* iOS Safari の横ラバーバンド対策 */
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* 数字の幅を揃える: iOS の SF Pro は既定で可変幅のため tabular-nums を指定。Windows の system-ui は太字の面が別書体に解決され
+     tnum も効かず桁幅が崩れるため、font-family は "Segoe UI" を system-ui より先に置く（styles.css・他ツール CSS も同じ順）。 */
+  font-variant-numeric: tabular-nums;
+}
+
+.bill-manager-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* 月ビュー・年間ビュー共通の前後ナビ（前月/翌月、前年/翌年）。 */
+.bill-manager-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.bill-manager-nav-label {
+  min-width: 6rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bill-manager-note {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+}
+
+/* 集計カード（月ビュー）: 3〜4行に収める。 */
+.bill-manager-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bill-manager-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bill-manager-summary-breakdown {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+}
+
+/* 「固定費 1,234円」のようなまとまりの途中（数字と「円」の間など）で折り返さないようにする。
+   折り返しはまとまり間の区切り（／）でのみ起こる。 */
+.bill-manager-summary-breakdown-item {
+  white-space: nowrap;
+}
+
+.bill-manager-summary-cash {
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--pt-border);
+  font-size: 1.15rem;
+}
+
+.bill-manager-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bill-manager-section-title {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+}
+
+/* 収入行（給与＋臨時収入）。 */
+.bill-manager-income-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bill-manager-income-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.bill-manager-income-extra {
+  color: var(--pt-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.bill-manager-income-amount {
+  flex: none;
+  width: 6.5rem;
+  text-align: right;
+}
+
+.bill-manager-extra-income-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 項目一覧: 1項目1行。375px でも折り返さずに収まる幅配分にする。 */
+.bill-manager-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bill-manager-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.65rem;
+}
+
+/* 「計上しない」ON の行は名前・カテゴリ・金額などの入力側だけを薄くする。行全体に opacity を
+   掛けると、行の子である RowMenu のポップアップ（row-menu-anchor 配下）まで一緒に薄くなり
+   操作しづらくなるため、content 側にだけ opacity を限定する。 */
+.bill-manager-entry-row.is-excluded .bill-manager-entry-row-content {
+  opacity: 0.55;
+}
+
+.bill-manager-entry-row.is-excluded .bill-manager-entry-name {
+  text-decoration: line-through;
+}
+
+.bill-manager-entry-row-content {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 編集モードは名前 input＋カテゴリ select＋保存＋キャンセルを 375px で1行に収める
+   （名前 input は 11rem を上限に縮み、カテゴリ select は 3 文字ラベル＋矢印が収まる 5.5rem）。 */
+.bill-manager-entry-row-edit-fields {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.bill-manager-entry-row-edit-fields input[type="text"] {
+  flex: 0 1 11rem;
+  min-width: 0;
+}
+
+.bill-manager-entry-row-edit-fields select {
+  flex: none;
+  width: 5.5rem;
+  padding-inline: 0.3rem;
+}
+
+.bill-manager-entry-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bill-manager-entry-category {
+  flex: none;
+  max-width: 4.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bill-manager-entry-status {
+  flex: none;
+  font-size: 0.65rem;
+}
+
+.bill-manager-entry-amount {
+  flex: none;
+  width: 5.5rem;
+  min-width: 0;
+  padding-inline: 0.4rem;
+  text-align: right;
+}
+
+.bill-manager-entry-row-actions {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.bill-manager-entry-row-actions .pt-button {
+  padding: 0.35rem 0.5rem;
+  font-size: var(--pt-text-sm);
+  white-space: nowrap;
+}
+
+/* 特殊費用一覧: 金額＋メモの小さな行。 */
+.bill-manager-special-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bill-manager-special-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: 0.6rem;
+  font-size: var(--pt-text-sm);
+}
+
+.bill-manager-special-amount {
+  flex: none;
+  font-weight: 700;
+}
+
+.bill-manager-special-memo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pt-muted);
+}
+
+.bill-manager-special-delete {
+  flex: none;
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* 追加フォーム（項目・特殊費用共通）: スマホは折り返し可。 */
+.bill-manager-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.bill-manager-add-form input[type="text"],
+.bill-manager-add-form input[type="number"],
+.bill-manager-add-form select {
+  flex: 1;
+  min-width: 7rem;
+}
+
+/* 年間ビュー: 項目名列を sticky にして横スクロールする。 */
+.bill-manager-year-card {
+  padding: 0.75rem;
+}
+
+.bill-manager-year-card .bill-manager-note {
+  margin-top: 0.6rem;
+}
+
+.bill-manager-year-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bill-manager-year-table {
+  min-width: 46rem;
+}
+
+/* 数値列（sticky の行見出し以外）は右揃え。月見出しも数値に合わせて右寄せ。 */
+.bill-manager-year-table td:not(.bill-manager-year-sticky-col),
+.bill-manager-year-table th:not(.bill-manager-year-sticky-col) {
+  text-align: right;
+}
+
+.bill-manager-year-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  max-width: 7rem;
+  overflow: hidden;
+  background: var(--pt-surface);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bill-manager-year-table td.is-derived,
+.bill-manager-year-table th.is-derived {
+  color: var(--pt-muted);
+}
+
+/* クレカ未取込の月: 列全体に薄い斜線のハッチングを掛け、その月が集計外であることを示す（数値は読めるまま）。 */
+.bill-manager-year-table td.is-credit-missing,
+.bill-manager-year-table th.is-credit-missing {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--pt-muted) 22%, transparent) 5px 6px
+  );
+}
+
+.bill-manager-year-month-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.3rem 0.4rem;
+  color: var(--pt-text);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.bill-manager-year-summary-row .bill-manager-year-sticky-col {
+  font-weight: 700;
+}
+
+/* 支出合計／収入／現金残高: 上に太い罫線＋薄い面色で「集計結果」と分かるようにする。
+   ライトは青みの無いグレー（--pt-info-bg は青すぎる）、ダークは --pt-info-bg。ダークの判定は styles.css と同じ
+   「prefers-color-scheme + data-theme 属性」の2系統。 */
+.bill-manager-year-result-row td,
+.bill-manager-year-result-row .bill-manager-year-sticky-col {
+  background: #eceff3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bill-manager-app:not([data-theme="light"]) .bill-manager-year-result-row td,
+  .bill-manager-app:not([data-theme="light"]) .bill-manager-year-result-row .bill-manager-year-sticky-col {
+    background: var(--pt-info-bg);
+  }
+}
+
+.bill-manager-app[data-theme="dark"] .bill-manager-year-result-row td,
+.bill-manager-app[data-theme="dark"] .bill-manager-year-result-row .bill-manager-year-sticky-col {
+  background: var(--pt-info-bg);
+}
+
+.bill-manager-year-result-row-first td,
+.bill-manager-year-result-row-first .bill-manager-year-sticky-col {
+  border-top: 2px solid var(--pt-border);
+}
+
+.bill-manager-year-cash-row td,
+.bill-manager-year-cash-row .bill-manager-year-sticky-col {
+  font-weight: 700;
+}
+
+/* td が 700 のため中の strong が既定の bolder で 900（Segoe UI Black）に解決され、数字が可変幅になって桁幅が崩れる。行と同じ 700 に固定する。 */
+.bill-manager-year-cash-row strong {
+  font-weight: inherit;
+}
+
+/* 金額入力: 数値 input のスピンボタン（上下矢印）を出さない。スマホでは inputMode="numeric" で数字キーボードが出る。 */
+.bill-manager-amount {
+  appearance: textfield;
+  -moz-appearance: textfield;
+  font-variant-numeric: tabular-nums; /* input は UA の font 指定で継承が切れるため個別に指定 */
+}
+
+.bill-manager-amount::-webkit-outer-spin-button,
+.bill-manager-amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 翌々月以降（編集不可）の金額 input。is-excluded の入力側と同じ薄さに揃える。 */
+.bill-manager-amount:disabled {
+  opacity: 0.55;
+}
+
+/* 「計上しない」かつ編集不可の行は、is-excluded 側の .bill-manager-entry-row-content
+   （opacity: 0.55）と disabled の金額 input（opacity: 0.55）が重なって二重に薄くなる（0.55 * 0.55 ≒ 0.30）。
+   is-excluded の入力側と同じ薄さに揃えたいだけなので、disabled 側の opacity をここで打ち消す。 */
+.bill-manager-entry-row.is-excluded .bill-manager-amount:disabled {
+  opacity: 1;
+}

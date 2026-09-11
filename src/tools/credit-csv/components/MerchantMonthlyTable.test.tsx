@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { MerchantMonthlyTable } from './MerchantMonthlyTable'
-import type { MerchantMonthlySummary } from '../lib/types'
+import type { MerchantMonthlySummary } from '../../../lib/credit-csv/types'
 
 const rows: MerchantMonthlySummary[] = [
   { key: '2026-02', periodLabel: '2026/02', totalAmount: 3000 },

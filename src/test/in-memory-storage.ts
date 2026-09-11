@@ -2,6 +2,8 @@ import type { TodoState } from '../tools/my-todo/shared/types.js'
 import type { MyTodoStorage } from '../server/storage/my-todo/index.js'
 import type { HistoryEntry, PromptWord } from '../tools/prompt-builder/shared/types.js'
 import type { PromptHistoryStorage, PromptWordStorage } from '../server/storage/prompt-builder/index.js'
+import type { LedgerState } from '../tools/bill-manager/shared/types.js'
+import type { BillManagerStorage } from '../server/storage/bill-manager/index.js'
 
 export class InMemoryTodoStorage implements MyTodoStorage {
   private state: TodoState | null = null
@@ -38,5 +40,17 @@ export class InMemoryHistoryStorage implements PromptHistoryStorage {
   async putHistory(entries: HistoryEntry[]): Promise<HistoryEntry[]> {
     this.entries = entries
     return entries
+  }
+}
+
+export class InMemoryBillManagerStorage implements BillManagerStorage {
+  private state: LedgerState | null = null
+
+  async getLedger(): Promise<LedgerState | null> {
+    return this.state
+  }
+
+  async putLedger(state: LedgerState): Promise<void> {
+    this.state = state
   }
 }

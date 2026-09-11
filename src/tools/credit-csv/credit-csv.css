@@ -4,7 +4,7 @@
   min-height: 100%;
   background: var(--pt-bg);
   color: var(--pt-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 .credit-csv-hero-copy {
@@ -209,17 +209,10 @@
   gap: 0.6rem;
 }
 
-.credit-csv-status-message {
+/* 共通 .pt-status-message は margin:0 のため、単独でページ上部に出るこのツールだけ上マージンを別途持たせる。
+   背景は共通の --pt-bg に統一する（従来の --pt-surface とは僅かに異なる）。 */
+.credit-csv-app .credit-csv-status-message {
   margin: 0.85rem 0 0;
-  padding: 0.85rem 1rem;
-  background: var(--pt-surface);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.75rem;
-}
-
-.credit-csv-status-message-error {
-  color: var(--pt-danger);
-  border-color: var(--pt-danger);
 }
 
 .credit-csv-upload-form {

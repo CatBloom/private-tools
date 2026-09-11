@@ -68,6 +68,7 @@ describe('OutputPage', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   it('reflects weight changes in the output preview', async () => {
@@ -456,5 +457,142 @@ describe('OutputPage', () => {
     expect(putHistory).not.toHaveBeenCalled()
     expect(screen.getByText('saved set', { exact: false })).toBeInTheDocument()
     expect(screen.queryByText('renamed set', { exact: false })).not.toBeInTheDocument()
+  })
+
+  describe('revalidate on tab return', () => {
+    it('replaces history on window focus when the fetched list differs, without saving it back', async () => {
+      renderPage()
+      await screen.findByText('（出力はまだありません）')
+
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(await screen.findByText('saved set', { exact: false })).toBeInTheDocument()
+      expect(putHistory).not.toHaveBeenCalled()
+    })
+
+    it('applies the latest response when two revalidations overlap, even if the older one resolves first', async () => {
+      renderPage()
+      await screen.findByText('（出力はまだありません）')
+
+      const make = (id: string, name: string): HistoryEntry => ({ id, name, createdAt: '2024-01-01T00:00:00.000Z', items: [], target: 'base' })
+      const resolvers: Array<(entries: HistoryEntry[]) => void> = []
+      vi.mocked(getHistory).mockImplementation(() => new Promise<HistoryEntry[]>((resolve) => { resolvers.push(resolve) }))
+
+      // focus の間引き（1 秒）を越えるよう Date だけ進めて、再取得を 2 本重ねる。
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-15T00:00:00Z'))
+      window.dispatchEvent(new Event('focus'))
+      vi.setSystemTime(new Date('2026-09-15T00:00:05Z'))
+      window.dispatchEvent(new Event('focus'))
+      await waitFor(() => expect(resolvers).toHaveLength(2))
+
+      // 古い方（1 本目）が先に解決しても適用されず、後から届いた最新（2 本目）が適用される。
+      resolvers[0]([make('h1', 'older set')])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      resolvers[1]([make('h2', 'newest set')])
+
+      expect(await screen.findByText('newest set', { exact: false })).toBeInTheDocument()
+      expect(screen.queryByText('older set', { exact: false })).not.toBeInTheDocument()
+      expect(putHistory).not.toHaveBeenCalled()
+    })
+
+    it('does not re-fetch while a history entry is being edited', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '編集' }))
+
+      expect(getHistory).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-fetch while a history save (delete) is in flight', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValue([entry])
+      let resolvePut: (entries: HistoryEntry[]) => void = () => {}
+      vi.mocked(putHistory).mockImplementation(
+        () => new Promise<HistoryEntry[]>((resolve) => { resolvePut = resolve }),
+      )
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
+
+      // deleteHistoryEntry の setHistorySaveStatus('saving') が確実に反映されてから focus する
+      // （confirm の resolve から先の続きは非同期なため、即座には反映されていないことがある）。
+      openRowMenu(row)
+      await waitFor(() => expect(within(row).getByRole('menuitem', { name: '削除' })).toBeDisabled())
+
+      expect(getHistory).toHaveBeenCalledTimes(1)
+      window.dispatchEvent(new Event('focus'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(getHistory).toHaveBeenCalledTimes(1)
+
+      resolvePut([])
+    })
+
+    it('does not resurrect a history entry deleted while a stale revalidate GET is still in flight', async () => {
+      const entry: HistoryEntry = {
+        id: 'h1',
+        name: 'saved set',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        items: [{ id: 'i1', wordId: 'w1', text: 'cat girl', weight: 0 }],
+        target: 'base',
+      }
+      vi.mocked(getHistory).mockResolvedValueOnce([entry])
+      vi.mocked(putHistory).mockImplementation(async (entries) => entries)
+
+      renderPage()
+      const row = (await screen.findByText('saved set', { exact: false })).closest('li')!
+
+      // タブ復帰の再取得を pending のままにしておく（フラグは削除完了後に元へ戻ってしまう）。
+      let resolveRevalidate: (entries: HistoryEntry[]) => void = () => {}
+      vi.mocked(getHistory).mockImplementationOnce(
+        () => new Promise<HistoryEntry[]>((resolve) => { resolveRevalidate = resolve }),
+      )
+      window.dispatchEvent(new Event('focus'))
+      await Promise.resolve()
+
+      // GET が pending の間に削除操作を完了させる。
+      openRowMenu(row)
+      fireEvent.click(within(row).getByRole('menuitem', { name: '削除' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'OK' }))
+      await waitFor(() => expect(putHistory).toHaveBeenCalledWith([]))
+      await waitFor(() => expect(screen.queryByText('saved set', { exact: false })).not.toBeInTheDocument())
+
+      // 削除完了後に、pending だった GET が削除前の古いデータで解決する。
+      resolveRevalidate([entry])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(screen.queryByText('saved set', { exact: false })).not.toBeInTheDocument()
+    })
   })
 })

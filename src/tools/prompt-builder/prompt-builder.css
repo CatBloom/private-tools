@@ -6,7 +6,7 @@
   overflow-x: clip;
   background: var(--pt-bg);
   color: var(--pt-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 .prompt-builder-page-stack {
@@ -36,22 +36,10 @@
   gap: 0.6rem;
 }
 
-.prompt-builder-status-message {
+/* 共通 .pt-status-message はカード内の余白をカード自身の gap に任せる前提で margin:0 のため、
+   .pt-card 直下で連続表示するこのツールだけ上下マージンを別途持たせる。 */
+.prompt-builder-app .prompt-builder-status-message {
   margin: 0.85rem 0;
-  padding: 0.85rem 1rem;
-  background: var(--pt-bg);
-  border: 1px solid var(--pt-border);
-  border-radius: 0.75rem;
-}
-
-.prompt-builder-status-message-error {
-  color: var(--pt-danger);
-  border-color: var(--pt-danger);
-}
-
-
-.prompt-builder-status-message-error button {
-  margin-left: 0.6rem;
 }
 
 .prompt-builder-word-form {

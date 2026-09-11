@@ -1,27 +1,12 @@
+import { readResult } from '../../lib/api'
+
 export type FileMeta = {
   name: string
   size: number
   uploadedAt: string
 }
 
-type ApiResult<T> = { ok: true; data: T } | { ok: false; error: { message: string } }
-
 const API_BASE = '/tools/credit-csv/api'
-
-const readResult = async <T>(response: Response): Promise<T> => {
-  let body: ApiResult<T>
-  try {
-    body = (await response.json()) as ApiResult<T>
-  } catch {
-    throw new Error(`サーバーとの通信に失敗しました。(status: ${response.status})`)
-  }
-
-  if (!body.ok) {
-    throw new Error(body.error.message)
-  }
-
-  return body.data
-}
 
 export const listFiles = async (): Promise<FileMeta[]> => {
   const response = await fetch(`${API_BASE}/files`)

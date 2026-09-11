@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAlert, useConfirm } from '../../../components/feedback'
+import { useGatedSave, type SaveStatus } from '../../../hooks/useGatedSave'
+import { useRevalidateOnReturn } from '../../../hooks/useRevalidateOnReturn'
 import { getTodos, putTodos } from '../api'
 import { canPlaceInToday, moveItem } from '../lib/move'
 import { reorder } from '../lib/reorder'
@@ -7,12 +9,8 @@ import { rollover, toLocalDateString } from '../lib/rollover'
 import { TODAY_LIMIT, type TodoItem, type TodoSectionId, type TodoState } from '../shared/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 const EMPTY_STATE: TodoState = { today: [], someday: [], lastRolloverDate: null }
-
-// KV の「同一キー1秒1回」制約を守るための書き込み最小間隔（1秒未満の連続編集だけ遅延させる）。
-const MIN_WRITE_INTERVAL_MS = 1000
 
 const createItem = (text: string): TodoItem => ({
   id: crypto.randomUUID(),
@@ -48,84 +46,26 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
   const [todoState, setTodoState] = useState<TodoState>(EMPTY_STATE)
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [saveError, setSaveError] = useState<string | null>(null)
 
   // stale closure 対策（保存判定・rollover が常に最新値を読めるようにする）。
   const todoStateRef = useRef(todoState)
   todoStateRef.current = todoState
-  // 直近で putTodos に成功したスナップショット参照。同一参照なら差分無しとみなす（失敗時は更新しない）。
-  const lastSentRef = useRef<TodoState | null>(null)
-  const inFlightRef = useRef<Promise<unknown> | null>(null)
-  const lastWriteStartedAtRef = useRef<number | null>(null)
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // scheduleSave は runSave より後に定義されるため useCallback の依存配列に直接書けない（TDZ）。ref 経由で呼ぶ。
-  const scheduleSaveRef = useRef<() => void>(() => {})
+  // タブ復帰（revalidate）の発火ごとに進める通し番号。応答到着時にこの値と一致しなければ
+  // （後から発火した別の revalidate に追い越されていたら）古い応答として破棄する。
+  const revalidateGenerationRef = useRef(0)
 
-  const runSave = useCallback(
-    (snapshot: TodoState) => {
-      setSaveStatus('saving')
-      setSaveError(null)
-      lastWriteStartedAtRef.current = Date.now()
-      const request = putTodos(snapshot)
-      inFlightRef.current = request
-      request.then(
-        () => {
-          lastSentRef.current = snapshot
-          inFlightRef.current = null
-          if (todoStateRef.current !== snapshot) {
-            // 通信中にさらに変更があった。scheduleSave 経由でもう一度だけ送る。
-            scheduleSaveRef.current()
-          } else {
-            setSaveStatus('saved')
-          }
-        },
-        (error: unknown) => {
-          inFlightRef.current = null
-          const message = error instanceof Error ? error.message : '保存に失敗しました。'
-          setSaveError(message)
-          setSaveStatus('error')
-          showAlert('error', message)
-        },
-      )
-    },
-    [showAlert],
-  )
-
-  // 保存の唯一のエントリポイント。in-flight 中・差分無しなら何もしない。
-  const scheduleSave = useCallback(() => {
-    if (inFlightRef.current) return
-    const snapshot = todoStateRef.current
-    if (snapshot === lastSentRef.current) return
-
-    if (pendingTimerRef.current !== null) {
-      clearTimeout(pendingTimerRef.current)
-      pendingTimerRef.current = null
-    }
-
-    const elapsed = lastWriteStartedAtRef.current === null ? Infinity : Date.now() - lastWriteStartedAtRef.current
-    const delay = Math.max(0, MIN_WRITE_INTERVAL_MS - elapsed)
-
-    if (delay <= 0) {
-      runSave(snapshot)
-      return
-    }
-
-    pendingTimerRef.current = setTimeout(() => {
-      pendingTimerRef.current = null
-      scheduleSave()
-    }, delay)
-  }, [runSave])
-  scheduleSaveRef.current = scheduleSave
-
-  useEffect(() => {
-    return () => {
-      if (pendingTimerRef.current !== null) {
-        clearTimeout(pendingTimerRef.current)
-        pendingTimerRef.current = null
-      }
-    }
-  }, [])
+  const {
+    saveStatus,
+    saveError,
+    hasPendingChanges,
+    markSynced,
+  } = useGatedSave<TodoState>({
+    state: todoState,
+    stateRef: todoStateRef,
+    ready: loadStatus === 'ready',
+    save: putTodos,
+    onError: (message) => showAlert('error', message),
+  })
 
   const loadTodos = useCallback(async () => {
     setLoadStatus('loading')
@@ -134,13 +74,13 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
       const state = await getTodos()
       setTodoState(state)
       // 読み込み直後の空撃ち保存を防ぐため送信済み扱いにする。
-      lastSentRef.current = state
+      markSynced(state)
       setLoadStatus('ready')
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : '読み込みに失敗しました。')
       setLoadStatus('error')
     }
-  }, [])
+  }, [markSynced])
 
   useEffect(() => {
     loadTodos()
@@ -154,10 +94,37 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
     if (rolled !== todoStateRef.current) setTodoState(rolled)
   }, [loadStatus])
 
-  useEffect(() => {
+  // タブに戻ったときの再取得。未保存の変更（in-flight・保存待ちタイマー・送信済みと不一致）が
+  // あれば何もしない。取得結果に初回読み込みと同じ経路で rollover を適用し、現在の state と
+  // 等価なら何もしない。異なる場合は state を差し替える：rollover 自体が変化を生んでいなければ
+  // 「取得しただけ」なので markSynced も揃えて PUT を発火させず、rollover が変化を生んだ場合は
+  // 初回読み込みと同様に通常どおり保存させる（markSynced は呼ばない）。
+  const revalidate = useCallback(() => {
     if (loadStatus !== 'ready') return
-    scheduleSave()
-  }, [todoState, loadStatus, scheduleSave])
+    if (hasPendingChanges()) return
+    revalidateGenerationRef.current += 1
+    const generation = revalidateGenerationRef.current
+    const snapshotBefore = todoStateRef.current
+
+    getTodos()
+      .then((fetched) => {
+        // 取得中に編集が始まっていたら破棄する。
+        if (hasPendingChanges()) return
+        // 後から発火した別の revalidate に追い越されていたら（この応答は古い）破棄する。
+        if (revalidateGenerationRef.current !== generation) return
+        // 世代が最新でも、GET が in-flight の間に編集して保存まで完了していたら
+        // hasPendingChanges() は false に戻る。古いスナップショットで保存済みの変更を
+        // 巻き戻さないよう、state の参照が変わっていた場合も破棄する。
+        if (todoStateRef.current !== snapshotBefore) return
+        const rolled = rollover(fetched, toLocalDateString(new Date()))
+        if (JSON.stringify(rolled) === JSON.stringify(todoStateRef.current)) return
+        setTodoState(rolled)
+        if (rolled === fetched) markSynced(rolled)
+      })
+      .catch(() => {})
+  }, [loadStatus, hasPendingChanges, markSynced])
+
+  useRevalidateOnReturn(revalidate)
 
   const addItem = useCallback(
     (section: TodoSectionId, text: string) => {

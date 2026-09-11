@@ -1,10 +1,10 @@
-import { normalizeMerchant } from "./format";
+import { normalizeMerchant } from "../../../lib/credit-csv/format";
 import type {
   MerchantMonthlySummary,
   MerchantSummary,
   MonthlyTotal,
   Transaction
-} from "./types";
+} from "../../../lib/credit-csv/types";
 
 const sumAmounts = (transactions: Transaction[]) =>
   transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
